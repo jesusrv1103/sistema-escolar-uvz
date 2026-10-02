@@ -357,17 +357,15 @@ class InscripcionService
             $faltantes[] = 'Hay observaciones FALTANTE abiertas.';
         }
 
-        // RB-8.5: sin convenio ⇒ OK; convenio aplicado ⇒ debe estar
-        // `APROBADO` (FC-7/RB-8 literal). `PENDIENTE_APROBACION` y
-        // `RECHAZADO` son bloqueantes; ninguno de los dos es `APROBADO`.
-        if ($inscripcion->convenio_id !== null) {
-            if ($inscripcion->convenio_estatus === EstatusConvenio::PENDIENTE_APROBACION) {
-                $faltantes[] = 'El convenio está PENDIENTE_APROBACION.';
-            } elseif ($inscripcion->convenio_estatus === EstatusConvenio::RECHAZADO) {
-                $faltantes[] = 'El convenio aplicado está RECHAZADO (RB-8 exige convenio APROBADO).';
-            } elseif ($inscripcion->convenio_estatus !== EstatusConvenio::APROBADO) {
-                $faltantes[] = 'El convenio aplicado no está resuelto como APROBADO.';
-            }
+        // RB-8.5 (decisión aprobada Fase 12): sin convenio ⇒ OK; convenio
+        // aplicado ⇒ debe estar RESUELTO (`APROBADO` o `RECHAZADO`). El
+        // rechazo se considera resuelto SIN DESCUENTO: la Fase 7 ya permite
+        // generar cargos con `RECHAZADO` (descuento 0, cargos normales), así
+        // que bloquearlo aquí dejaría un estado imposible de resolver.
+        // Único bloqueante: `PENDIENTE_APROBACION`.
+        if ($inscripcion->convenio_id !== null
+            && $inscripcion->convenio_estatus === EstatusConvenio::PENDIENTE_APROBACION) {
+            $faltantes[] = 'El convenio está PENDIENTE_APROBACION.';
         }
 
         return $faltantes;

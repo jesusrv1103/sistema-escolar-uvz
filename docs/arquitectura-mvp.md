@@ -872,7 +872,8 @@ Para pasar a `ENROLLED` **debe ser obligatorio únicamente**:
 2. ✅ Todos los **documentos obligatorios** están `ACEPTADO`;
 3. ✅ **No existen observaciones** con `tipo = FALTANTE` y `estatus = ABIERTA`;
 4. ✅ **Control Escolar** realizó la revisión final (usuario `validada_por`);
-5. ✅ Si hay convenio aplicado, está en `convenio_estatus = APROBADO` (o no existe convenio).
+5. ✅ Si hay convenio aplicado, está **RESUELTO**: `convenio_estatus = APROBADO` **o** `RECHAZADO` (o no existe convenio). **`PENDIENTE_APROBACION` bloquea.**
+   > **Corrección Fase 12 (decisión aprobada):** un convenio **`RECHAZADO` se considera RESUELTO SIN DESCUENTO** y **no bloquea** la finalización. La Fase 7 ya permite generar cargos con `RECHAZADO` (`monto_descuento = 0`, cargos normales, el proceso continúa): bloquearlo después en `FINAL_REVIEW` generaría un estado imposible de resolver. Único bloqueante: `PENDIENTE_APROBACION`.
 
 **NO bloquea la finalización:**
 - ❌ mensualidades futuras `PENDIENTE` o vencidas;
@@ -1221,7 +1222,7 @@ CONTROL_ESCOLAR → abrir PanelEstados / revisión final
         ✓ concepto INSCRIPCION estatus = PAGADO
         ✓ documentos obligatorios todos ACEPTADOS
         ✓ sin observaciones ABIERTA de tipo FALTANTE
-        ✓ convenio APROBADO (o no aplica)
+        ✓ convenio RESUELTO: APROBADO o RECHAZADO (o no aplica); PENDIENTE_APROBACION bloquea
         ✗ NO se verifica el estado de las MENSUALIDADES
   → InscripcionService::finalizar()  **UNA transacción**
       → NumeroControlService::asignar()
@@ -1516,7 +1517,7 @@ Pertenece **al alumno**, no a la inscripción. Se asigna **una sola vez** al com
 ### ✅ Corrección de reglas (sobre mensualidades) — APROBADA
 
 - **Las mensualidades futuras NO impiden llegar a `ENROLLED`.**
-- Para finalizar es obligatorio **únicamente**: concepto **`INSCRIPCION`** pagado/validado; documentos obligatorios aceptados; **sin observaciones `FALTANTE` abiertas**; revisión final de Control Escolar (más convenio aprobado si existe).
+- Para finalizar es obligatorio **únicamente**: concepto **`INSCRIPCION`** pagado/validado; documentos obligatorios aceptados; **sin observaciones `FALTANTE` abiertas**; revisión final de Control Escolar (más convenio **resuelto** — `APROBADO` o `RECHAZADO` — si existe; **`PENDIENTE_APROBACION` bloquea**).
 - Las mensualidades pueden existir como conceptos `PENDIENTE` con la inscripción `ENROLLED`.
 - **Validar posteriormente una mensualidad NO modifica el estado del proceso.**
 - La transición `PAYMENT_REVIEW → PAYMENT_VALIDATED → PENDING_DOCUMENTS` corresponde **solo al pago requerido** para completar la inscripción.

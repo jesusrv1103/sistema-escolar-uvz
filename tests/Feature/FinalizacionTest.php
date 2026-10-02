@@ -151,8 +151,9 @@ function escenarioFinalizacionF12(array $opciones = []): array
     auth()->setUser($admisiones);
 
     // Convenio (opcional): se aplica y se resuelve ANTES de generar cargos
-    // (etapa previa, F7). APROBADO ⇒ con descuento; RECHAZADO ⇒ flujo sigue
-    // sin descuento (RB-3/FC-4), pero RB-8 exige APROBADO para finalizar.
+    // (etapa previa, F7). APROBADO ⇒ con descuento; RECHAZADO ⇒ resuelto sin
+    // descuento (cargos normales). Ambos pueden finalizar (decisión aprobada
+    // Fase 12); solo PENDIENTE_APROBACION bloquea RB-8.
     if ($opciones['convenio'] !== null) {
         $convenios = app(ConvenioService::class);
         $convenios->aplicar($inscripcion, convenioF12(), $admisiones);
@@ -468,16 +469,51 @@ test('F18: un convenio PENDIENTE_APROBACION bloquea', function () {
     expectNoFinalizaF12($e['inscripcion'], $e['control'], 'PENDIENTE_APROBACION');
 });
 
-test('F18: un convenio RECHAZADO bloquea porque RB-8 exige APROBADO', function () {
-    // Camino real F7: convenio aplicado y RECHAZADO ⇒ cargos sin descuento,
-    // pago y documentos completan y la inscripción SÍ llega a FINAL_REVIEW.
+test('F16: un convenio RECHAZADO se considera resuelto y no bloquea la finalizacion', function () {
+    // Decisión aprobada Fase 12: RECHAZADO = resuelto SIN descuento (la Fase 7
+    // ya permite generar cargos con RECHAZADO); bloquearlo aquí dejaría un
+    // estado imposible de resolver. Solo PENDIENTE_APROBACION bloquea.
     $e = escenarioFinalizacionF12(['convenio' => 'rechazado']);
 
     expect($e['inscripcion']->estatus)->toBe(InscripcionEstatus::FINAL_REVIEW)
         ->and($e['inscripcion']->convenio_estatus)->toBe(EstatusConvenio::RECHAZADO);
 
-    // RB-8 literal: convenio aplicado debe estar APROBADO (o no existir).
-    expectNoFinalizaF12($e['inscripcion'], $e['control'], 'RECHAZADO');
+    $finalizada = finalizarF12($e['inscripcion'], $e['control']);
+
+    expect($finalizada->estatus)->toBe(InscripcionEstatus::ENROLLED)
+        ->and($finalizada->alumno->numero_control)->toBe('20260001');
+});
+
+test('F16: el convenio RECHAZADO conserva monto_descuento = 0 y los cargos intactos', function () {
+    $e = escenarioFinalizacionF12(['convenio' => 'rechazado']);
+    $inscripcion = $e['inscripcion'];
+
+    // RECHAZADO ⇒ sin descuento: montos originales de la inscripción.
+    expect($inscripcion->monto_descuento)->toBe('0.00')
+        ->and($inscripcion->monto_inscripcion)->toBe('1500.00');
+
+    $concepto = $inscripcion->conceptosPago()->where('tipo', 'INSCRIPCION')->firstOrFail();
+    $mensualidades = $inscripcion->conceptosPago()->where('tipo', 'MENSUALIDAD')->get();
+
+    expect($concepto->monto)->toBe('1500.00')
+        ->and($concepto->descuento)->toBe('0.00')
+        ->and($concepto->monto_total)->toBe('1500.00')
+        ->and($mensualidades)->toHaveCount(4)
+        ->and($mensualidades->every(fn ($m): bool => $m->monto_total === '1200.00' && $m->descuento === '0.00'))->toBeTrue();
+
+    // La finalización NO recalcula descuentos ni modifica los cargos.
+    finalizarF12($inscripcion, $e['control']);
+
+    $conceptoTras = $inscripcion->conceptosPago()->where('tipo', 'INSCRIPCION')->firstOrFail();
+    $mensualidadesTras = $inscripcion->conceptosPago()->where('tipo', 'MENSUALIDAD')->get();
+
+    expect($inscripcion->refresh()->monto_descuento)->toBe('0.00')
+        ->and($conceptoTras->monto)->toBe('1500.00')
+        ->and($conceptoTras->descuento)->toBe('0.00')
+        ->and($conceptoTras->monto_total)->toBe('1500.00')
+        ->and($conceptoTras->estatus)->toBe(EstatusConceptoPago::PAGADO)
+        ->and($mensualidadesTras)->toHaveCount(4)
+        ->and($mensualidadesTras->every(fn ($m): bool => $m->monto_total === '1200.00' && $m->descuento === '0.00' && $m->estatus === EstatusConceptoPago::PENDIENTE))->toBeTrue();
 });
 
 test('F18: finalizar fuera de FINAL_REVIEW se rechaza explicitamente', function () {
