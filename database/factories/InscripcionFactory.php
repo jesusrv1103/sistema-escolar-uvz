@@ -47,7 +47,8 @@ class InscripcionFactory extends Factory
         return $this->state(['periodo_id' => $periodo->getKey()]);
     }
 
-    private static function programaPrueba(): Programa
+    /** Programa sintético activo, compartido entre pruebas (público para tests). */
+    public static function programaPrueba(): Programa
     {
         return Programa::firstOrCreate(
             ['clave' => 'SINT'],
@@ -55,7 +56,8 @@ class InscripcionFactory extends Factory
         );
     }
 
-    private static function periodoPrueba(): Periodo
+    /** Periodo sintético activo y abierto, compartido entre pruebas. */
+    public static function periodoPrueba(): Periodo
     {
         return Periodo::firstOrCreate(
             ['clave' => 'SINT-2026'],

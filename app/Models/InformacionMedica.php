@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\TipoSangre;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class InformacionMedica extends Model
 {
+    /** @use HasFactory<InformacionMedica> */
+    use HasFactory;
+
     /** Nombre de tabla personalizado (pluralización literal). */
     protected $table = 'informacion_medicas';
 
