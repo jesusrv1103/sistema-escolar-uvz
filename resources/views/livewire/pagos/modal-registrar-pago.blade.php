@@ -7,7 +7,7 @@
                     <h3 class="text-sm font-semibold text-brand-text">Registrar pago</h3>
                     <p class="mt-1 text-xs text-brand-muted">
                         Un pago completo por concepto (sin parciales ni anticipos). Queda
-                        <strong>PENDIENTE</strong> hasta que Administración lo valide; el comprobante
+                        <strong>Pendiente</strong> hasta que Administración lo valide; el comprobante
                         (PDF/JPG/PNG, máx. 10 MB) se guarda en archivo privado.
                     </p>
                 </div>
@@ -45,7 +45,7 @@
 
                 <div class="mt-4 space-y-3">
                     <div>
-                        <label for="concepto-pago" class="block text-xs font-medium text-brand-text">Concepto (PENDIENTE)</label>
+                        <label for="concepto-pago" class="block text-xs font-medium text-brand-text">Concepto ({{ \App\Enums\EstatusConceptoPago::PENDIENTE->label() }})</label>
                         <select id="concepto-pago" wire:model="conceptoId"
                             class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
                             <option value="">— Selecciona un concepto —</option>
@@ -72,7 +72,7 @@
                                 class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
                                 <option value="">— Selecciona —</option>
                                 @foreach ($metodos as $metodo)
-                                    <option value="{{ $metodo->value }}">{{ $metodo->value }}</option>
+                                    <option value="{{ $metodo->value }}">{{ $metodo->label() }}</option>
                                 @endforeach
                             </select>
                             @error('metodo') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -82,7 +82,7 @@
                     <div>
                         <label for="referencia-pago" class="block text-xs font-medium text-brand-text">
                             Referencia de operación
-                            <span class="font-normal text-brand-muted">(obligatoria para TRANSFERENCIA y TARJETA)</span>
+                            <span class="font-normal text-brand-muted">(obligatoria para Transferencia y Tarjeta)</span>
                         </label>
                         <input id="referencia-pago" type="text" wire:model="referencia" maxlength="100"
                             placeholder="Nº de operación o transferencia"

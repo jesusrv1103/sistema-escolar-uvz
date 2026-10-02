@@ -186,15 +186,17 @@ class DocumentoService
 
             if ($documento->estatus !== EstatusDocumento::PENDIENTE) {
                 throw new DocumentoInvalidoException(sprintf(
-                    'Solo se aceptan documentos PENDIENTE (estatus actual: %s).',
-                    $documento->estatus->value,
+                    'Solo se aceptan documentos %s (estatus actual: %s).',
+                    EstatusDocumento::PENDIENTE->label(),
+                    $documento->estatus->label(),
                 ));
             }
 
             if ($inscripcion->estatus !== InscripcionEstatus::DOCUMENT_REVIEW) {
                 throw new DocumentoInvalidoException(sprintf(
-                    'La inscripción debe estar en DOCUMENT_REVIEW para validar documentos (estatus actual: %s).',
-                    $inscripcion->estatus->value,
+                    'La inscripción debe estar en %s para validar documentos (estatus actual: %s).',
+                    InscripcionEstatus::DOCUMENT_REVIEW->label(),
+                    $inscripcion->estatus->label(),
                 ));
             }
 
@@ -249,8 +251,9 @@ class DocumentoService
 
             if ($documento->estatus !== EstatusDocumento::PENDIENTE) {
                 throw new DocumentoInvalidoException(sprintf(
-                    'Solo se rechazan documentos PENDIENTE (estatus actual: %s).',
-                    $documento->estatus->value,
+                    'Solo se rechazan documentos %s (estatus actual: %s).',
+                    EstatusDocumento::PENDIENTE->label(),
+                    $documento->estatus->label(),
                 ));
             }
 
@@ -366,8 +369,11 @@ class DocumentoService
     {
         if (! in_array($inscripcion->estatus, self::ETAPAS_DE_CARGA, true)) {
             throw new DocumentoInvalidoException(sprintf(
-                'La inscripción está en %s: los documentos solo se cargan en PENDING_DOCUMENTS, DOCUMENT_REVIEW o FINAL_REVIEW.',
-                $inscripcion->estatus->value,
+                'La inscripción está en %s: los documentos solo se cargan en %s, %s o %s.',
+                $inscripcion->estatus->label(),
+                InscripcionEstatus::PENDING_DOCUMENTS->label(),
+                InscripcionEstatus::DOCUMENT_REVIEW->label(),
+                InscripcionEstatus::FINAL_REVIEW->label(),
             ));
         }
     }

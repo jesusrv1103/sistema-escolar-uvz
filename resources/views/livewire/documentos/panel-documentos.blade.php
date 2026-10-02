@@ -17,8 +17,8 @@
                 <h1 class="text-lg font-semibold text-brand-text">Documentos de la inscripción</h1>
                 <p class="mt-1 text-xs text-brand-muted">
                     Estatus de la inscripción:
-                    <span class="rounded-full border border-brand-line bg-brand-surface px-2 py-0.5 font-semibold">{{ $inscripcion->estatus->value }}</span>
-                    · Un registro por tipo: una nueva carga reemplaza el archivo y regresa a PENDIENTE.
+                    <span class="rounded-full border border-brand-line bg-brand-surface px-2 py-0.5 font-semibold">{{ $inscripcion->estatus->label() }}</span>
+                    · Un registro por tipo: una nueva carga reemplaza el archivo y regresa a Pendiente.
                 </p>
             </div>
             <a href="{{ route('inscripciones.ver', $inscripcion) }}"
@@ -61,7 +61,7 @@
                                 <p class="mt-1 text-xs text-brand-muted">
                                     {{ $documento->nombre_original }}
                                     ·
-                                    <span class="rounded-full border border-brand-line bg-brand-surface px-1.5 py-0.5 font-semibold">{{ $documento->estatus->value }}</span>
+                                    <span class="rounded-full border border-brand-line bg-brand-surface px-1.5 py-0.5 font-semibold">{{ $documento->estatus->label() }}</span>
                                     · cargado {{ $documento->created_at?->format('d/m/Y H:i') }}
                                     @if ($documento->subidoPor !== null)
                                         · por {{ $documento->subidoPor->name }}

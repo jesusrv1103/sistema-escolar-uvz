@@ -29,10 +29,10 @@
                     'border-amber-300 bg-amber-50 text-amber-800' => $estatusConvenio === 'PENDIENTE_APROBACION',
                     'border-green-300 bg-green-50 text-green-800' => $estatusConvenio === 'APROBADO',
                     'border-red-300 bg-red-50 text-red-800' => $estatusConvenio === 'RECHAZADO',
-                ])>{{ $estatusConvenio ?? 'SIN ESTATUS' }}</span>
+                ])>{{ $inscripcion->convenio_estatus?->label() ?? 'Sin estatus' }}</span>
                 <span class="text-brand-text">{{ $inscripcion->convenio?->nombre }}</span>
                 <span class="text-brand-muted">
-                    ({{ $inscripcion->convenio?->tipo?->value }}
+                    ({{ $inscripcion->convenio?->tipo?->label() }}
                     {{ $inscripcion->convenio?->tipo?->value === 'PORCENTAJE' ? $inscripcion->convenio?->valor.'%' : '$'.number_format((float) ($inscripcion->convenio?->valor ?? 0), 2) }})
                 </span>
                 <span class="text-brand-muted">Descuento: ${{ number_format((float) $inscripcion->monto_descuento, 2) }}</span>
@@ -83,7 +83,7 @@
                     <div>
                         <h3 class="text-base font-semibold text-brand-text">Aplicar convenio</h3>
                         <p class="mt-1 text-xs text-brand-muted">
-                            Solo convenios activos y vigentes. Quedará en <strong>PENDIENTE_APROBACION</strong>
+                            Solo convenios activos y vigentes. Quedará en <strong>Pendiente de aprobación</strong>
                             hasta que Administración lo resuelva.
                         </p>
                     </div>

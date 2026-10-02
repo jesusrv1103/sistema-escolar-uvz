@@ -18,7 +18,7 @@
                     </button>
                 @else
                     <span class="rounded-full border border-brand-line bg-white px-3 py-1 text-xs font-semibold text-brand-muted">
-                        No cancelable ({{ $inscripcion->estatus->value }})
+                        No cancelable ({{ $inscripcion->estatus->label() }})
                     </span>
                 @endif
             </div>
@@ -33,7 +33,7 @@
                     <div>
                         <h3 class="text-base font-semibold text-brand-text">Cancelar inscripción</h3>
                         <p class="mt-1 text-xs text-brand-muted">
-                            Acción <strong>definitiva</strong>: la inscripción pasa a <strong>CANCELLED</strong> y no se
+                            Acción <strong>definitiva</strong>: la inscripción pasa a <strong>{{ \App\Enums\InscripcionEstatus::CANCELLED->label() }}</strong> y no se
                             puede reabrir. <strong>No se realizan reembolsos</strong> y los pagos validados permanecen
                             registrados (folio, montos y comprobantes intactos).
                         </p>

@@ -114,7 +114,7 @@ class PagoService
                     throw new PagoInvalidoException(sprintf(
                         'El concepto "%s" ya no está pendiente (estatus actual: %s): no admite pagos.',
                         $concepto->concepto,
-                        $concepto->estatus->value,
+                        $concepto->estatus->label(),
                     ));
                 }
 
@@ -136,8 +136,9 @@ class PagoService
                 if ($concepto->tipo === TipoConcepto::INSCRIPCION) {
                     if ($inscripcion->estatus !== InscripcionEstatus::PENDING_PAYMENT) {
                         throw new PagoInvalidoException(sprintf(
-                            'El concepto de inscripción solo admite pagos en PENDING_PAYMENT (estatus actual: %s).',
-                            $inscripcion->estatus->value,
+                            'El concepto de inscripción solo admite pagos en %s (estatus actual: %s).',
+                            InscripcionEstatus::PENDING_PAYMENT->label(),
+                            $inscripcion->estatus->label(),
                         ));
                     }
                 } elseif ($inscripcion->estatus === InscripcionEstatus::CANCELLED) {
@@ -225,8 +226,9 @@ class PagoService
 
             if ($pago->estatus !== EstatusPago::PENDIENTE) {
                 throw new PagoInvalidoException(sprintf(
-                    'Solo se validan pagos PENDIENTE (estatus actual: %s).',
-                    $pago->estatus->value,
+                    'Solo se validan pagos %s (estatus actual: %s).',
+                    EstatusPago::PENDIENTE->label(),
+                    $pago->estatus->label(),
                 ));
             }
 
@@ -273,8 +275,9 @@ class PagoService
 
                 if ($inscripcion->estatus !== InscripcionEstatus::PAYMENT_REVIEW) {
                     throw new PagoInvalidoException(sprintf(
-                        'La inscripción debe estar en PAYMENT_REVIEW para validar el pago de inscripción (estatus actual: %s).',
-                        $inscripcion->estatus->value,
+                        'La inscripción debe estar en %s para validar el pago de inscripción (estatus actual: %s).',
+                        InscripcionEstatus::PAYMENT_REVIEW->label(),
+                        $inscripcion->estatus->label(),
                     ));
                 }
 
@@ -313,8 +316,9 @@ class PagoService
 
             if ($pago->estatus !== EstatusPago::PENDIENTE) {
                 throw new PagoInvalidoException(sprintf(
-                    'Solo se rechazan pagos PENDIENTE (estatus actual: %s).',
-                    $pago->estatus->value,
+                    'Solo se rechazan pagos %s (estatus actual: %s).',
+                    EstatusPago::PENDIENTE->label(),
+                    $pago->estatus->label(),
                 ));
             }
 
@@ -401,7 +405,7 @@ class PagoService
         if (in_array($metodo, [MetodoPago::TRANSFERENCIA, MetodoPago::TARJETA], true) && $referencia === '') {
             throw new PagoInvalidoException(sprintf(
                 'La referencia de operación es obligatoria para el método %s.',
-                $metodo->value,
+                $metodo->label(),
             ));
         }
 

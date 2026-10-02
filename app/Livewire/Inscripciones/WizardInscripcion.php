@@ -178,7 +178,10 @@ class WizardInscripcion extends Component
         app(InscripcionService::class)->transicionar($inscripcion, InscripcionEstatus::DATA_COMPLETE);
 
         $this->paso = 6;
-        session()->flash('wizard', 'Datos completos: la inscripción pasó a DATA_COMPLETE.');
+        session()->flash('wizard', sprintf(
+            'Datos completos: la inscripción pasó a %s.',
+            InscripcionEstatus::DATA_COMPLETE->label(),
+        ));
     }
 
     /**
@@ -365,7 +368,10 @@ class WizardInscripcion extends Component
 
         try {
             app(InscripcionService::class)->generarCargos($inscripcion);
-            session()->flash('wizard', 'Cargos generados (1 inscripción + 4 mensualidades): la inscripción pasó a PENDING_PAYMENT.');
+            session()->flash('wizard', sprintf(
+                'Cargos generados (1 inscripción + 4 mensualidades): la inscripción pasó a %s.',
+                InscripcionEstatus::PENDING_PAYMENT->label(),
+            ));
         } catch (ConvenioInvalidoException|CargosInvalidosException $e) {
             $this->addError('cargos', $e->getMessage());
         }

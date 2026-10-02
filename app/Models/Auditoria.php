@@ -53,6 +53,37 @@ class Auditoria extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * Etiqueta en español de `accion` PARA PRESENTACIÓN únicamente.
+     *
+     * En BD se conserva el valor técnico (`estado_cambiado`, …); aquí solo
+     * se traduce lo que se muestra al usuario (regla permanente:
+     * docs/reglas-desarrollo.md). Una acción desconocida regresa tal cual.
+     */
+    public function accionLabel(): string
+    {
+        return match ($this->accion) {
+            'inscripcion_creada' => 'Inscripción creada',
+            'estado_cambiado' => 'Estado cambiado',
+            'cargos_generados' => 'Cargos generados',
+            'numero_control_asignado' => 'Número de control asignado',
+            'inscripcion_cancelada' => 'Inscripción cancelada',
+            'pago_registrado' => 'Pago registrado',
+            'pago_validado' => 'Pago validado',
+            'pago_rechazado' => 'Pago rechazado',
+            'documento_subido' => 'Documento subido',
+            'documento_reemplazado' => 'Documento reemplazado',
+            'documento_aceptado' => 'Documento aceptado',
+            'documento_rechazado' => 'Documento rechazado',
+            'observacion_creada' => 'Observación creada',
+            'observacion_resuelta' => 'Observación resuelta',
+            'convenio_aplicado' => 'Convenio aplicado',
+            'convenio_aprobado' => 'Convenio aprobado',
+            'convenio_rechazado' => 'Convenio rechazado',
+            default => (string) $this->accion,
+        };
+    }
+
     /** Append-only: la auditoría nunca se edita (§10 regla crítica). */
     public function update(array $attributes = [], $options = [])
     {

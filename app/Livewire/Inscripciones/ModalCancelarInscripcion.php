@@ -71,7 +71,10 @@ class ModalCancelarInscripcion extends Component
             $this->reset('motivo');
             $this->resetErrorBag();
             $this->abierto = false;
-            session()->flash('wizard', 'Inscripción cancelada (CANCELLED): es definitiva en el MVP, no implica reembolso y los pagos validados permanecen registrados.');
+            session()->flash('wizard', sprintf(
+                'Inscripción cancelada (%s): es definitiva en el MVP, no implica reembolso y los pagos validados permanecen registrados.',
+                InscripcionEstatus::CANCELLED->label(),
+            ));
         } catch (CancelacionInvalidaException $e) {
             $this->addError('cancelacion', $e->getMessage());
         }

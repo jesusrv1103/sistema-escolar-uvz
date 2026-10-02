@@ -16,7 +16,9 @@
         <div class="rounded-xl border border-brand-line bg-brand-surface p-4">
             <p class="text-xs font-medium text-brand-muted">Inscripciones pendientes</p>
             <p class="mt-1 text-2xl font-semibold text-brand-text">{{ $contadores['inscripciones_pendientes'] }}</p>
-            <p class="mt-1 text-[11px] text-brand-muted">Estatus distinto de ENROLLED y CANCELLED.</p>
+            <p class="mt-1 text-[11px] text-brand-muted">
+                Estatus distinto de {{ \App\Enums\InscripcionEstatus::ENROLLED->label() }} y {{ \App\Enums\InscripcionEstatus::CANCELLED->label() }}.
+            </p>
             <a href="{{ route('inscripciones.lista') }}"
                 class="mt-2 inline-block text-xs font-semibold text-brand-primary hover:underline">
                 Ver listado →
@@ -27,21 +29,27 @@
         <div class="rounded-xl border border-brand-line bg-brand-surface p-4">
             <p class="text-xs font-medium text-brand-muted">Pagos por validar</p>
             <p class="mt-1 text-2xl font-semibold text-brand-text">{{ $contadores['pagos_por_validar'] }}</p>
-            <p class="mt-1 text-[11px] text-brand-muted">Pagos con estatus PENDIENTE (cuatro ojos).</p>
+            <p class="mt-1 text-[11px] text-brand-muted">
+                Pagos con estatus {{ \App\Enums\EstatusPago::PENDIENTE->label() }} (cuatro ojos).
+            </p>
         </div>
 
         {{-- 3. Documentos pendientes (cargados y esperando validación) --}}
         <div class="rounded-xl border border-brand-line bg-brand-surface p-4">
             <p class="text-xs font-medium text-brand-muted">Documentos pendientes</p>
             <p class="mt-1 text-2xl font-semibold text-brand-text">{{ $contadores['documentos_pendientes'] }}</p>
-            <p class="mt-1 text-[11px] text-brand-muted">Documentos cargados con estatus PENDIENTE.</p>
+            <p class="mt-1 text-[11px] text-brand-muted">
+                Documentos cargados con estatus {{ \App\Enums\EstatusDocumento::PENDIENTE->label() }}.
+            </p>
         </div>
 
         {{-- 4. Inscripciones completadas (solo estatus ENROLLED) --}}
         <div class="rounded-xl border border-brand-line bg-brand-surface p-4">
             <p class="text-xs font-medium text-brand-muted">Inscripciones completadas</p>
             <p class="mt-1 text-2xl font-semibold text-brand-text">{{ $contadores['inscripciones_completadas'] }}</p>
-            <p class="mt-1 text-[11px] text-brand-muted">Inscripciones con estatus ENROLLED.</p>
+            <p class="mt-1 text-[11px] text-brand-muted">
+                Inscripciones con estatus {{ \App\Enums\InscripcionEstatus::ENROLLED->label() }}.
+            </p>
             <a href="{{ route('inscripciones.lista', ['filtroEstatus' => 'ENROLLED']) }}"
                 class="mt-2 inline-block text-xs font-semibold text-brand-primary hover:underline">
                 Ver listado →

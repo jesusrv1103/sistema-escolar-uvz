@@ -23,6 +23,29 @@ enum InscripcionEstatus: string
     case CANCELLED = 'CANCELLED';
 
     /**
+     * Etiqueta visible en español (es-MX) para UI, mensajes y PDFs.
+     *
+     * REGLA PERMANENTE (docs/reglas-desarrollo.md): jamás mostrar `->value`
+     * al usuario; la presentación SIEMPRE pasa por aquí. El valor técnico
+     * sigue siendo el que se persiste, se compara y viaja en auditoría.
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::DRAFT => 'Borrador',
+            self::DATA_COMPLETE => 'Datos completos',
+            self::PENDING_PAYMENT => 'Pago pendiente',
+            self::PAYMENT_REVIEW => 'Pago en revisión',
+            self::PAYMENT_VALIDATED => 'Pago validado',
+            self::PENDING_DOCUMENTS => 'Documentos pendientes',
+            self::DOCUMENT_REVIEW => 'Revisión de documentos',
+            self::FINAL_REVIEW => 'Revisión final',
+            self::ENROLLED => 'Inscripción completada',
+            self::CANCELLED => 'Cancelada',
+        };
+    }
+
+    /**
      * Matriz única `desde => [hasta]` (§7.2). Enunciado en orden §7.1: el
      * orden de las claves define el rango de cada estado para detectar
      * retrocesos. ENROLLED y CANCELLED son terminales (lista vacía).

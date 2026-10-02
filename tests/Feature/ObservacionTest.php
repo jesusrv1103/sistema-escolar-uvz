@@ -143,7 +143,7 @@ test('crear: un tipo fuera del BackedEnum se rechaza', function () {
 
     foreach (['NO_EXISTE', '', '   ', 'faltante', 'FALTANTEE', str_repeat('T', 30)] as $tipo) {
         expect(fn () => crearObservacionF11($e['inscripcion'], $e['admisiones'], $tipo, 'Detalle suficientemente largo'))
-            ->toThrow(ObservacionInvalidaException::class, 'FALTANTE, DOCUMENTO, PAGO o GENERAL');
+            ->toThrow(ObservacionInvalidaException::class, 'Faltante, Documento, Pago o General');
     }
 
     expect(Observacion::query()->count())->toBe(0)
@@ -210,7 +210,7 @@ test('resolver: la segunda resolucion se rechaza explicitamente y no hay reapert
     resolverObservacionF11($o, $e['control']);
 
     expect(fn () => resolverObservacionF11($o, $e['admisiones']))
-        ->toThrow(ObservacionInvalidaException::class, 'Solo se resuelven observaciones ABIERTA');
+        ->toThrow(ObservacionInvalidaException::class, 'Solo se resuelven observaciones con estatus Abierta');
 
     $o->refresh();
     expect($o->estatus)->toBe(EstatusObservacion::RESUELTA)
@@ -337,7 +337,7 @@ test('ENROLLED: se crean y resuelven sin efectos sobre el proceso y el listado e
     $this->actingAs($e['admisiones']);
     Livewire::test(ListaObservaciones::class, ['inscripcion' => $inscripcion])
         ->assertSee('Observacion historica posterior al alta')
-        ->assertSee('ABIERTA')
+        ->assertSee('Abierta')
         ->call('resolver', $o->id)
         ->assertHasNoErrors();
 
@@ -524,7 +524,7 @@ test('el listado muestra el ciclo completo con responsables y fechas sin datos s
     $this->actingAs($e['administracion']);
     Livewire::test(ListaObservaciones::class, ['inscripcion' => $e['inscripcion']])
         ->assertSee('Falta acta de nacimiento original')
-        ->assertSee('RESUELTA')
+        ->assertSee('Resuelta')
         ->assertSee($e['admisiones']->name)
         ->assertSee($e['control']->name)
         ->assertSee($o->created_at->format('d/m/Y'))

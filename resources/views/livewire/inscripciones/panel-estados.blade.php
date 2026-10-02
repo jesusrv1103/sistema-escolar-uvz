@@ -18,7 +18,7 @@
                 <h1 class="text-lg font-semibold text-brand-text">Revisión final</h1>
                 <p class="mt-1 text-xs text-brand-muted">
                     Estatus de la inscripción:
-                    <span class="rounded-full border border-brand-line bg-brand-surface px-2 py-0.5 font-semibold">{{ $inscripcion->estatus->value }}</span>
+                    <span class="rounded-full border border-brand-line bg-brand-surface px-2 py-0.5 font-semibold">{{ $inscripcion->estatus->label() }}</span>
                     · Verifica los requisitos antes de cerrar la inscripción y asignar el número de control.
                 </p>
             </div>
@@ -52,12 +52,12 @@
         <h2 class="mt-6 text-sm font-semibold text-brand-text">Requisitos de cierre</h2>
         <ul class="mt-2 divide-y divide-brand-line rounded-xl border border-brand-line">
             <li class="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                <span class="text-sm text-brand-text">Pago del concepto INSCRIPCION</span>
+                <span class="text-sm text-brand-text">Pago del concepto de inscripción</span>
                 @if ($pagoOk)
-                    <span class="rounded-full border border-green-600 px-2 py-0.5 text-xs font-semibold text-green-700">✓ PAGADO</span>
+                    <span class="rounded-full border border-green-600 px-2 py-0.5 text-xs font-semibold text-green-700">✓ Pagado</span>
                 @else
                     <span class="rounded-full border border-red-600 px-2 py-0.5 text-xs font-semibold text-red-600">
-                        ✗ {{ $concepto?->estatus->value ?? 'sin generar' }}
+                        ✗ {{ $concepto?->estatus?->label() ?? 'sin generar' }}
                     </span>
                 @endif
             </li>
@@ -77,7 +77,7 @@
                 @endif
             </li>
             <li class="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                <span class="text-sm text-brand-text">Observaciones FALTANTE abiertas</span>
+                <span class="text-sm text-brand-text">Observaciones de tipo Faltante abiertas</span>
                 @if ($faltantesAbiertos === 0)
                     <span class="rounded-full border border-green-600 px-2 py-0.5 text-xs font-semibold text-green-700">✓ Ninguna</span>
                 @else
@@ -88,19 +88,21 @@
                 <span class="text-sm text-brand-text">Convenio</span>
                 @if ($convenioOk)
                     <span class="rounded-full border border-green-600 px-2 py-0.5 text-xs font-semibold text-green-700">
-                        ✓ {{ $convenioEstado === null ? 'No aplica' : 'APROBADO' }}
+                        ✓ {{ $convenioEstado === null ? 'No aplica' : \App\Enums\EstatusConvenio::APROBADO->label() }}
                     </span>
                 @else
-                    <span class="rounded-full border border-red-600 px-2 py-0.5 text-xs font-semibold text-red-600">✗ {{ $convenioEstado ?? 'sin resolver' }}</span>
+                    <span class="rounded-full border border-red-600 px-2 py-0.5 text-xs font-semibold text-red-600">
+                        ✗ {{ \App\Enums\EstatusConvenio::tryFrom($convenioEstado)?->label() ?? 'sin resolver' }}
+                    </span>
                 @endif
             </li>
             <li class="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
                 <span class="text-sm text-brand-text">Revisión final (Control Escolar)</span>
                 @if ($enRevisionFinal)
-                    <span class="rounded-full border border-green-600 px-2 py-0.5 text-xs font-semibold text-green-700">✓ En FINAL_REVIEW</span>
+                    <span class="rounded-full border border-green-600 px-2 py-0.5 text-xs font-semibold text-green-700">✓ En revisión final</span>
                 @else
                     <span class="rounded-full border border-brand-line bg-brand-surface px-2 py-0.5 text-xs font-semibold text-brand-muted">
-                        Estado actual: {{ $inscripcion->estatus->value }}
+                        Estado actual: {{ $inscripcion->estatus->label() }}
                     </span>
                 @endif
             </li>
@@ -140,12 +142,12 @@
                         <span wire:loading wire:target="finalizar">Finalizando…</span>
                     </button>
                     <span class="self-center text-xs text-brand-muted">
-                        Asigna el número de control y cierra en ENROLLED (transacción única).
+                        Asigna el número de control y cierra en Inscripción completada (transacción única).
                     </span>
                 @elseif ($enRevisionFinal)
                     <span class="text-xs font-semibold text-red-600">No se puede finalizar: faltan requisitos (los 4 roles siempre se validan en el servidor).</span>
                 @else
-                    <span class="text-xs font-semibold text-brand-muted">La inscripción debe estar en FINAL_REVIEW para finalizar.</span>
+                    <span class="text-xs font-semibold text-brand-muted">La inscripción debe estar en Revisión final para finalizar.</span>
                 @endif
             </div>
         @endcan

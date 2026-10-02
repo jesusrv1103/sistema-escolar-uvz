@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Enums\EstatusConvenio;
 use App\Enums\EstatusConceptoPago;
+use App\Enums\EstatusDocumento;
 use App\Enums\InscripcionEstatus;
 use App\Enums\TipoConcepto;
+use App\Enums\TipoObservacion;
 use App\Exceptions\CargosInvalidosException;
 use App\Exceptions\CancelacionInvalidaException;
 use App\Exceptions\ConvenioInvalidoException;
@@ -164,7 +166,10 @@ class InscripcionService
             $inscripcion = Inscripcion::query()->lockForUpdate()->findOrFail($inscripcion->getKey());
 
             if ($inscripcion->estatus !== InscripcionEstatus::DATA_COMPLETE) {
-                throw new CargosInvalidosException('Los cargos solo se generan desde DATA_COMPLETE.');
+                throw new CargosInvalidosException(sprintf(
+                    'Los cargos solo se generan desde %s.',
+                    InscripcionEstatus::DATA_COMPLETE->label(),
+                ));
             }
 
             // 2. Convenio resuelto antes de avanzar a PENDING_PAYMENT (F23).
@@ -271,8 +276,9 @@ class InscripcionService
 
             if ($inscripcion->estatus !== InscripcionEstatus::FINAL_REVIEW) {
                 throw new FinalizacionInvalidaException(sprintf(
-                    'La finalización solo procede desde FINAL_REVIEW (estatus actual: %s).',
-                    $inscripcion->estatus->value,
+                    'La finalización solo procede desde %s (estado actual: %s).',
+                    InscripcionEstatus::FINAL_REVIEW->label(),
+                    $inscripcion->estatus->label(),
                 ));
             }
 
@@ -365,8 +371,8 @@ class InscripcionService
             //    cancelable; CANCELLED no se vuelve a cancelar).
             if ($inscripcion->estatus->esTerminal()) {
                 throw new CancelacionInvalidaException(sprintf(
-                    'La inscripción está %s: es un estado terminal y no puede cancelarse.',
-                    $inscripcion->estatus->value,
+                    'La inscripción está en estado %s: es un estado terminal y no puede cancelarse.',
+                    $inscripcion->estatus->label(),
                 ));
             }
 
@@ -428,22 +434,22 @@ class InscripcionService
         // generó).
         $concepto = $inscripcion->conceptoInscripcion;
         if ($concepto === null) {
-            $faltantes[] = 'Falta el concepto de pago de INSCRIPCION.';
+            $faltantes[] = sprintf('Falta el concepto de pago de %s.', TipoConcepto::INSCRIPCION->label());
         } elseif ($concepto->estatus !== EstatusConceptoPago::PAGADO) {
-            $faltantes[] = 'El concepto INSCRIPCION no está PAGADO.';
+            $faltantes[] = sprintf('El concepto %s no está %s.', TipoConcepto::INSCRIPCION->label(), EstatusConceptoPago::PAGADO->label());
         }
 
         // RB-8.2: todos los tipos obligatorios aplicables en `ACEPTADO`
         // (reutiliza DocumentoService: obligatorio + activo + no eliminado;
         // los opcionales jamás bloquean).
         if (! app(DocumentoService::class)->obligatoriosTodosAceptados($inscripcion)) {
-            $faltantes[] = 'Todos los documentos obligatorios deben estar ACEPTADOS.';
+            $faltantes[] = sprintf('Todos los documentos obligatorios deben estar %s.', EstatusDocumento::ACEPTADO->label());
         }
 
         // RB-8.3: ninguna observación `FALTANTE` + `ABIERTA` (reutiliza
         // Inscripcion::tieneFaltantesAbiertos(), Fase 11).
         if ($inscripcion->tieneFaltantesAbiertos()) {
-            $faltantes[] = 'Hay observaciones FALTANTE abiertas.';
+            $faltantes[] = sprintf('Hay observaciones de tipo %s abiertas.', TipoObservacion::FALTANTE->label());
         }
 
         // RB-8.5 (decisión aprobada Fase 12): sin convenio ⇒ OK; convenio
@@ -454,7 +460,7 @@ class InscripcionService
         // Único bloqueante: `PENDIENTE_APROBACION`.
         if ($inscripcion->convenio_id !== null
             && $inscripcion->convenio_estatus === EstatusConvenio::PENDIENTE_APROBACION) {
-            $faltantes[] = 'El convenio está PENDIENTE_APROBACION.';
+            $faltantes[] = sprintf('El convenio está en estado %s.', EstatusConvenio::PENDIENTE_APROBACION->label());
         }
 
         return $faltantes;

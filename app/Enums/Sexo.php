@@ -12,12 +12,28 @@ enum Sexo: string
     case MASCULINO = 'MASCULINO';
     case FEMENINO = 'FEMENINO';
 
-    /** @return array<string, string> opciones para selects (valor => etiqueta) */
+    /** Etiqueta visible en español; nunca exponer `->value` al usuario. */
+    public function label(): string
+    {
+        return match ($this) {
+            self::MASCULINO => 'Masculino',
+            self::FEMENINO => 'Femenino',
+        };
+    }
+
+    /**
+     * @return array<string, string> opciones para selects (valor => etiqueta)
+     *
+     * Compatibilidad: la fuente única de etiquetas es `label()`.
+     */
     public static function etiquetas(): array
     {
-        return [
-            self::MASCULINO->value => 'Masculino',
-            self::FEMENINO->value => 'Femenino',
-        ];
+        $opciones = [];
+
+        foreach (self::cases() as $caso) {
+            $opciones[$caso->value] = $caso->label();
+        }
+
+        return $opciones;
     }
 }

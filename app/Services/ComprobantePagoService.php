@@ -88,10 +88,11 @@ class ComprobantePagoService
             'numeroControl' => $alumno->numero_control,
             'programa' => $inscripcion->programa->nombre,
             'concepto' => $pago->conceptoPago->concepto,
-            'tipoConcepto' => $pago->conceptoPago->tipo->value,
+            // Presentación en español (etiquetas); el valor técnico vive en BD.
+            'tipoConcepto' => $pago->conceptoPago->tipo->label(),
             'monto' => '$'.number_format((float) $pago->monto, 2),
             'moneda' => 'MXN',
-            'metodo' => $pago->metodo?->value,
+            'metodo' => $pago->metodo?->label(),
             'referencia' => $pago->referencia,
         ];
     }

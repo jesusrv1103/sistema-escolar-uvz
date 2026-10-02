@@ -11,4 +11,15 @@ enum RolUsuario: string
     case ADMISIONES = 'ADMISIONES';
     case ADMINISTRACION = 'ADMINISTRACION';
     case CONTROL_ESCOLAR = 'CONTROL_ESCOLAR';
+
+    /** Etiqueta visible en español; nunca exponer `->value` al usuario. */
+    public function label(): string
+    {
+        return match ($this) {
+            self::ADMIN => 'Administrador',
+            self::ADMISIONES => 'Admisiones',
+            self::ADMINISTRACION => 'Administración',
+            self::CONTROL_ESCOLAR => 'Control Escolar',
+        };
+    }
 }

@@ -40,7 +40,8 @@
                     class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
                     <option value="">Todos</option>
                     @foreach ($estatusOpciones as $opcion)
-                        <option value="{{ $opcion->value }}">{{ $opcion->value }}</option>
+                        {{-- value técnico (query/BD) · texto visible en español --}}
+                        <option value="{{ $opcion->value }}">{{ $opcion->label() }}</option>
                     @endforeach
                 </select>
             </div>
@@ -84,7 +85,7 @@
                                 'border-brand-line bg-brand-surface text-brand-muted' => $inscripcion->estatus === \App\Enums\InscripcionEstatus::DRAFT,
                                 'border-brand-primary bg-white text-brand-primary' => $inscripcion->estatus !== \App\Enums\InscripcionEstatus::DRAFT,
                             ])>
-                                {{ $inscripcion->estatus->value }}
+                                {{ $inscripcion->estatus->label() }}
                             </span>
                         </td>
                         <td class="px-4 py-3 text-xs text-brand-muted">{{ $inscripcion->created_at?->format('d/m/Y H:i') }}</td>

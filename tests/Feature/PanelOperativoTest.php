@@ -222,10 +222,10 @@ test('UI: el panel muestra exactamente los 4 contadores aprobados y sus enlaces'
         ->assertSee('>1</p>', false)
         ->assertDontSee('>2</p>', false)
         // Definiciones literales de FC-9, sin porcentajes ni tendencias.
-        ->assertSee('Estatus distinto de ENROLLED y CANCELLED.')
-        ->assertSee('Pagos con estatus PENDIENTE (cuatro ojos).')
-        ->assertSee('Documentos cargados con estatus PENDIENTE.')
-        ->assertSee('Inscripciones con estatus ENROLLED.')
+        ->assertSee('Estatus distinto de Inscripción completada y Cancelada.')
+        ->assertSee('Pagos con estatus Pendiente (cuatro ojos).')
+        ->assertSee('Documentos cargados con estatus Pendiente.')
+        ->assertSee('Inscripciones con estatus Inscripción completada.')
         // Enlaces solo a pantallas existentes (listado + filtro aprobado).
         ->assertSee(route('inscripciones.lista'), false)
         ->assertSee('filtroEstatus=ENROLLED', false)

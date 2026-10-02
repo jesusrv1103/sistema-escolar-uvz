@@ -9,7 +9,7 @@
         <div class="flex flex-wrap items-center gap-2 text-sm">
             @if ($inscripcion !== null)
                 <span class="rounded-full border border-brand-line bg-brand-surface px-3 py-1 text-xs font-semibold text-brand-primary">
-                    {{ $inscripcion->estatus->value }}
+                    {{ $inscripcion->estatus->label() }}
                 </span>
             @endif
             <a href="{{ route('inscripciones.lista') }}" class="font-medium text-brand-primary hover:text-brand-secondary">Inscripciones</a>
@@ -175,7 +175,7 @@
                     <div><dt class="text-xs text-brand-muted">Nombre</dt><dd>{{ $alumno->apellidos }}, {{ $alumno->nombre }}</dd></div>
                     <div><dt class="text-xs text-brand-muted">CURP</dt><dd class="font-mono">{{ $alumno->curp }}</dd></div>
                     <div><dt class="text-xs text-brand-muted">Fecha de nacimiento</dt><dd>{{ $alumno->fecha_nacimiento?->format('d/m/Y') }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Sexo</dt><dd>{{ $alumno->sexo?->value }}</dd></div>
+                    <div><dt class="text-xs text-brand-muted">Sexo</dt><dd>{{ $alumno->sexo?->label() }}</dd></div>
                     <div><dt class="text-xs text-brand-muted">Correo</dt><dd>{{ $alumno->correo ?? '—' }}</dd></div>
                     <div><dt class="text-xs text-brand-muted">Teléfono</dt><dd>{{ $alumno->telefono ?? '—' }}</dd></div>
                 </dl>
@@ -259,7 +259,7 @@
                         <dd>{{ $alumno ? $alumno->apellidos.', '.$alumno->nombre : '—' }}
                             <span class="font-mono text-xs text-brand-muted">{{ $alumno?->curp }}</span></dd></div>
                     <div><dt class="text-xs text-brand-muted">Estatus actual</dt>
-                        <dd class="font-semibold">{{ $inscripcion->estatus->value }}</dd></div>
+                        <dd class="font-semibold">{{ $inscripcion->estatus->label() }}</dd></div>
                     <div><dt class="text-xs text-brand-muted">Programa</dt>
                         <dd>{{ $inscripcion->programa?->nombre ?? '—' }}</dd></div>
                     <div><dt class="text-xs text-brand-muted">Periodo</dt>
@@ -282,7 +282,7 @@
                     <div class="mt-5 flex flex-wrap gap-3">
                         <button type="button" wire:click="completar" wire:loading.attr="disabled"
                             class="rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-secondary">
-                            <span wire:loading.remove wire:target="completar">Completar datos (→ DATA_COMPLETE)</span>
+                            <span wire:loading.remove wire:target="completar">Completar datos (→ {{ \App\Enums\InscripcionEstatus::DATA_COMPLETE->label() }})</span>
                             <span wire:loading wire:target="completar">Guardando…</span>
                         </button>
                         <span class="self-center text-xs text-brand-muted">
@@ -291,7 +291,7 @@
                     </div>
                 @elseif ($inscripcion->estatus !== \App\Enums\InscripcionEstatus::DRAFT)
                     <p class="mt-4 text-xs font-semibold text-brand-primary">
-                        Datos completos ({{ $inscripcion->estatus->value }}).
+                        Datos completos ({{ $inscripcion->estatus->label() }}).
                     </p>
                 @endif
             @else
@@ -367,16 +367,16 @@
                     @can('generarCargos', $inscripcion)
                         <p class="mt-1 text-xs text-brand-muted">
                             Aún no hay cargos. Al generarlos se crearán 1 concepto de inscripción y 4 mensualidades
-                            (cuatrimestre UVZ) y la inscripción pasará a <strong>PENDING_PAYMENT</strong>.
+                            (cuatrimestre UVZ) y la inscripción pasará a <strong>{{ \App\Enums\InscripcionEstatus::PENDING_PAYMENT->label() }}</strong>.
                         </p>
                         <button type="button" wire:click="generarCargos" wire:loading.attr="disabled"
                             class="mt-3 rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-secondary">
-                            <span wire:loading.remove wire:target="generarCargos">Generar cargos (→ PENDING_PAYMENT)</span>
+                            <span wire:loading.remove wire:target="generarCargos">Generar cargos (→ {{ \App\Enums\InscripcionEstatus::PENDING_PAYMENT->label() }})</span>
                             <span wire:loading wire:target="generarCargos">Generando…</span>
                         </button>
                     @endcan
                 @else
-                    <p class="mt-2 text-xs text-brand-muted">Sin cargos todavía: se generan cuando los datos están completos (DATA_COMPLETE).</p>
+                    <p class="mt-2 text-xs text-brand-muted">Sin cargos todavía: se generan cuando los datos están completos ({{ \App\Enums\InscripcionEstatus::DATA_COMPLETE->label() }}).</p>
                 @endif
             @else
                 <ul class="mt-3 divide-y divide-brand-line text-sm">
@@ -385,7 +385,7 @@
                             <div>
                                 <span class="font-medium text-brand-text">{{ $concepto->concepto }}</span>
                                 <span class="text-xs text-brand-muted">
-                                    · {{ $concepto->tipo->value }}{{ $concepto->numero !== null ? ' · #'.$concepto->numero : '' }}
+                                    · {{ $concepto->tipo->label() }}{{ $concepto->numero !== null ? ' · #'.$concepto->numero : '' }}
                                     · vence {{ $concepto->fecha_vencimiento->format('d/m/Y') }}
                                 </span>
                             </div>
@@ -398,7 +398,7 @@
                                 </span>
                                 <span class="ml-2 font-semibold text-brand-text">${{ number_format((float) $concepto->monto_total, 2) }}</span>
                                 <span class="ml-2 rounded-full border border-brand-line bg-brand-surface px-2 py-0.5 text-[11px] font-semibold">
-                                    {{ $concepto->estatus->value }}
+                                    {{ $concepto->estatus->label() }}
                                 </span>
                             </div>
                         </li>

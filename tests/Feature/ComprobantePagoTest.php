@@ -159,7 +159,7 @@ test('los datos del comprobante incluyen folio, monto, metodo y branding', funct
         ->and($datos['monto'])->toBe('$'.number_format((float) $pago->monto, 2))
         ->and($datos['monto'])->toContain(number_format((float) $escenario['concepto']->monto_total, 2))
         ->and($datos['moneda'])->toBe('MXN')
-        ->and($datos['metodo'])->toBe('TRANSFERENCIA')
+        ->and($datos['metodo'])->toBe('Transferencia')
         ->and($datos['referencia'])->toBe('REF-998877')
         ->and($datos['alumno'])->toBe(trim($pago->conceptoPago->inscripcion->alumno->nombre.' '.$pago->conceptoPago->inscripcion->alumno->apellidos))
         ->and($datos['programa'])->not->toBe('')

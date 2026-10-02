@@ -203,3 +203,11 @@ Explicar: (1) problema, (2) impacto, (3) solución mínima recomendada. Esperar 
 - No marcar una fase COMPLETA con pruebas fallando.
 - No ocultar errores encontrados.
 - No modificar código fuera de alcance solo para "limpiar" o refactorizar; los refactors no relacionados se posponen salvo que sean estrictamente necesarios para implementar la fase de forma segura.
+
+## 18. Interfaz en español (regla permanente)
+
+- **Prohibido mostrar `Enum::value` (u otro valor técnico) directamente al usuario.** Toda representación visible —selects, filtros, tablas, badges, flash messages, mensajes de servicio, PDFs y el historial de auditoría— se muestra mediante `Enum::label()` (etiquetas es_MX).
+- Los valores técnicos se conservan **sin cambios** en: base de datos, atributo `value=` de `<option>`, `wire:model`, queries/filtros de la URL, payloads de auditoría, transiciones, logs y reglas de negocio. Traducir es únicamente una capa de presentación.
+- Aplica al Roadmap 2.0 y a **cualquier enum futuro**: los enums nuevos incluyen `public function label(): string` desde su creación. `Sexo::etiquetas()` y `TipoSangre::etiquetas()` derivan de `label()` (fuente única de etiquetas).
+- Si una excepción de dominio también se muestra al usuario: mensaje humano en español para la UI y, cuando aporte, contexto técnico exacto solo en diagnóstico interno (nunca visible).
+- Los mensajes de validación nativos de Laravel se definen en `lang/es_MX/validation.php`; sin ese archivo las claves crudas (p. ej. `validation.required`) se renderizaban en pantalla.

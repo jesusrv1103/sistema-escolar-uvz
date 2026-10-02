@@ -19,7 +19,7 @@
                 <h1 class="text-lg font-semibold text-brand-text">Observaciones de la inscripción</h1>
                 <p class="mt-1 text-xs text-brand-muted">
                     Estatus de la inscripción:
-                    <span class="rounded-full border border-brand-line bg-brand-surface px-2 py-0.5 font-semibold">{{ $inscripcion->estatus->value }}</span>
+                    <span class="rounded-full border border-brand-line bg-brand-surface px-2 py-0.5 font-semibold">{{ $inscripcion->estatus->label() }}</span>
                     · Se registran y se resuelven: el detalle y el tipo quedan como histórico.
                 </p>
             </div>
@@ -48,7 +48,7 @@
                             class="mt-1 block w-full rounded-md border border-brand-line px-2 py-1.5 text-xs">
                             <option value="">Selecciona…</option>
                             @foreach ($tipoOpciones as $opcion)
-                                <option value="{{ $opcion->value }}">{{ $opcion->value }}</option>
+                                <option value="{{ $opcion->value }}">{{ $opcion->label() }}</option>
                             @endforeach
                         </select>
                         @error('tipo') <p class="mt-1 text-[11px] text-red-600">{{ $message }}</p> @enderror
@@ -79,7 +79,7 @@
                     class="mt-1 block w-44 rounded-md border border-brand-line px-2 py-1.5 text-xs">
                     <option value="">Todas</option>
                     @foreach ($estatusOpciones as $opcion)
-                        <option value="{{ $opcion->value }}">{{ $opcion->value }}</option>
+                        <option value="{{ $opcion->value }}">{{ $opcion->label() }}</option>
                     @endforeach
                 </select>
             </div>
@@ -89,7 +89,7 @@
                     class="mt-1 block w-44 rounded-md border border-brand-line px-2 py-1.5 text-xs">
                     <option value="">Todos</option>
                     @foreach ($tipoOpciones as $opcion)
-                        <option value="{{ $opcion->value }}">{{ $opcion->value }}</option>
+                        <option value="{{ $opcion->value }}">{{ $opcion->label() }}</option>
                     @endforeach
                 </select>
             </div>
@@ -102,11 +102,11 @@
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-brand-text">
-                                {{ $observacion->tipo->value }}
+                                {{ $observacion->tipo->label() }}
                                 @if ($observacion->estatus === \App\Enums\EstatusObservacion::ABIERTA)
-                                    <span class="ml-1 rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700">ABIERTA</span>
+                                    <span class="ml-1 rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700">Abierta</span>
                                 @else
-                                    <span class="ml-1 rounded-full border border-green-300 bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700">RESUELTA</span>
+                                    <span class="ml-1 rounded-full border border-green-300 bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700">Resuelta</span>
                                 @endif
                                 @if ($observacion->tipo === \App\Enums\TipoObservacion::FALTANTE
                                     && $observacion->estatus === \App\Enums\EstatusObservacion::ABIERTA)

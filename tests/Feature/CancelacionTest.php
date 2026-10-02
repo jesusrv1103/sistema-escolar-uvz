@@ -260,7 +260,7 @@ test('F19: ENROLLED no cancelable — rechazo explicito de estado terminal', fun
     $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $inscripcion = Inscripcion::factory()->enEstatus(InscripcionEstatus::ENROLLED)->create();
 
-    expectNoCancelaF13($inscripcion, $admin, 'Motivo valido de cancelacion', 'ENROLLED');
+    expectNoCancelaF13($inscripcion, $admin, 'Motivo valido de cancelacion', 'Inscripción completada');
 
     expect($inscripcion->refresh()->estatus)->toBe(InscripcionEstatus::ENROLLED);
 });
@@ -271,7 +271,7 @@ test('F19: CANCELLED no se vuelve a cancelar (sin idempotencia silenciosa)', fun
 
     cancelarF13($inscripcion, $admin, 'Primera cancelacion valida');
 
-    expectNoCancelaF13($inscripcion, $admin, 'Segundo intento con otro motivo', 'CANCELLED');
+    expectNoCancelaF13($inscripcion, $admin, 'Segundo intento con otro motivo', 'Cancelada');
 
     $inscripcion->refresh();
     expect($inscripcion->estatus)->toBe(InscripcionEstatus::CANCELLED)
@@ -452,7 +452,7 @@ test('UI: el panel de cancelacion se muestra solo a ADMIN y solo en estados canc
     $enrolled = Inscripcion::factory()->enEstatus(InscripcionEstatus::ENROLLED)->create();
     $this->actingAs($e['admin']);
     Livewire::test(ModalCancelarInscripcion::class, ['inscripcion' => $enrolled])
-        ->assertSee('No cancelable (ENROLLED)')
+        ->assertSee('No cancelable (Inscripción completada)')
         ->assertDontSee('wire:click="abrir"', false);
     auth()->logout();
 });
@@ -467,7 +467,7 @@ test('UI: cancelar desde el componente cierra en CANCELLED y deja sin boton de r
         ->set('motivo', 'La familia se muda de país.')
         ->call('cancelar')
         ->assertHasNoErrors()
-        ->assertSee('No cancelable (CANCELLED)')
+        ->assertSee('No cancelable (Cancelada)')
         ->assertDontSee('wire:click="abrir"', false)
         ->assertDontSee('Confirmar cancelación');
     auth()->logout();

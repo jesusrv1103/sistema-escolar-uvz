@@ -611,7 +611,7 @@ test('el panel muestra estados, obligatoriedad, acciones y el motivo de rechazo'
         ->assertSee('Obligatorio')
         ->assertSee('Opcional')
         ->assertSee('acta de nacimiento.pdf')
-        ->assertSee('RECHAZADO')
+        ->assertSee('Rechazado')
         ->assertSee('Imagen borrosa, vuelve a capturarla')
         ->assertSee('Descargar')
         ->assertSee('Subir');   // tras el rechazo, ADMISIONES reemplaza

@@ -42,8 +42,8 @@
                     <label for="tipo" class="block text-sm font-medium text-brand-text">Tipo</label>
                     <select id="tipo" wire:model.live="tipo"
                         class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                        <option value="PORCENTAJE">PORCENTAJE (%)</option>
-                        <option value="MONTO">MONTO (MXN)</option>
+                        <option value="PORCENTAJE">Porcentaje (%)</option>
+                        <option value="MONTO">Monto (MXN)</option>
                     </select>
                     @error('tipo') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
@@ -112,7 +112,7 @@
                     <tr>
                         <td class="px-4 py-3 font-semibold text-brand-primary">{{ $convenio->clave }}</td>
                         <td class="px-4 py-3">{{ $convenio->nombre }}</td>
-                        <td class="px-4 py-3">{{ $convenio->tipo->value }}</td>
+                        <td class="px-4 py-3">{{ $convenio->tipo->label() }}</td>
                         <td class="px-4 py-3">
                             {{ $convenio->tipo === \App\Enums\TipoConvenio::PORCENTAJE ? $convenio->valor.' %' : '$'.$convenio->valor }}
                         </td>

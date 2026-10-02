@@ -17,7 +17,7 @@
                 'border-red-300 bg-red-50 text-red-800' => $inscripcion->estatus->value === 'CANCELLED',
                 'border-brand-line bg-brand-surface text-brand-primary' => ! in_array($inscripcion->estatus->value, ['ENROLLED', 'CANCELLED'], true),
             ])>
-                {{ $inscripcion->estatus->value }}
+                {{ $inscripcion->estatus->label() }}
             </span>
         </div>
 
@@ -105,10 +105,10 @@
                     'border-green-300 bg-green-50 text-green-800' => $estatusConvenio === 'APROBADO',
                     'border-red-300 bg-red-50 text-red-800' => $estatusConvenio === 'RECHAZADO',
                     'border-brand-line bg-brand-surface text-brand-muted' => $estatusConvenio === null,
-                ])>{{ $estatusConvenio ?? 'SIN ESTATUS' }}</span>
+                ])>{{ $inscripcion->convenio_estatus?->label() ?? 'Sin estatus' }}</span>
                 <span class="font-medium text-brand-text">{{ $inscripcion->convenio?->nombre }}</span>
                 <span class="text-brand-muted">
-                    ({{ $inscripcion->convenio?->tipo?->value }}
+                    ({{ $inscripcion->convenio?->tipo?->label() }}
                     {{ $inscripcion->convenio?->tipo?->value === 'PORCENTAJE'
                         ? $inscripcion->convenio?->valor.'%'
                         : '$'.number_format((float) ($inscripcion->convenio?->valor ?? 0), 2) }})
@@ -155,11 +155,11 @@
                             <p class="text-sm font-medium text-brand-text">
                                 {{ $concepto->concepto }}
                                 <span class="text-xs font-normal text-brand-muted">
-                                    · {{ $concepto->tipo->value }}{{ $concepto->numero !== null ? ' · #'.$concepto->numero : '' }}
+                                    · {{ $concepto->tipo->label() }}{{ $concepto->numero !== null ? ' · #'.$concepto->numero : '' }}
                                 </span>
                             </p>
                             <span class="rounded-full border border-brand-line bg-white px-2 py-0.5 text-[11px] font-semibold text-brand-muted">
-                                Concepto {{ $concepto->estatus->value }}
+                                Concepto {{ $concepto->estatus->label() }}
                             </span>
                         </div>
 
@@ -174,14 +174,14 @@
                                                 'border-green-300 bg-green-50 text-green-800' => $pago->estatus->value === 'VALIDADO',
                                                 'border-red-300 bg-red-50 text-red-800' => $pago->estatus->value === 'RECHAZADO',
                                                 'border-amber-300 bg-amber-50 text-amber-800' => $pago->estatus->value === 'PENDIENTE',
-                                            ])>{{ $pago->estatus->value }}</span>
+                                            ])>{{ $pago->estatus->label() }}</span>
                                         </p>
                                         <p class="text-brand-muted">
                                             Folio: <span class="font-mono font-semibold text-brand-text">{{ $pago->folio ?? '—' }}</span>
                                         </p>
                                     </div>
                                     <p class="mt-1 text-brand-muted">
-                                        {{ $pago->metodo->value }}
+                                        {{ $pago->metodo->label() }}
                                         @if (filled($pago->referencia)) · ref. {{ $pago->referencia }} @endif
                                         · pago {{ $pago->fecha_pago?->format('d/m/Y') }}
                                         · capturó {{ $pago->registradoPor?->name ?? '—' }}
@@ -247,7 +247,7 @@
                                 'border-green-300 bg-green-50 text-green-800' => $documento->estatus->value === 'ACEPTADO',
                                 'border-red-300 bg-red-50 text-red-800' => $documento->estatus->value === 'RECHAZADO',
                                 'border-amber-300 bg-amber-50 text-amber-800' => $documento->estatus->value === 'PENDIENTE',
-                            ])>{{ $documento->estatus->value }}</span>
+                            ])>{{ $documento->estatus->label() }}</span>
                         </div>
                         <p class="mt-1 text-brand-muted">
                             Subido {{ $documento->created_at?->format('d/m/Y H:i') }}
@@ -281,16 +281,17 @@
                     @foreach ($historial as $registro)
                         <li class="py-2">
                             <div class="flex flex-wrap items-center justify-between gap-2">
-                                <p class="font-medium text-brand-text">{{ $registro->accion }}</p>
+                                <p class="font-medium text-brand-text">{{ $registro->accionLabel() }}</p>
                                 <p class="font-mono text-brand-muted">{{ $registro->created_at?->format('d/m/Y H:i:s') }}</p>
                             </div>
                             <p class="mt-1 text-brand-muted">
                                 Usuario: {{ $registro->user?->name ?? 'Sistema' }}
                                 @if ($registro->estado_anterior !== null || $registro->estado_nuevo !== null)
+                                    {{-- Presentación: etiquetas en español; en BD siguen los valores técnicos --}}
                                     · Estado:
-                                        {{ $registro->estado_anterior ?? '—' }}
+                                        {{ \App\Enums\InscripcionEstatus::tryFrom($registro->estado_anterior)?->label() ?? ($registro->estado_anterior ?? '—') }}
                                         <span aria-hidden="true">→</span>
-                                        {{ $registro->estado_nuevo ?? '—' }}
+                                        {{ \App\Enums\InscripcionEstatus::tryFrom($registro->estado_nuevo)?->label() ?? ($registro->estado_nuevo ?? '—') }}
                                 @endif
                             </p>
                         </li>

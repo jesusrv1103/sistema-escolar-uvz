@@ -170,9 +170,10 @@ class ConvenioService
     private function validarEtapaPrevia(Inscripcion $inscripcion): void
     {
         if (! in_array($inscripcion->estatus, [InscripcionEstatus::DRAFT, InscripcionEstatus::DATA_COMPLETE], true)) {
-            throw new ConvenioInvalidoException(
-                'El convenio solo puede aplicarse antes de generar los cargos (etapa previa a PENDING_PAYMENT).',
-            );
+            throw new ConvenioInvalidoException(sprintf(
+                'El convenio solo puede aplicarse antes de generar los cargos (etapa previa a %s).',
+                InscripcionEstatus::PENDING_PAYMENT->label(),
+            ));
         }
 
         if ($inscripcion->conceptosPago()->exists()) {
@@ -212,9 +213,10 @@ class ConvenioService
         }
 
         if ($inscripcion->convenio_estatus !== EstatusConvenio::PENDIENTE_APROBACION) {
-            throw new ConvenioInvalidoException(
-                sprintf('El convenio no está pendiente de aprobación (estatus actual: %s).', $inscripcion->convenio_estatus?->value ?? 'sin estatus'),
-            );
+            throw new ConvenioInvalidoException(sprintf(
+                'El convenio no está pendiente de aprobación (estatus actual: %s).',
+                $inscripcion->convenio_estatus?->label() ?? 'sin estatus',
+            ));
         }
 
         return $inscripcion->convenio()->firstOrFail();

@@ -155,7 +155,10 @@ class PanelDocumentos extends Component
         }
 
         $this->cerrarRechazo();
-        session()->flash('documentos', 'Documento rechazado: el expediente regresa a PENDING_DOCUMENTS.');
+        session()->flash('documentos', sprintf(
+            'Documento rechazado: el expediente regresa a %s.',
+            InscripcionEstatus::PENDING_DOCUMENTS->label(),
+        ));
     }
 
     public function render()

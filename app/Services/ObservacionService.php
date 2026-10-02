@@ -112,8 +112,9 @@ class ObservacionService
 
             if ($observacion->estatus !== EstatusObservacion::ABIERTA) {
                 throw new ObservacionInvalidaException(sprintf(
-                    'Solo se resuelven observaciones ABIERTA (estatus actual: %s).',
-                    $observacion->estatus->value,
+                    'Solo se resuelven observaciones con estatus %s (estatus actual: %s).',
+                    EstatusObservacion::ABIERTA->label(),
+                    $observacion->estatus->label(),
                 ));
             }
 
@@ -145,7 +146,13 @@ class ObservacionService
             : TipoObservacion::tryFrom(trim($tipo));
 
         if ($resuelto === null) {
-            throw new ObservacionInvalidaException('El tipo de observación es obligatorio y debe ser FALTANTE, DOCUMENTO, PAGO o GENERAL.');
+            throw new ObservacionInvalidaException(sprintf(
+                'El tipo de observación es obligatorio y debe ser %s, %s, %s o %s.',
+                TipoObservacion::FALTANTE->label(),
+                TipoObservacion::DOCUMENTO->label(),
+                TipoObservacion::PAGO->label(),
+                TipoObservacion::GENERAL->label(),
+            ));
         }
 
         return $resuelto;

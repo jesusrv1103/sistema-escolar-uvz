@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pagos;
 
+use App\Enums\EstatusConceptoPago;
 use App\Exceptions\PagoInvalidoException;
 use App\Models\Inscripcion;
 use App\Models\Pago;
@@ -113,7 +114,10 @@ class ModalValidarPago extends Component
             app(PagoService::class)->rechazar($pago, $this->motivo);
             $this->reset('pagoRechazoId', 'motivo');
             $this->resetErrorBag();
-            session()->flash('wizard', 'Pago rechazado: el concepto sigue PENDIENTE y admite un nuevo intento.');
+            session()->flash('wizard', sprintf(
+                'Pago rechazado: el concepto sigue %s y admite un nuevo intento.',
+                EstatusConceptoPago::PENDIENTE->label(),
+            ));
         } catch (PagoInvalidoException $e) {
             // p. ej. motivo solo espacios: se traduce al campo motivo.
             $this->addError('motivo', $e->getMessage());

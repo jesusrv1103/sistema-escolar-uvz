@@ -63,14 +63,14 @@
                                         </p>
                                         <p class="text-xs text-brand-muted">
                                             {{ $programa?->nombre }} · {{ $concepto->concepto }}
-                                            ({{ $concepto->tipo->value }})
+                                            ({{ $concepto->tipo->label() }})
                                         </p>
                                     </div>
                                     <p class="font-semibold text-brand-text">${{ number_format((float) $pago->monto, 2) }}</p>
                                 </div>
 
                                 <p class="mt-1 text-xs text-brand-muted">
-                                    {{ $pago->metodo->value }}
+                                    {{ $pago->metodo->label() }}
                                     @if (filled($pago->referencia)) · ref. {{ $pago->referencia }} @endif
                                     · pago {{ $pago->fecha_pago->format('d/m/Y') }}
                                     · capturó {{ $pago->registradoPor?->name ?? '—' }}

@@ -304,7 +304,7 @@ test('el concepto de INSCRIPCION solo admite pagos en PENDING_PAYMENT', function
     $escenario['inscripcion']->forceFill(['estatus' => InscripcionEstatus::PAYMENT_VALIDATED->value])->save();
 
     expect(fn () => app(PagoService::class)->registrar($escenario['concepto'], datosF8($escenario['concepto']), $escenario['admisiones']))
-        ->toThrow(PagoInvalidoException::class, 'PENDING_PAYMENT');
+        ->toThrow(PagoInvalidoException::class, 'Pago pendiente');
 
     expect($escenario['concepto']->pagos()->count())->toBe(0);
 });

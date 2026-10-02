@@ -3,6 +3,7 @@
 namespace App\Livewire\Pagos;
 
 use App\Enums\EstatusConceptoPago;
+use App\Enums\EstatusPago;
 use App\Enums\MetodoPago;
 use App\Exceptions\PagoInvalidoException;
 use App\Models\Inscripcion;
@@ -128,7 +129,10 @@ class ModalRegistrarPago extends Component
         $this->metodo = '';
         $this->resetErrorBag();
         $this->abierto = false;
-        session()->flash('wizard', 'Pago registrado correctamente: queda PENDIENTE de validación por Administración.');
+        session()->flash('wizard', sprintf(
+            'Pago registrado correctamente: queda %s de validación por Administración.',
+            EstatusPago::PENDIENTE->label(),
+        ));
     }
 
     private function autorizarLectura(): void

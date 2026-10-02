@@ -417,7 +417,7 @@ test('F18: el concepto INSCRIPCION no PAGADO bloquea', function () {
     $concepto->estatus = EstatusConceptoPago::PENDIENTE;
     $concepto->save();
 
-    expectNoFinalizaF12($e['inscripcion'], $e['control'], 'INSCRIPCION no está PAGADO');
+    expectNoFinalizaF12($e['inscripcion'], $e['control'], 'concepto Inscripción no está Pagado');
 });
 
 test('F18: un documento obligatorio ausente bloquea', function () {
@@ -453,7 +453,7 @@ test('F18: una observacion FALTANTE abierta bloquea', function () {
 
     crearObservacionF12($e['inscripcion'], $e['admisiones'], TipoObservacion::FALTANTE, 'Falta acta de nacimiento original para el expediente');
 
-    expectNoFinalizaF12($e['inscripcion'], $e['control'], 'FALTANTE');
+    expectNoFinalizaF12($e['inscripcion'], $e['control'], 'observaciones de tipo Faltante');
 });
 
 test('F18: un convenio PENDIENTE_APROBACION bloquea', function () {
@@ -466,7 +466,7 @@ test('F18: un convenio PENDIENTE_APROBACION bloquea', function () {
         'convenio_estatus' => EstatusConvenio::PENDIENTE_APROBACION->value,
     ])->save();
 
-    expectNoFinalizaF12($e['inscripcion'], $e['control'], 'PENDIENTE_APROBACION');
+    expectNoFinalizaF12($e['inscripcion'], $e['control'], 'Pendiente de aprobación');
 });
 
 test('F16: un convenio RECHAZADO se considera resuelto y no bloquea la finalizacion', function () {
@@ -520,7 +520,7 @@ test('F18: finalizar fuera de FINAL_REVIEW se rechaza explicitamente', function 
     $inscripcion = Inscripcion::factory()->enEstatus(InscripcionEstatus::DATA_COMPLETE)->create();
     $control = User::factory()->deRol(RolUsuario::CONTROL_ESCOLAR)->create();
 
-    expectNoFinalizaF12($inscripcion, $control, 'FINAL_REVIEW');
+    expectNoFinalizaF12($inscripcion, $control, 'La finalización solo procede desde Revisión final');
 });
 
 test('F18: ENROLLED es terminal — repetir finalizar no genera otro numero', function () {
@@ -530,7 +530,7 @@ test('F18: ENROLLED es terminal — repetir finalizar no genera otro numero', fu
     auth()->setUser($e['control']);
     try {
         expect(fn () => app(InscripcionService::class)->finalizar($e['inscripcion'], $e['control']))
-            ->toThrow(FinalizacionInvalidaException::class, 'ENROLLED');
+            ->toThrow(FinalizacionInvalidaException::class, 'Inscripción completada');
     } finally {
         auth()->logout();
     }
@@ -634,9 +634,9 @@ test('UI: PanelEstados muestra los requisitos y el boton solo a roles autorizado
     $this->actingAs($e['control']);
     Livewire::test(PanelEstados::class, ['inscripcion' => $e['inscripcion']])
         ->assertSee('Revisión final')
-        ->assertSee('Pago del concepto INSCRIPCION')
+        ->assertSee('Pago del concepto de inscripción')
         ->assertSee('Documentos obligatorios')
-        ->assertSee('Observaciones FALTANTE abiertas')
+        ->assertSee('Observaciones de tipo Faltante abiertas')
         ->assertSee('Convenio')
         ->assertSee('Se asigna al finalizar')
         ->assertSee('Finalizar inscripción');
@@ -645,7 +645,7 @@ test('UI: PanelEstados muestra los requisitos y el boton solo a roles autorizado
     // ADMISIONES puede leer el panel, pero sin el botón de cierre (@can).
     $this->actingAs($e['admisiones']);
     Livewire::test(PanelEstados::class, ['inscripcion' => $e['inscripcion']])
-        ->assertSee('Pago del concepto INSCRIPCION')
+        ->assertSee('Pago del concepto de inscripción')
         ->assertDontSee('Finalizar inscripción');
     auth()->logout();
 });

@@ -179,7 +179,7 @@ test('el detalle muestra estado general con alumno, control, programa, periodo, 
         ->assertSee('20260141')
         ->assertSee($e['inscripcion']->programa->nombre)
         ->assertSee($e['inscripcion']->periodo->nombre)
-        ->assertSee('ENROLLED')
+        ->assertSee('Inscripción completada')
         // Hitos ya almacenados, sin estados derivados inventados.
         ->assertSee('Datos completos')
         ->assertSee('Pagos validados')
@@ -245,7 +245,7 @@ test('el convenio se muestra legible: no aplica, estados y quien aplico/aprobo',
     ])->save();
 
     detalleF14Como($e['admin'], $e['inscripcion'])
-        ->assertSee('APROBADO')
+        ->assertSee('Aprobado')
         ->assertSee('Promoción F14')
         ->assertSee('Descuento aplicado: $200.00')
         ->assertSee('Aplicado por '.$e['admisiones']->name)
@@ -260,7 +260,7 @@ test('el convenio se muestra legible: no aplica, estados y quien aplico/aprobo',
         'convenio_aprobado_at' => null,
     ])->save();
     detalleF14Como($e['admin'], $e['inscripcion'])
-        ->assertSee('PENDIENTE_APROBACION')
+        ->assertSee('Pendiente de aprobación')
         ->assertDontSee('Aprobado por ');
     auth()->logout();
 
@@ -270,7 +270,7 @@ test('el convenio se muestra legible: no aplica, estados y quien aplico/aprobo',
         'convenio_motivo' => 'Documento de promoción no vigente F14',
     ])->save();
     detalleF14Como($e['admin'], $e['inscripcion'])
-        ->assertSee('RECHAZADO')
+        ->assertSee('Rechazado')
         ->assertSee('Documento de promoción no vigente F14');
     auth()->logout();
 });
@@ -286,13 +286,13 @@ test('el detalle lista los pagos con folio, metodo, estatus y enlaces con policy
         ->assertSee('Pagos')
         // VALIDADO: folio, método, referencia, fecha y validador.
         ->assertSee('PAG-20261002-00000141')
-        ->assertSee('TRANSFERENCIA')
+        ->assertSee('Transferencia')
         ->assertSee('REF-F14-9988')
         ->assertSee(now()->subDays(6)->format('d/m/Y'))
         ->assertSee($e['administracion']->name)
         // PENDIENTE y RECHAZADO con su motivo (historial conservado).
-        ->assertSee('PENDIENTE')
-        ->assertSee('RECHAZADO')
+        ->assertSee('Pendiente')
+        ->assertSee('Rechazado')
         ->assertSee('Referencia F14 no localizada')
         // Enlaces a comprobante y PDF por las rutas existentes con policy.
         ->assertSee('Ver comprobante')
@@ -319,9 +319,9 @@ test('el detalle lista documentos con tipo, obligatorio, estatus y validacion si
         ->assertSee('Documento F14D_EXTRA')
         ->assertSee('Obligatorio')
         ->assertSee('Opcional')
-        ->assertSee('ACEPTADO')
-        ->assertSee('PENDIENTE')
-        ->assertSee('RECHAZADO')
+        ->assertSee('Aceptado')
+        ->assertSee('Pendiente')
+        ->assertSee('Rechazado')
         ->assertSee('No legible F14')
         // Acciones: se reutiliza el panel existente (sin segunda implementación).
         ->assertSee(route('inscripciones.documentos', $e['inscripcion']), false)
@@ -344,13 +344,14 @@ test('el historial de auditoria se muestra para ADMIN en orden inverso y sin pay
 
     detalleF14Como($e['admin'], $e['inscripcion'])
         ->assertSee('Historial de auditoría')
-        // Más reciente primero (pago_validado fue el segundo registro).
-        ->assertSeeInorder(['pago_validado', 'estado_cambiado'])
+        // Más reciente primero (pago_validado fue el segundo registro):
+        // la acción se presenta con su etiqueta en español.
+        ->assertSeeInorder(['Pago validado', 'Estado cambiado'])
         // Usuario responsable y cambios de estado.
         ->assertSee($e['admisiones']->name)
         ->assertSee($e['administracion']->name)
-        ->assertSee('DRAFT')
-        ->assertSee('DATA_COMPLETE')
+        ->assertSee('Borrador')
+        ->assertSee('Datos completos')
         // El payload `datos` (aunque no sea sensible) NUNCA se muestra crudo.
         ->assertDontSee('payload-secreto-f14')
         ->assertDontSee('ruta_interna');

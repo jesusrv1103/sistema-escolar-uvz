@@ -201,7 +201,7 @@ test('un pago ya VALIDADO no puede validarse otra vez', function () {
     $folio = $pago->refresh()->folio;
 
     expect(fn () => app(PagoService::class)->validar($pago, $escenario['administracion']))
-        ->toThrow(PagoInvalidoException::class, 'VALIDADO');
+        ->toThrow(PagoInvalidoException::class, 'Validado');
 
     expect($pago->refresh()->folio)->toBe($folio)   // inmutable
         ->and(Pago::query()->count())->toBe(1);
@@ -216,7 +216,7 @@ test('un pago RECHAZADO no puede validarse', function () {
     app(PagoService::class)->rechazar($pago, 'Motivo sintetico para no validar', $escenario['administracion']);
 
     expect(fn () => app(PagoService::class)->validar($pago, $escenario['administracion']))
-        ->toThrow(PagoInvalidoException::class, 'RECHAZADO');
+        ->toThrow(PagoInvalidoException::class, 'Rechazado');
 
     expect($pago->refresh()->estatus)->toBe(EstatusPago::RECHAZADO)
         ->and($pago->folio)->toBeNull()
@@ -236,7 +236,7 @@ test('ROLLBACK TOTAL si falla la transicion: no queda folio ni concepto pagado n
 
     $this->actingAs($escenario['administracion']);
     expect(fn () => app(PagoService::class)->validar($pago, $escenario['administracion']))
-        ->toThrow(PagoInvalidoException::class, 'PAYMENT_REVIEW');
+        ->toThrow(PagoInvalidoException::class, 'Pago en revisión');
 
     // ROLLBACK TOTAL: se intentó escribir folio + concepto + auditoría antes
     // del fallo y TODO se deshizo (sin folio huérfano ni avance parcial).
