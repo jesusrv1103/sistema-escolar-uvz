@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 14** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 14** y a la **aprobación del Roadmap 2.0 / ETAPA 2** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md` (ETAPA 1) · `docs/roadmap-sistema-escolar.md` (ETAPA 2) · análisis: `docs/analisis-evolucion-control-escolar.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -23,7 +23,7 @@
 | Fase 12 — Revisión final y número de control | ✅ **COMPLETA** (256 pruebas, build correcto, 1 ruta nueva: `inscripciones.revision-final`) |
 | Fase 13 — Cancelación | ✅ **COMPLETA** (271 pruebas, build correcto, sin rutas nuevas) |
 | Fase 14 — Panel operativo y listados | ✅ **COMPLETA** (288 pruebas, build correcto, sin rutas nuevas) |
-| Fases 15–16 | ⬜ pendientes (esperan aprobación) |
+| Fases 15–16 | ↪️ **reubicadas como 2.0-00 — Blindaje del núcleo existente** (Opción A aprobada, C6) — **⬜ NO iniciadas** |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -307,12 +307,22 @@
 - **Smoke test (§21–22), repetido tras seeders y cachés:** primera pasada **68/68** (pre-seeders) y **repetición completa: 121 verificaciones (92 + 29), todas en verde al cierre, con 0 HTTP 500 y 0 `production.ERROR` nuevos** (log estable en las 119 entradas previas al fix de layout); login 302→`/dashboard` de los 4 roles; HTTP + marcadores de UI + acciones Livewire reales sobre datos **100 % sintéticos**: ADMIN → `/admin/*` 200 (otros roles 403), capturación, información médica y botón de cancelar; ADMISIONES → admisiones OK pero `pago.validar`, `documento.validar` y cancelación **403**; ADMINISTRACION → **pago validado con folio** `PAG-20261002-00000003` (four-eyes: captura QA Admin → validación QA Administración; concepto liquidado y cadena FC-5 `PAYMENT_REVIEW → PENDING_DOCUMENTS`), **información médica y cancelación 403**; CONTROL_ESCOLAR → documentos `PENDIENTE → ACEPTADO` (los 2 tipos obligatorios → `FINAL_REVIEW`) y **finalización real** con número de control `20260002`, `pago.validar` **403**; **cancelación real por ADMIN** → `ins3 = CANCELLED`; balance de datos: `ins1`/`ins2` `ENROLLED` (`20260001`/`20260002`), 3 folios `VALIDADO`, **19 registros de auditoría**; las 5 primeras observaciones fueron del **escenario sintético** (faltaba el 2.º documento obligatorio de `ins2`; la guarda `obligatoriosTodosAceptados()` respondió correctamente) y quedaron en verde al completarlo; sin datos reales y **sin Pest contra la BD de hosting**.
 - **Incidencias resueltas:** (1) `Vite manifest not found` en `/login` → symlink `public → public_html`; (2) **`<main>` vacío en las rutas full-page de Livewire** (la layout solo tenía `@yield('content')` y Livewire inyecta `@slot('slot')`; solo visible en HTTP real) → fix mínimo en `resources/views/layouts/app.blade.php` compatible con ambas vías, 288/2119 en verde, commit `d864f3a`; (3) línea `ADMIN_PASSWORD=` **vacía** en el `.env` del servidor → reemplazada por el valor desde el archivo local privado (sin exponerlo en argv ni logs); (4) mtime de `php.ini` en las 18 versiones de PHP (10:38) → aprovisionamiento de Hostinger, no del checkpoint.
 - **Sitios hermanos intactos (§23):** solo se escribió en `darkcyan-mongoose-808972.hostingersite.com`; `universidadvilladezacatecas.edu.mx` y los 17 dominios restantes sin cambios por este checkpoint (los mtimes ajenos de hoy corresponden a sesiones/cache y auto-updates de sus propios sitios vivos); única BD de la cuenta = la nuestra, sin tablas ajenas modificadas; sin cambios PHP/Apache globales, sin `rm -rf`, sin `rsync --delete`, sin chmod recursivo global.
-- **Git:** `master` = Fase 14 (`ccd2c6f`) + fix de layout (`d864f3a`); rama `feat/fase-14-panel-operativo` conservada; sin remotos, sin push, sin borrado de ramas.
-- **Fase 15: NO iniciada.**
+- **Git:** `master` = Fase 14 (`ccd2c6f`) + fix de layout (`d864f3a`) + documentación del checkpoint (`fabc114`, `1b10436`); rama `feat/fase-14-panel-operativo` conservada; sin remotos, sin push, sin borrado de ramas.
+- **Estado del checkpoint: COMPLETO y APROBADO por el usuario (02/10/2026)** — smoke 121 verificaciones en verde, 4 usuarios QA por rol, matriz de capacidades verificada, credenciales solo en archivos locales `600` (`~/.ssh/hostinger_*`), otros sitios intactos e incidencia de layout corregida (`d864f3a`).
+- **Fases 15 y 16: NO iniciadas** → ejecutarse como **2.0-00** (ver sección siguiente).
+
+## ETAPA 2 — Roadmap 2.0 (aprobado 02/10/2026, sin implementar)
+
+- **Checkpoint Hostinger completo y aprobado** (ver sección anterior) y **F1–F14 completas** (ETAPA 1 — Admisión e Inscripción).
+- **Roadmap 2.0 APROBADO en planeación** (`docs/analisis-evolucion-control-escolar.md`, actualizado con todas las decisiones): 18 fases (**2.0-00 … 2.0-17**) y **23 tablas nuevas propuestas**.
+- **Decisiones persistidas:** C1 portal de alumno aprobado con aislamiento estricto (2.0-16); C2/C3/D-N1 nueva entidad **`matriculas_periodo`** (`UNIQUE(alumno_id, periodo_id)`, máquina propia; `inscripciones` reservada a admisión/ingreso; `inscripciones_materias` sobre `matricula_periodo_id`); C4 **ETAPA 2 — Control Escolar** (F1–F14 = ETAPA 1, sin reescribir historia); C5 análisis persistible y commiteado; C6 **Opción A** → F15/F16 = **2.0-00 Blindaje del núcleo** (antes de 2.0-01); C7 datos institucionales no inventados y **2.0-01 no bloqueada** (catálogos vacíos); C8 formatos **internos UVZ** con pipeline DATOS/REGLAS → SERVICIO → PLANTILLA BLADE → PDF (fuera SEP/MEC/MET/SIGED/certificados/titulación electrónica).
+- **Roles:** conservados los 4 actuales; **DOCENTE** aprobado (2.0-06, D-N2); **ALUMNO** aprobado (2.0-16, D-N5); **COORDINADOR** no por ahora. **Diferidas a su fase:** D-N3, D-N4, D-N6, D-N7.
+- **Documentación actualizada:** `analisis-evolucion-control-escolar.md`, `roadmap-sistema-escolar.md`, `arquitectura-mvp.md` (§7.3, §19, §24), `plan-implementacion.md` (F15/F16 → 2.0-00) y este documento; sin borrar información histórica, **sin código, sin migraciones y sin ejecución de tests** (tarea documental); commit local solo de documentación.
+- **Estado de fases de la Etapa 2: 2.0-00 ⬜ PENDIENTE, NO INICIADA** · 2.0-01 … 2.0-17 ⬜ NO INICIADAS.
 
 ## Pendientes / registrados
 
-- **Fase 15 no iniciar** hasta aprobación del usuario.
+- **2.0-00 (ex-F15/F16, Blindaje del núcleo) no iniciar** hasta aprobación explícita del usuario; ninguna fase de la ETAPA 2 iniciada (tampoco 2.0-01).
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies: las 8 clases existen desde la Fase 2; `PagoPolicy`, `DocumentoPolicy` y `ObservacionPolicy` están **registradas explícitamente** en `AuthServiceProvider` (modelo real) y el resto se resuelve por convención cuando los modelos las usen (sin código artificial).

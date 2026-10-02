@@ -8,6 +8,8 @@
 > **Fase 7 registrada**: decisiones UVZ cuatrimestrales aprobadas → **UVZ opera por CUATRIMESTRES**, 4 mensualidades por inscripción con vencimiento el **día 10 configurable** (`config/escolar.php`), convenio aplicado **únicamente al concepto INSCRIPCION** y descuento fijo limitado al monto de inscripción (§4.9, RB-3, FC-4). La abstracción `duracion_periodos` **se conserva**.
 >
 > **Fase 8 registrada**: pagos implementados → folio **`PAG-YYYYMMDD-########`** generado **solo al validar** (fecha de validación con el timezone de la aplicación + `pago.id` con padding a 8 dígitos; `UNIQUE(folio)` en BD como defensa final, sin tabla `consecutivos`, sin `MAX()`, sin reutilizar `NumeroControlService`), **un único intento activo por concepto** (a lo sumo UN `PENDIENTE` a la vez, bloqueado con `lockForUpdate()`, o UN `VALIDADO` que liquida el concepto) e **historial de intentos `RECHAZADO` preservado** (nunca se sobrescribe ni elimina; tras un rechazo se admite un nuevo intento) — §4.10, RB-4, RB-10.
+>
+> **Etapa 2 registrada (02/10/2026)**: **ETAPA 2 — CONTROL ESCOLAR aprobada en planeación** → **§24** (F1–F14 = ETAPA 1 — Admisión e Inscripción; `inscripciones` reservada al ingreso; nueva entidad `matriculas_periodo`; roles DOCENTE/ALUMNO; formatos internos UVZ; F15/F16 → 2.0-00). **Ninguna fase de la Etapa 2 está implementada (2.0-00 NO iniciada).**
 
 ---
 
@@ -35,6 +37,8 @@
 20. [Orden recomendado de implementación](#20-orden-recomendado-de-implementación)
 21. [Supuestos importantes usados](#21-supuestos-importantes-usados)
 22. [Decisiones aprobadas (registro)](#22-decisiones-aprobadas-registro)
+23. [Identidad institucional y branding (Fase 1.1)](#23-identidad-institucional-y-branding-fase-11)
+24. [ETAPA 2 — Control Escolar (decisión aprobada 02/10/2026)](#24-etapa-2--control-escolar-decisión-aprobada-02102026)
 
 ---
 
@@ -600,6 +604,7 @@ Cualquier estado NO final ──► CANCELLED        (solo ADMIN, motivo obligat
 7. **Corrección de alcance (aprobada):** el ciclo `PENDING_PAYMENT → PAYMENT_REVIEW → PAYMENT_VALIDATED → PENDING_DOCUMENTS` corresponde **exclusivamente al concepto `INSCRIPCION`** (el requerido para completar la inscripción). **Capturar o validar un pago de `MENSUALIDAD` NO modifica `inscripciones.estatus` en ningún caso.**
 8. **La aprobación de un convenio NO es un estado de la inscripción:** es un sub-proceso (`inscripciones.convenio_estatus`) que debe quedar resuelto antes de `PENDING_PAYMENT`.
 9. Los estados no cambian por el simple paso del tiempo (una mensualidad vencida no altera el proceso).
+10. **Alcance exclusivo (Etapa 2, decisión aprobada C2/C3):** esta máquina gobierna únicamente el proceso de **ADMISIÓN / INGRESO** (`inscripciones`). La matrícula académica por periodo de la Etapa 2 (`matriculas_periodo`) tendrá su **propia máquina de estados**, separada de `InscripcionEstatus`, sin transiciones cruzadas (ver §24). Esta máquina, `RB-8`, `ENROLLED`/`CANCELLED` terminales y el resto de reglas §10 permanecen **intactos**.
 
 ---
 
@@ -1388,21 +1393,23 @@ Las 6 decisiones bloqueantes **ya fueron aprobadas**; se resumen aquí con su re
 
 ## 19. Qué queda fuera del MVP
 
-- Calificaciones, kardex, boletas, asignaturas, docentes, grupos, horarios, aulas, asistencias.
-- Portal del alumno/tutor y autoservicio en línea (**solo usuarios administrativos con acceso**).
-- Pasarela de pagos en línea, conciliación bancaria, **facturación CFDI**, **reembolsos/devoluciones**.
-- Notificaciones por correo/SMS/WhatsApp.
-- **Constancia formal de inscripción en PDF** (el **comprobante de pago PDF sí entra**, RB-19).
-- Reportes avanzados, exportación Excel/CSV, gráficas y BI (**el dashboard de 4 contadores sí entra**, RB-20).
-- Becas complejas, planes de pago, **pagos parciales**, descuentos múltiples acumulables.
-- Multi-campus / multi-institución, turnos, sucursales.
-- Importación masiva desde Excel.
-- API/SPA, integraciones con sistemas externos.
-- RBAC granular con matriz permiso×rol (solo 4 roles fijos), **2FA**.
-- **Catálogo de tarifas por programa/periodo** (los montos se capturan por inscripción, D8).
-- Versionado de documentos, firma digital, OCR/escaneo de CURP.
-- Retención/archivo de auditoría y dashboards de métricas históricas.
-- Concurrencia multi-edición en tiempo real (bloqueo de registro en curso).
+> **Registro de alcance (Etapa 2, aprobada 02/10/2026):** lo que sigue quedó **fuera del MVP (ETAPA 1 — Admisión e Inscripción)**, sin reescribir su historia. Las funciones que sí corresponden al nuevo alcance aprobado (calificaciones, kardex, docentes, grupos, constancias internas, reportes, becas, portales, etc.) ahora pertenecen a la **ETAPA 2 — CONTROL ESCOLAR** (`docs/roadmap-sistema-escolar.md`, fases 2.0-00 … 2.0-17 y §24 de este documento). **Ninguna fase de la Etapa 2 está implementada.** Las que siguen fuera **de la Etapa 2** se mantienen fuera.
+
+- Calificaciones, kardex, boletas, asignaturas, docentes, grupos, horarios, aulas, asistencias. *(→ Etapa 2, fases 2.0-01 … 2.0-10)*
+- Portal del alumno/tutor y autoservicio en línea (**solo usuarios administrativos con acceso**). *(Rol ALUMNO aprobado para 2.0-16 con aislamiento estricto — D-N5; en la Etapa 1 se mantiene "sin login")*
+- Pasarela de pagos en línea, conciliación bancaria, **facturación CFDI**, **reembolsos/devoluciones**. *(sigue fuera)*
+- Notificaciones por correo/SMS/WhatsApp. *(sigue fuera)*
+- **Constancia formal de inscripción en PDF** (el **comprobante de pago PDF sí entra**, RB-19). *(los formatos internos UVZ pasan a la Etapa 2 — C8)*
+- Reportes avanzados, exportación Excel/CSV, gráficas y BI (**el dashboard de 4 contadores sí entra**, RB-20). *(reportes operativos → 2.0-17; exportación → decisión D-N6 diferida)*
+- Becas complejas, planes de pago, **pagos parciales**, descuentos múltiples acumulables. *(becas/descuentos → 2.0-12 con decisión D-N3; pagos parciales siguen fuera)*
+- Multi-campus / multi-institución, turnos, sucursales. *(sigue fuera)*
+- Importación masiva desde Excel. *(sigue fuera)*
+- API/SPA, integraciones con sistemas externos. *(sigue fuera; en la Etapa 2 quedan además fuera SEP, MEC, MET, SIGED, certificados oficiales y titulación electrónica — C8)*
+- RBAC granular con matriz permiso×rol (solo 4 roles fijos), **2FA**. *(la Etapa 2 solo agrega los roles aprobados DOCENTE y ALUMNO; sin RBAC granular ni 2FA)*
+- **Catálogo de tarifas por programa/periodo** (los montos se capturan por inscripción, D8). *(sigue fuera)*
+- Versionado de documentos, firma digital, OCR/escaneo de CURP. *(sigue fuera)*
+- Retención/archivo de auditoría y dashboards de métricas históricas. *(sigue fuera)*
+- Concurrencia multi-edición en tiempo real (bloqueo de registro en curso). *(sigue fuera)*
 
 ---
 
@@ -1598,12 +1605,28 @@ El comprobante deberá usar logo UVZ, "Universidad Villa de Zacatecas", colores 
 
 ---
 
+## 24. ETAPA 2 — Control Escolar (decisión aprobada 02/10/2026)
+
+> Registro mínimo de las decisiones de la **Etapa 2 — Control Escolar** (análisis completo en `docs/analisis-evolucion-control-escolar.md`; fases en `docs/roadmap-sistema-escolar.md`). **Fase 2.0-00 NO iniciada; nada de esta etapa está implementado.**
+
+1. **Alcance (C4):** aprobada la **ETAPA 2 — CONTROL ESCOLAR**. F1–F14 permanecen documentadas como **ETAPA 1 — ADMISIÓN E INSCRIPCIÓN**; la historia del MVP no se reescribe.
+2. **`inscripciones` reservada al ingreso (C2/C3/D-N1):** la tabla, modelo, `InscripcionService`, máquina `InscripcionEstatus` y RB-8 quedan reservados al proceso de **ADMISIÓN/INGRESO**. No se reutilizan ni se reinterpretan como flujo académico de todos los periodos.
+3. **Nueva entidad `matriculas_periodo`:** representa la matrícula académica de un alumno en un periodo, con `UNIQUE(alumno_id, periodo_id)` y **máquina de estados propia** (separada de `InscripcionEstatus`). La **primera** matrícula nace de una inscripción de ingreso que llegó a `ENROLLED`; las siguientes son **reinscripciones** de periodos posteriores. `inscripciones_materias` depende de `matricula_periodo_id`, **no** de la máquina de `inscripciones`.
+4. **Roles:** los 4 roles actuales (ADMIN, ADMISIONES, ADMINISTRACION, CONTROL_ESCOLAR) se conservan. **DOCENTE** aprobado para 2.0-06 (D-N2) y **ALUMNO** aprobado para 2.0-16 (D-N5) con **aislamiento estricto** (solo su propia información — C1; la D11 "alumnos sin login" sigue válida para la Etapa 1). **COORDINADOR:** no se crea por ahora.
+5. **Formatos (C8):** aprobados los **formatos estándar internos UVZ** con pipeline estricto **DATOS/REGLAS → SERVICIO → PLANTILLA BLADE → PDF**. Fuera: SEP, MEC, MET, SIGED, certificados oficiales, titulación electrónica e integraciones gubernamentales.
+6. **Datos institucionales (C7):** **no inventar** planes, materias, créditos, RVOE, fechas, modalidades ni información no proporcionada. Esto **no bloquea 2.0-01**: esa fase crea arquitectura, tablas y CRUD con **catálogos vacíos**; los datos reales se capturan cuando UVZ los proporcione.
+7. **F15/F16 → 2.0-00 (C6, Opción A):** el alcance original de F15 (cobertura/matriz/regresiones) y F16 (hardening/RB-21) se ejecuta reubicado como **2.0-00 — Blindaje del núcleo existente**, **antes de 2.0-01**. **NO iniciadas.**
+8. **Decisiones diferidas (se definen al llegar su fase):** D-N3 (becas/descuentos, 2.0-12), D-N4 (extraordinarios, 2.0-07), D-N6 (exportaciones CSV/Excel, 2.0-17), D-N7 (tipos de folios de actas/constancias, 2.0-05/2.0-08).
+9. **Se conservan intactas** todas las reglas críticas §10 y las decisiones §22 de la Etapa 1.
+
+---
+
 ## Evolución futura del Sistema Escolar
 
-El **Sistema Escolar UVZ** está concebido como un sistema escolar completo; el MVP actual cubre solo la primera etapa (**Admisión e Inscripción**). La hoja de ruta de etapas futuras (reinscripciones, planes de estudio, materias, docentes, grupos, horarios, carga académica, inscripción a materias, calificaciones, asistencia, kardex, bajas y cambios de estatus, becas, adeudos, recargos, reportes, portales de alumno/docente, avisos y constancias) y la revisión de extensibilidad de este esquema están documentadas en **[`docs/roadmap-sistema-escolar.md`](roadmap-sistema-escolar.md)**.
+El **Sistema Escolar UVZ** está concebido como un sistema escolar completo; el MVP (ETAPA 1) cubre solo la primera etapa (**Admisión e Inscripción**, F1–F14 completas). La **ETAPA 2 — Control Escolar fue aprobada en planeación (02/10/2026)** — ver **§24** y [`docs/roadmap-sistema-escolar.md`](roadmap-sistema-escolar.md) (fases 2.0-00 … 2.0-17); el análisis detallado está en [`docs/analisis-evolucion-control-escolar.md`](analisis-evolucion-control-escolar.md). Ninguna fase de la Etapa 2 está implementada.
 
 **Preparado para crecer, pero implementar únicamente lo que el MVP necesita.**
 
 ---
 
-*Documento v3 — arquitectura consolidada con todas las decisiones aprobadas (incluye §23 identidad institucional, Fase 1.1). `docs/plan-implementacion.md` contiene el orden definitivo por fases (Fase 1 y 1.1 completas; Fase 2 no iniciada).*
+*Documento v3 — arquitectura consolidada con todas las decisiones aprobadas (incluye §23 identidad institucional, Fase 1.1; §24 registro de la ETAPA 2 — Control Escolar, 02/10/2026). `docs/plan-implementacion.md` contiene el orden definitivo por fases (Fase 1 y 1.1 completas; Fase 2 no iniciada).*

@@ -1,7 +1,8 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 y 14 **COMPLETAS**; **Fase 15 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 y 14 **COMPLETAS** (ETAPA 1 — Admisión e Inscripción). **Fases 15 y 16 NO iniciadas:** su alcance original se conserva y se ejecuta reubicado como **2.0-00 — Blindaje del núcleo existente** de la ETAPA 2 (Opción A aprobada, C6), antes de 2.0-01 → ver `docs/roadmap-sistema-escolar.md` y `docs/analisis-evolucion-control-escolar.md` §13.
+> **Ninguna fase de la ETAPA 2 está iniciada (2.0-00 NO iniciada).**
 
 ---
 
@@ -188,6 +189,8 @@
 
 ## Fase 15 — Cobertura completa de pruebas
 
+> **↪️ Reubicada (Opción A aprobada, C6):** se ejecuta como **2.0-00 — Blindaje del núcleo existente**, junto con la Fase 16, **antes de 2.0-01** (ETAPA 2). Alcance original conservado. **NO iniciada.**
+
 | Elemento | Detalle |
 |---|---|
 | Tareas | **F6–F9** (matriz de autorización por rol) + revisión de cobertura de los 4 flujos críticos |
@@ -195,10 +198,14 @@
 
 ## Fase 16 — Endurecimiento (RB-21)
 
+> **↪️ Reubicada (Opción A aprobada, C6):** se ejecuta como **2.0-00 — Blindaje del núcleo existente**, junto con la Fase 15, **antes de 2.0-01** (ETAPA 2). Alcance original conservado. **NO iniciada.**
+
 | Elemento | Detalle |
 |---|---|
 | Tareas | Rate limiting en login y cargas; validación server-side completa; archivos fuera de `public/` y descargas siempre autorizadas; sesiones seguras (regeneración al login); `@can` en toda vista; secretos solo en `.env`; verificación de `hidden` en modelos |
 | Salida | Checklist de seguridad firmado |
+
+> **ETAPA 2 — Control Escolar:** la continuación (fases 2.0-00 … 2.0-17) está en `docs/roadmap-sistema-escolar.md`, con análisis completo en `docs/analisis-evolucion-control-escolar.md`. Este plan (Fases 1–16) documenta la ETAPA 1 y no se reescribe.
 
 ---
 
@@ -219,7 +226,7 @@
 | 12 | F16–F18, U7–U8 (más concurrencia, rollback, autorización, UI y corrección de convenios: 37) |
 | 13 | F19–F20 |
 | 14 | contadores, detalle, autorización, privacidad e historial (cobertura propia, 17) |
-| 15 | F6–F9 + U9–U10 |
+| 15 (→ 2.0-00) | F6–F9 — **pendientes, NO iniciadas** (U9–U10 ya ejecutadas en la Fase 8) |
 
 **Total: 10 unitarias (U1–U10) + 28 feature (F1–F28).**
 
@@ -240,4 +247,4 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de la Fase 14:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ · Fase 11 ✅ · Fase 12 ✅ · Fase 13 ✅ · Fase 14 ✅ **COMPLETA** · **Fase 15 ⬜ NO iniciada, pendiente de aprobación del usuario.**
+> **Estado al cierre de la Fase 14:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ · Fase 11 ✅ · Fase 12 ✅ · Fase 13 ✅ · Fase 14 ✅ **COMPLETA** · **Fase 15 ⬜ y Fase 16 ⬜: NO iniciadas — alcance trasladado a 2.0-00 (Blindaje del núcleo, ETAPA 2; Opción A aprobada 02/10/2026). 2.0-00 pendiente de aprobación para ejecutar.**
