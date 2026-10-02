@@ -1,7 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9, 10 y 11 **COMPLETAS**; **Fase 12 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 y 12 **COMPLETAS**; **Fase 13 NO iniciada** — requiere aprobación explícita.
 
 ---
 
@@ -152,7 +152,7 @@
 
 **✅ COMPLETA (02/10/2026):** migración `observaciones` (`inscripcion_id` FK **cascade**, `tipo(20)`, `detalle` (text), `estatus(20)` default `ABIERTA`, `creada_por`/`resuelta_por` FK a `users`, `resuelta_at` nullable, timestamps; **sin soft delete**). El plan original decía "CRUD + resolver", pero **manda la arquitectura (§4.13/RB-15): APPEND-ONLY** — solo **crear, listar/ver y resolver**. Modelo `Observacion` con `$fillable` mínimo (`estatus`/`resuelta_*` **fuera**), endurecido como `Auditoria` (`update()`/`delete()`/`forceDelete()`/`restore()` → `LogicException`) y enum mínimo `EstatusObservacion` (`ABIERTA`/`RESUELTA`, **sin reapertura** en el MVP). `ObservacionService` (`crear()/resolver()`) es el **único punto de negocio**: validación server-side (`tipo` ∈ `TipoObservacion`, `detalle` 5–2000 con trim), autorización de los 4 roles según matriz §8.2 (`Gate::before` + capacidades `observacion.crear/resolver`, policy `ObservacionPolicy` conectada al modelo real), cada operación en **UNA transacción** con `lockForUpdate` + auditoría `observacion_creada`/`observacion_resuelta` en la misma transacción (RB-12, **ROLLBACK TOTAL** si la auditoría falla; payload con tipo/estatus/inscripción, **sin texto libre**), doble resolución **rechazada explícitamente**, `creada_por` = usuario autenticado server-side y **jamás** modifica `inscripciones.estatus`. Precondición: **no se crean sobre `CANCELLED`** (estado terminal: lectura y resolución de lo previo sí están permitidas); en `ENROLLED` se permiten **sin efectos sobre el proceso**. Guarda RB-8 punto 3 lista para la Fase 12: **`Inscripcion::tieneFaltantesAbiertos()`** (solo `FALTANTE` + `ABIERTA` bloquea; `DOCUMENTO`/`PAGO`/`GENERAL` no). `ListaObservaciones` (Livewire, ruta **`inscripciones.observaciones`** integrada al wizard y al listado): alta con validación, filtros de estatus/tipo, responsables y fechas, botón **Resolver**; binding horizontal por inscripción; sin datos médicos/CURP (RB-18). **219 pruebas verdes** (27 nuevas: ciclo de vida, validaciones, bloqueo `FALTANTE`, 4 roles, inactivos, listado sin datos sensibles, auditoría y rollback).
 
-## Fase 12 — Revisión final y número de control ★
+## Fase 12 — Revisión final y número de control ✅ COMPLETA
 
 | Elemento | Detalle |
 |---|---|
@@ -161,6 +161,8 @@
 | Transacción | `finalizar()`: `NumeroControlService` → (1) iniciar transacción, (2) `lockForUpdate()` sobre `consecutivos(tipo=NUMERO_CONTROL, anio)`, (3) incrementar `ultimo_valor`, (4) generar `YYYY####` con 4 dígitos, (5) asignar al alumno, (6) `UNIQUE` en `alumnos.numero_control`, (7) todo dentro de la misma transacción de finalización → `ENROLLED`. **Prohibido `MAX(numero_control)`** |
 | Clave | **NO se verifica el estado de las mensualidades** |
 | Pruebas | **F16** caso feliz con NC, **F17** mensualidades pendientes **no** bloquean, **F18** bloqueo por INSCRIPCION/documentos/faltantes, **U7–U8** formato y unicidad del NC |
+
+**✅ COMPLETA (02/10/2026):** migración `consecutivos` (`tipo varchar(30)`, `anio smallint`, `ultimo_valor int unsigned` default 0, timestamps, **UNIQUE (tipo, anio)**, sin soft delete) + enum mínimo `TipoConsecutivo` (solo `NUMERO_CONTROL`, deliberadamente separado de `TipoConcepto`/`TipoObservacion`) + modelo `Consecutivo` (casts enum/enteros, `$fillable` mínimo, **sin CRUD ni UI**). **Decisión de alcance aprobada y documentada:** el `YYYY` se deriva **EXCLUSIVAMENTE de `inscripciones.periodo.fecha_inicio->year`** (aclaración de RB-9/P2 en `arquitectura-mvp.md`): `fecha_inicio = 2027-01-11` ⇒ primer NC `20270001` aunque se finalice en diciembre de 2026; en `consecutivos`, `anio` = ese año. `NumeroControlService::asignar(Alumno, Inscripcion)` es el **único punto de asignación**: si el alumno ya tiene NC lo devuelve **sin incrementar**; si no → `lockForUpdate()` del alumno, **`insert-or-ignore` + `UNIQUE`** para crear la fila del año de forma segura ante concurrencia, `lockForUpdate()` del consecutivo, incremento con **límite 9999 explícito** (`NumeroControlException`, sin wrap-around silencioso), `YYYY + str_pad` a exactamente 8 dígitos y `forceFill` sobre `alumnos.numero_control` (**fuera de `$fillable`**; `UNIQUE` como última defensa); `DB::transaction` se anida como SAVEPOINT en la transacción de `finalizar()` (nunca un commit intermedio). `InscripcionService::finalizar()` orquesta en **UNA transacción**: authorize `inscripcion.finalizar` (ADMIN/CONTROL_ESCOLAR; inactivos 403) → `lockForUpdate()` → **solo desde `FINAL_REVIEW`** (otro estado ⇒ rechazo explícito; `ENROLLED` terminal) → guardas RB-8 vía **`requisitosPendientes()` reutilizable**: 1) concepto `INSCRIPCION` `PAGADO` (reutiliza `Inscripcion::conceptoInscripcion()`); 2) documentos obligatorios `ACEPTADO` (reutiliza `DocumentoService::obligatoriosTodosAceptados()`, ahora público); 3) sin `FALTANTE`+`ABIERTA` (reutiliza `tieneFaltantesAbiertos()`); 5) convenio aplicado **debe estar `APROBADO`** — `PENDIENTE_APROBACION` **y** `RECHAZADO` bloquean (RB-8/FC-7 literales); 4) `validada_por` server-side → NC en la MISMA transición → `transicionar()` a `ENROLLED` (`finalizada_at`, `validada_por`, auditoría `estado_cambiado`) → auditoría **`numero_control_asignado`** (RB-12: `numero_control`, `anio`, `conservado`); **ROLLBACK TOTAL** ante cualquier error (probado con fallo REAL de `Auditoria::creating`, sin mocks). **NO se verifican mensualidades** ni observaciones que no sean `FALTANTE`+`ABIERTA`. `PanelEstados` (Livewire, ruta **`inscripciones.revision-final`**, integrada al wizard y al listado): alumno/NC actual, programa, periodo, estatus, pago `INSCRIPCION`, convenio, documentos con desglose (aceptados/pendientes/rechazados/ausentes), faltantes abiertos, requisitos pendientes y botón **Finalizar** solo con rol+estado+guardas — las guardas **siempre server-side** (forzar la llamada Livewire ⇒ 403 o error, sin cambios); éxito = "Inscripción completada" + NC; **sin PDF de constancia y sin información médica** (RB-18: no necesaria para la UI mínima). **255 pruebas verdes** (36 nuevas: F16–F18, U7–U8, concurrencia real de BD, rollback, autorización y UI).
 
 ## Fase 13 — Cancelación
 
@@ -207,7 +209,7 @@
 | 9 | F26 |
 | 10 | F13–F15 |
 | 11 | ciclo de vida de observaciones (cobertura propia, 27) |
-| 12 | F16–F18, U7–U8 |
+| 12 | F16–F18, U7–U8 (más concurrencia, rollback, autorización y UI: 36) |
 | 13 | F19–F20 |
 | 15 | F6–F9 + U9–U10 |
 
