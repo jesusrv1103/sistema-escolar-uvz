@@ -15,6 +15,7 @@ use App\Livewire\Catalogos\Programas;
 use App\Livewire\Catalogos\TiposDocumento;
 use App\Livewire\Documentos\PanelDocumentos;
 use App\Livewire\Inscripciones\ListaInscripciones;
+use App\Livewire\Inscripciones\PanelEstados;
 use App\Livewire\Inscripciones\WizardInscripcion;
 use App\Livewire\Observaciones\ListaObservaciones;
 use Illuminate\Support\Facades\Route;
@@ -52,6 +53,8 @@ Route::middleware('auth')->prefix('inscripciones')->name('inscripciones.')->grou
     // Observaciones / faltantes (Fase 11): APPEND-ONLY — crear, listar y
     // resolver (§4.13); sin edición ni borrado.
     Route::get('/{inscripcion}/observaciones', ListaObservaciones::class)->name('observaciones');
+    // Revisión final (Fase 12): guardas RB-8 + número de control → ENROLLED.
+    Route::get('/{inscripcion}/revision-final', PanelEstados::class)->name('revision-final');
 });
 
 // Descarga del archivo de un documento (Fase 10): disco PRIVADO, policy y
