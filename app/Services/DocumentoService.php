@@ -445,8 +445,14 @@ class DocumentoService
         return array_diff($requisitos, $cargados) === [];
     }
 
-    /** ¿Todos los obligatorios están `ACEPTADO`? (guarda de FINAL_REVIEW) */
-    private function obligatoriosTodosAceptados(Inscripcion $inscripcion): bool
+    /**
+     * ¿Todos los obligatorios están `ACEPTADO`? (guarda de FINAL_REVIEW)
+     *
+     * Reutilizada por `InscripcionService::requisitosPendientes()` (guarda
+     * RB-8.2, Fase 12): una única definición de "obligatorio aplicable"
+     * (`obligatorio = true`, activo y no eliminado) para todo el sistema.
+     */
+    public function obligatoriosTodosAceptados(Inscripcion $inscripcion): bool
     {
         $requisitos = $this->requisitos();
 

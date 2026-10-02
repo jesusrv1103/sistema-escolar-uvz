@@ -5,12 +5,14 @@ namespace App\Models;
 use App\Enums\EstatusConvenio;
 use App\Enums\EstatusObservacion;
 use App\Enums\InscripcionEstatus;
+use App\Enums\TipoConcepto;
 use App\Enums\TipoObservacion;
 use App\Models\Concerns\HasAudit;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -105,6 +107,15 @@ class Inscripcion extends Model
     public function observaciones(): HasMany
     {
         return $this->hasMany(Observacion::class);
+    }
+
+    /**
+     * Relación de dominio (§6): el concepto `INSCRIPCION` de esta inscripción
+     * (usado por las guardas de finalización RB-8.1 en la Fase 12).
+     */
+    public function conceptoInscripcion(): HasOne
+    {
+        return $this->hasOne(ConceptoPago::class)->where('tipo', TipoConcepto::INSCRIPCION->value);
     }
 
     /**

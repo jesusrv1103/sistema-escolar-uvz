@@ -8,12 +8,14 @@ use App\Enums\InscripcionEstatus;
 use App\Enums\TipoConcepto;
 use App\Exceptions\CargosInvalidosException;
 use App\Exceptions\ConvenioInvalidoException;
+use App\Exceptions\FinalizacionInvalidaException;
 use App\Exceptions\MotivoRequeridoException;
 use App\Exceptions\TransicionInvalidaException;
 use App\Models\Inscripcion;
 use App\Models\Periodo;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Único punto autorizado para modificar `inscripciones.estatus` (§7.3.6).
@@ -24,13 +26,16 @@ use Illuminate\Support\Facades\DB;
  *  3. ocurre dentro de una transacción de BD (§7.3.3);
  *  4. registra auditoría y usuario responsable en la misma transacción.
  *
- * Las guardas de negocio de módulos aún inexistentes (pagos, documentos,
- * número de control) NO se simulan: se incorporarán en sus fases (§7.3.5).
+ * Las guardas de negocio viven en cada módulo y en las fases que las
+ * incorporan (§7.3.5): la revisión final RB-8 y la asignación del número de
+ * control están en `finalizar()` (Fase 12).
  */
 class InscripcionService
 {
-    public function __construct(private readonly AuditoriaService $auditoria)
-    {
+    public function __construct(
+        private readonly AuditoriaService $auditoria,
+        private readonly NumeroControlService $numeroControl,
+    ) {
     }
 
     public function puedeTransicionar(InscripcionEstatus $desde, InscripcionEstatus $hasta): bool
@@ -224,6 +229,148 @@ class InscripcionService
 
             return $inscripcion->refresh();
         });
+    }
+
+    /**
+     * Revisión final y asignación de número de control → `ENROLLED` (FC-7).
+     *
+     * UNA única transacción lógica (la más crítica del sistema, RB-12/R1) que
+     * abarca, en orden:
+     *  1. autorización server-side `inscripcion.finalizar` (ADMIN vía
+     *     `Gate::before` o CONTROL_ESCOLAR; inactivos siempre 403, §8.2);
+     *  2. `lockForUpdate()` de la inscripción y confirmación de `FINAL_REVIEW`
+     *     (cualquier otro estatus ⇒ rechazo explícito; ENROLLED es terminal);
+     *  3. guardas RB-8 completas vía `requisitosPendientes()` (forma
+     *     reutilizable que también consume el PanelEstados);
+     *  4. número de control dentro de ESTA MISMA transacción
+     *     (`NumeroControlService` se anida como SAVEPOINT: sin commit propio);
+     *  5. transición a `ENROLLED` por la máquina única ⇒ `finalizada_at`,
+     *     `validada_por` y auditoría `estado_cambiado` (§7.3);
+     *  6. auditoría `numero_control_asignado` (RB-12: acción crítica).
+     *
+     * Cualquier error ⇒ ROLLBACK TOTAL: jamás queda un NC asignado con la
+     * inscripción en `FINAL_REVIEW`, un consecutivo huérfano, `ENROLLED` sin
+     * auditoría ni hitos parciales.
+     *
+     * NO consulta mensualidades en ningún punto (RB-8 corregida: pueden
+     * quedar `PENDIENTE` en una inscripción `ENROLLED`, F17).
+     *
+     * @throws FinalizacionInvalidaException si el estatus o una guarda RB-8 no se cumplen
+     */
+    public function finalizar(Inscripcion $inscripcion, ?User $usuario = null): Inscripcion
+    {
+        // 1. Autorización server-side: el @can de la vista solo complementa UX.
+        Gate::authorize('inscripcion.finalizar');
+        $usuario ??= auth()->user();
+
+        return DB::transaction(function () use ($inscripcion, $usuario): Inscripcion {
+            // 2. Fila con lock: evita finalizaciones concurrentes de la misma
+            //    inscripción y lee el estado recién persistido.
+            $inscripcion = Inscripcion::query()->lockForUpdate()->findOrFail($inscripcion->getKey());
+
+            if ($inscripcion->estatus !== InscripcionEstatus::FINAL_REVIEW) {
+                throw new FinalizacionInvalidaException(sprintf(
+                    'La finalización solo procede desde FINAL_REVIEW (estatus actual: %s).',
+                    $inscripcion->estatus->value,
+                ));
+            }
+
+            // 3. Guardas RB-8 (requisitos obligatorios únicamente, §11).
+            $pendientes = $this->requisitosPendientes($inscripcion);
+            if ($pendientes !== []) {
+                throw new FinalizacionInvalidaException(
+                    'Requisitos de la revisión final incompletos: '.implode(' ', $pendientes),
+                );
+            }
+
+            // 4. Número de control en la MISMA transacción: conserva el
+            //    existente o emite el siguiente de la secuencia del año del
+            //    periodo (RB-9/P2).
+            $alumno = $inscripcion->alumno()->firstOrFail();
+            $conservado = $alumno->numero_control !== null;
+            $numero = $this->numeroControl->asignar($alumno, $inscripcion);
+
+            // 5. Transición por la máquina única: ENROLLED + finalizada_at +
+            //    validada_por + auditoría `estado_cambiado` (todo en tx).
+            $this->transicionar($inscripcion, InscripcionEstatus::ENROLLED, null, $usuario);
+
+            // 6. RB-12: la asignación del número de control es acción crítica
+            //    con su propio registro de trazabilidad (asignado o conservado).
+            $this->auditoria->registrar(
+                $inscripcion,
+                'numero_control_asignado',
+                [],
+                [],
+                [
+                    'numero_control' => $numero,
+                    'anio' => (int) substr($numero, 0, 4),
+                    'conservado' => $conservado,
+                ],
+                $usuario,
+            );
+
+            return $inscripcion->refresh();
+        });
+    }
+
+    /**
+     * Guardas RB-8 en forma reutilizable (§11): devuelve los requisitos
+     * FALTANTES de la revisión final; `[]` = todo cumplido.
+     *
+     * La consumen `finalizar()` (bloqueo server-side) y `PanelEstados`
+     * (indicar en UI qué requisito falta): una sola definición de las guardas.
+     *
+     * RB-8 explícito sobre lo que NO bloquea: este método NUNCA consulta
+     * mensualidades ni pagos `MENSUALIDAD` (pueden quedar `PENDIENTE`), ni
+     * observaciones que no sean `FALTANTE` + `ABIERTA`.
+     *
+     * El punto RB-8.4 (Control Escolar responsable) lo garantizan la
+     * autorización `inscripcion.finalizar` + `validada_por` que la transición
+     * a `ENROLLED` escribe server-side.
+     *
+     * @return list<string>
+     */
+    public function requisitosPendientes(Inscripcion $inscripcion): array
+    {
+        $faltantes = [];
+
+        // RB-8.1: concepto `INSCRIPCION` con estatus `PAGADO` (no basta con
+        // una mensualidad pagada; el cargo puede no existir si nunca se
+        // generó).
+        $concepto = $inscripcion->conceptoInscripcion;
+        if ($concepto === null) {
+            $faltantes[] = 'Falta el concepto de pago de INSCRIPCION.';
+        } elseif ($concepto->estatus !== EstatusConceptoPago::PAGADO) {
+            $faltantes[] = 'El concepto INSCRIPCION no está PAGADO.';
+        }
+
+        // RB-8.2: todos los tipos obligatorios aplicables en `ACEPTADO`
+        // (reutiliza DocumentoService: obligatorio + activo + no eliminado;
+        // los opcionales jamás bloquean).
+        if (! app(DocumentoService::class)->obligatoriosTodosAceptados($inscripcion)) {
+            $faltantes[] = 'Todos los documentos obligatorios deben estar ACEPTADOS.';
+        }
+
+        // RB-8.3: ninguna observación `FALTANTE` + `ABIERTA` (reutiliza
+        // Inscripcion::tieneFaltantesAbiertos(), Fase 11).
+        if ($inscripcion->tieneFaltantesAbiertos()) {
+            $faltantes[] = 'Hay observaciones FALTANTE abiertas.';
+        }
+
+        // RB-8.5: sin convenio ⇒ OK; convenio aplicado ⇒ debe estar
+        // `APROBADO` (FC-7/RB-8 literal). `PENDIENTE_APROBACION` y
+        // `RECHAZADO` son bloqueantes; ninguno de los dos es `APROBADO`.
+        if ($inscripcion->convenio_id !== null) {
+            if ($inscripcion->convenio_estatus === EstatusConvenio::PENDIENTE_APROBACION) {
+                $faltantes[] = 'El convenio está PENDIENTE_APROBACION.';
+            } elseif ($inscripcion->convenio_estatus === EstatusConvenio::RECHAZADO) {
+                $faltantes[] = 'El convenio aplicado está RECHAZADO (RB-8 exige convenio APROBADO).';
+            } elseif ($inscripcion->convenio_estatus !== EstatusConvenio::APROBADO) {
+                $faltantes[] = 'El convenio aplicado no está resuelto como APROBADO.';
+            }
+        }
+
+        return $faltantes;
     }
 
     /**
