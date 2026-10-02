@@ -1,7 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fase 1, 1.1 y 2 **COMPLETAS**; **Fase 3 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fase 1, 1.1, 2 y 3 **COMPLETAS**; **Fase 4 NO iniciada** — requiere aprobación explícita.
 
 ---
 
@@ -53,7 +53,7 @@
 | Credenciales | `AdminSeeder` toma `ADMIN_EMAIL`/`ADMIN_PASSWORD` de `.env` (claves vacías en `.env.example`); sin secretos en `docs/` ni en el código |
 | Guardas | `composer test` 26/26 ✔ · `npm run build` ✔ · `route:list` con `auth`/`guest` correctos ✔ |
 
-## Fase 3 — Catálogos
+## Fase 3 — Catálogos ✅ COMPLETA
 
 | Elemento | Detalle |
 |---|---|
@@ -61,6 +61,12 @@
 | Migraciones | `programas`, `periodos`, `tipos_documento`, `convenios` |
 | Semilla inicial | `CatalogosSeeder` parte de los 3 programas que publica el sitio UVZ: **Lic. en Derecho**, **Lic. en Seguridad y Administración Industrial**, **Lic. en Ciencia Forense** (ver arquitectura §23.4). El catálogo sigue siendo administrable |
 | Salida | Catálogos administrables; periodos con cierre |
+| Ajuste de extensibilidad (previo) | `programas.duracion_semestres` → **`duracion_periodos`** (`smallint unsigned`, **nullable**): duración total en periodos académicos, capturada por el ADMIN cuando exista fuente institucional; **sin** `tipo_periodo`, planes, RVOE, modalidad ni campus |
+| Implementación | 4 migraciones (`2026_10_01_000004`–`000007`); modelos `Programa`, `Periodo`, `TipoDocumento` (`$table = tipos_documento`), `Convenio`; componentes Livewire 4 `App\Livewire\Catalogos\{Programas, Periodos, TiposDocumento, Convenios}` sobre la base abstracta `CatalogoAdmin` (crear/editar/guardar/activar-desactivar/eliminar + cerrar/reabrir periodo); rutas `/admin/{programas,periodos,tipos-documento,convenios}` con `auth` + `role:ADMIN`; enlaces mínimos en cabecera y dashboard (`@can('usuario.manage')`) |
+| Seeders | `CatalogosSeeder` (claves internas `DER`, `SAI`, `CF`; `duracion_periodos = NULL`; idempotente) y `TiposDocumentoSeeder` (solo `ACTA_NAC`, lo definido en arquitectura; idempotente). `DatabaseSeeder` los invoca |
+| Validaciones | server-side en cada `guardar()`: claves únicas + formato, `fecha_fin >= fecha_inicio`, convenio `PORCENTAJE` 0 < v ≤ 100 / `MONTO` v > 0, campos obligatorios, `Gate usuario.manage` en cada acción |
+| Pruebas | `tests/Feature/CatalogosTest.php` (12): CRUD de los 4 catálogos, 403 a otros roles (rutas y componente), claves duplicadas, fechas inválidas, valores de convenio fuera de rango, soft delete, seeders idempotentes y semilla UVZ |
+| Estado | ✅ **COMPLETA** — `composer test` 38 pruebas / 227 assertions verdes; `npm run build` OK; `route:list` OK |
 
 ## Fase 4 — Expediente del alumno
 
@@ -205,4 +211,4 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de la Fase 2:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ **COMPLETA** · **Fase 3 ⬜ NO iniciada, pendiente de aprobación del usuario.**
+> **Estado al cierre de la Fase 3:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ **COMPLETA** · **Fase 4 ⬜ NO iniciada, pendiente de aprobación del usuario.**

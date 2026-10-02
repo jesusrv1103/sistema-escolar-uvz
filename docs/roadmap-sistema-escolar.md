@@ -64,6 +64,8 @@ Confirmaciones sobre `docs/arquitectura-mvp.md` §4–§5:
 | `numero_control` pertenece al alumno | ✔ | Columna en `alumnos` (`char(8)`, unique, nullable), asignada una sola vez (§4.2) |
 | `Inscripcion` = alumno + periodo + programa | ✔ | `inscripciones(alumno_id, periodo_id, programa_id)` con `UNIQUE(alumno_id, periodo_id)` (§4.8) |
 | `programas` podrá relacionarse con planes de estudio | ✔ | Tabla catálogo simple; futura tabla `planes_estudio(programa_id)` no requiere cambios en el MVP |
+| `programas` no se acopla a una organización semestral | ✔ | `duracion_periodos` (`smallint unsigned`, **nullable**) mide duración en periodos académicos; `tipo_periodo`, planes, RVOE, modalidad y campus quedan fuera del MVP y se agregarán en sus fases (ajuste Fase 3) |
+| Las `claves` de catálogo no se confunden con datos oficiales | ✔ | `clave` documentada como identificador **interno** del sistema (semilla `DER`/`SAI`/`CF`); RVOE y duraciones no se inventan: se capturan cuando exista fuente institucional |
 | `periodos` se reutiliza en grupos, cargas y calificaciones | ✔ | Catálogo genérico (`clave`, fechas, `activo`); `cerrado_at` está descrito como bloqueo de **inscripciones** |
 | Finanzas desacoplada del dominio académico | ✔ | `conceptos_pago`/`pagos` solo cuelgan de `inscripciones`; el módulo académico futuro no los toca |
 | `auditoria` es transversal | ✔ | Morph `auditable_type/id` + `accion`/`datos` JSON, usable por cualquier modelo futuro (§4.14) |
@@ -75,7 +77,7 @@ Confirmaciones sobre `docs/arquitectura-mvp.md` §4–§5:
 | ID | Riesgo | Impacto | Ajuste mínimo recomendado (cuando se autorice) |
 |---|---|---|---|
 | **R1** | `documentos` referencia `inscripcion_id` con `UNIQUE(inscripcion_id, tipo_documento_id)`: documentos propios del **alumno** (expediente académico, kardex, constancias) no caben bien en ese ámbito | Bajo–medio | Agregar `alumno_id` **nullable** y ampliar el ámbito de `tipos_documento`, o crear `expediente_documentos` con FK a `alumnos`; conservando el MVP intacto |
-| **R2** | `periodos.cerrado_at` podría interpretarse en módulos futuros como cierre general y bloquear la captura de calificaciones | Bajo | Dejar explícito que `cerrado_at` bloquea **solo inscripciones**; cada módulo futuro definirá su propio criterio de cierre |
+| **R2** | `periodos.cerrado_at` podría interpretarse en módulos futuros como cierre general y bloquear la captura de calificaciones | Bajo | Dejar explícito que `cerrado_at` bloquea **solo inscripciones**; cada módulo futuro definirá su propio criterio de cierre. *Semántica ya documentada en Fase 3 (§4.6, modelo `Periodo`, migración y vista del catálogo)* |
 | **R3** | `users.rol` son 4 roles fijos del MVP; etapas futuras requerirán roles nuevos (DOCENTE, COORDINADOR, ALUMNO) | Bajo | Extender el enum/validación de rol y el `AdminSeeder`; el esquema (`varchar`) no cambia |
 | **R4** | Los portales (alumno/docente) exigirán cuentas de usuario con otro perfil que `users` actual | Bajo | Evaluar dominio/ámbito de acceso por rol; sin cambios hasta autorizar la etapa |
 

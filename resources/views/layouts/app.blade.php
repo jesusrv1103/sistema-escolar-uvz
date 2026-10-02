@@ -44,6 +44,10 @@
             </a>
 
             <div class="flex items-center gap-3 text-sm">
+                @can('usuario.manage')
+                    <a href="{{ route('admin.programas') }}"
+                        class="hidden font-medium text-brand-primary hover:text-brand-secondary sm:block">Catálogos</a>
+                @endcan
                 @auth
                     <span class="hidden text-brand-muted sm:block">{{ auth()->user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}">

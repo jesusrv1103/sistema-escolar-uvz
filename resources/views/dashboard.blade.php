@@ -22,4 +22,16 @@
             {{ config('branding.slogan') }} · {{ config('branding.hashtag') }}
         </p>
     </div>
+
+    @can('usuario.manage')
+        <div class="mt-6 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
+            <h2 class="text-sm font-semibold text-brand-text">Catálogos administrativos</h2>
+            <div class="mt-3 flex flex-wrap gap-2 text-sm">
+                <a href="{{ route('admin.programas') }}" class="rounded-md border border-brand-line px-3 py-1.5 font-medium text-brand-primary hover:bg-brand-surface">Programas</a>
+                <a href="{{ route('admin.periodos') }}" class="rounded-md border border-brand-line px-3 py-1.5 font-medium text-brand-primary hover:bg-brand-surface">Periodos</a>
+                <a href="{{ route('admin.tipos-documento') }}" class="rounded-md border border-brand-line px-3 py-1.5 font-medium text-brand-primary hover:bg-brand-surface">Tipos de documento</a>
+                <a href="{{ route('admin.convenios') }}" class="rounded-md border border-brand-line px-3 py-1.5 font-medium text-brand-primary hover:bg-brand-surface">Convenios</a>
+            </div>
+        </div>
+    @endcan
 @endsection

@@ -213,9 +213,9 @@ Una sola tabla con `tipo` evita duplicar columnas `tutor_*` y `emergencia_*`.
 | Campo | Tipo | Restricciones | Notas |
 |---|---|---|---|
 | `id` | bigint | PK | |
-| `clave` | varchar(20) | **unique**, not null | ej. `LIS-CP` |
+| `clave` | varchar(20) | **unique**, not null | identificador **INTERNO** del sistema (ej. `DER`); **no es RVOE** |
 | `nombre` | varchar(150) | not null | licenciatura/programa |
-| `duracion_semestres` | smallint | not null | |
+| `duracion_periodos` | smallint unsigned | **nullable** | duración total del programa en **periodos académicos** (no semestres); sin fuente institucional se deja vacío y el ADMIN lo captura desde el CRUD (ajuste de extensibilidad, evita datos falsos) |
 | `activo` | boolean | not null, default true | |
 | `deleted_at` | timestamp | nullable | **soft delete** |
 
@@ -229,7 +229,7 @@ Una sola tabla con `tipo` evita duplicar columnas `tutor_*` y `emergencia_*`.
 | `fecha_inicio` | date | not null | |
 | `fecha_fin` | date | not null | |
 | `activo` | boolean | not null, default true | |
-| `cerrado_at` | timestamp | nullable | al tener valor: **bloquea nuevas inscripciones y modificaciones** de ese periodo; ADMIN visualiza histórico |
+| `cerrado_at` | timestamp | nullable | al tener valor: **bloquea nuevas inscripciones y modificaciones** de ese periodo (RB-13); ADMIN visualiza histórico. **Semántica exclusiva de inscripción:** NO es un cierre académico global para módulos futuros (calificaciones, asistencia, grupos), que definirán su propio criterio (riesgo R2 del roadmap) |
 | `deleted_at` | timestamp | nullable | **soft delete** |
 
 ### 4.7 `convenios` (catálogo)
@@ -711,7 +711,7 @@ database/
 ├── migrations/
 ├── seeders/
 │   ├── AdminSeeder.php
-│   ├── CatalogosSeeder.php                     (programas y periodos base; ver §23.4: los 3 programas iniciales publicados por el sitio UVZ)
+│   ├── CatalogosSeeder.php                     (semilla de `programas`: los 3 programas UVZ de §23.4; `periodos` sin semilla por no existir fechas institucionales)
 │   └── TiposDocumentoSeeder.php
 
 resources/
@@ -1052,6 +1052,16 @@ Toda acción está limitada por la matriz de §8. El rol se verifica tanto a niv
 - **CSRF** habilitado (Blade/Livewire por defecto).
 - Consultas con `select` explícito en listados; `with()` para evitar N+1.
 - Contraseñas con `Hash::make` y `hidden`; secretos solo en `.env`.
+
+### 12.12 Catálogos (ADMIN)
+
+| Catálogo | Reglas server-side |
+|---|---|
+| `programas` | `clave`: `required`, `max:20`, formato `A-Z0-9_-`, `unique` (índice simple: una clave con soft delete **no** se reutiliza hasta purgar el registro); `nombre`: `required`, `max:150`; `duracion_periodos`: `nullable`, `integer`, 1–65535; `activo`: `boolean` |
+| `periodos` | `clave`/`nombre` requeridos; `fecha_inicio`: `required`, `date`; `fecha_fin`: `required`, `date`, `after_or_equal:fecha_inicio`; `activo`: `boolean`; `cerrado_at` solo por acción Cerrar/Reabrir (no se captura a mano) |
+| `tipos_documento` | `clave`: `required`, `max:30`, `unique`; `nombre`: `required`, `max:120`; `obligatorio`, `activo`: `boolean` |
+| `convenios` | `clave`: `required`, `max:20`, `unique`; `nombre`: `required`, `max:150`; `tipo`: en `TipoConvenio` (`PORCENTAJE`\|`MONTO`); `valor`: `PORCENTAJE` → 0 < v ≤ 100, `MONTO` → v > 0; `fecha_fin` ≥ `fecha_inicio`; `notas`: `nullable`, `max:2000`; `activo`: `boolean` |
+| Autorización | Rutas `/admin/...` con `auth` + `role:ADMIN`; cada acción del componente verifica `Gate usuario.manage` (ADMIN). La **aprobación** de un convenio no vive en el catálogo: pertenece a cada inscripción (§4.8) |
 
 ---
 
@@ -1544,6 +1554,8 @@ Programas que el sitio institucional publica actualmente (datos iniciales, **no*
 3. Licenciatura en Ciencia Forense
 
 El catálogo `programas` sigue siendo administrable (CRUD ADMIN, alta/baja); estas tres solo son la semilla.
+
+**Claves internas de la semilla** (identificadores del sistema, **no** RVOE): `DER`, `SAI`, `CF`. `duracion_periodos` se siembra `NULL` mientras no exista fuente institucional; el valor lo captura el ADMIN desde el catálogo.
 
 ### 23.5 Comprobante de pago PDF (Fase 9)
 

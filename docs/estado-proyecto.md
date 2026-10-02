@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 1.1** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 3** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 ## Fases
 
@@ -9,8 +9,8 @@
 | Fase 1 — Base del proyecto | ✅ **COMPLETA** (app, login/logout, 11 pruebas, `npm run build`) |
 | Fase 1.1 — Livewire 4 + identidad institucional | ✅ **COMPLETA** (15 pruebas, build correcto) |
 | Fase 2 — Seguridad y autorización base | ✅ **COMPLETA** (26 pruebas, build correcto, `route:list` OK) |
-| Fase 3 — Catálogos | ⬜ **NO INICIADA** — espera aprobación explícita |
-| Fases 4–16 | ⬜ pendientes |
+| Fase 3 — Catálogos | ✅ **COMPLETA** (38 pruebas, build correcto, `route:list` OK) |
+| Fases 4–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -23,6 +23,17 @@
 - **AdminSeeder**: idempotente (`updateOrCreate`), credencial desde `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (vacías en `.env.example`; sin secretos en `docs/`); `DatabaseSeeder` lo invoca.
 - **Login**: rechaza `activo = false`, actualiza `last_login_at`, conserva rate limiting, regeneración de sesión y logout.
 - **Pruebas nuevas**: `tests/Feature/AutorizacionTest.php` (8) + 3 en `tests/Feature/Auth/LoginTest.php`; `tests/Pest.php` aplica `RefreshDatabase` a `Feature` y `Unit`.
+
+## Fase 3 — catálogos (implementado)
+
+- **Ajuste previo de extensibilidad:** `programas.duracion_semestres` → **`duracion_periodos`** (`smallint unsigned`, **nullable**); mide la duración total en periodos académicos (no semestres). Sin `tipo_periodo`, planes de estudio, RVOE, modalidad ni campus. `docs/arquitectura-mvp.md` (§4.5, §4.6, §12.12, §23.4) y `docs/roadmap-sistema-escolar.md` actualizados.
+- **Migraciones** `2026_10_01_000004`–`000007`: `programas`, `periodos` (con `cerrado_at`), `tipos_documento`, `convenios`; unique en `clave`, fechas `date`, soft deletes.
+- **Modelos**: `Programa`, `Periodo`, `TipoDocumento` (`protected $table = 'tipos_documento'`), `Convenio` (`tipo` cast a `TipoConvenio`); fillables explícitos (sin `$guarded = []`).
+- **Componentes Livewire 4** en `app/Livewire/Catalogos/`: base abstracta `CatalogoAdmin` (flujo crear/editar/guardar/alternar activo/eliminar + `Gate usuario.manage` en cada acción) y `Programas`, `Periodos` (acciones `cerrar`/`reabrir` sobre `cerrado_at`), `TiposDocumento`, `Convenios`; vistas en `resources/views/livewire/catalogos/`.
+- **Rutas** `/admin/{programas,periodos,tipos-documento,convenios}` con `auth` + `role:ADMIN`; navegación mínima: enlace "Catálogos" en la cabecera y tarjetas en el dashboard, ambas tras `@can('usuario.manage')`.
+- **Seeders idempotentes**: `CatalogosSeeder` (3 programas UVZ con claves internas `DER`, `SAI`, `CF`; `duracion_periodos = NULL` para no inventar datos; sin semilla de `periodos` por no existir fechas institucionales) y `TiposDocumentoSeeder` (solo `ACTA_NAC`, lo definido en arquitectura §4.11).
+- **Validación server-side** (arquitectura §12.12): claves únicas y con formato, `fecha_fin >= fecha_inicio`, convenio `PORCENTAJE` 0 < v ≤ 100 / `MONTO` v > 0, campos obligatorios, autorización ADMIN.
+- **Semántica documentada**: `cerrado_at` bloquea **solo** inscripciones (RB-13 / riesgo R2); la aprobación de un convenio no vive en el catálogo.
 
 ## Stack y entorno
 
@@ -47,12 +58,20 @@
 - `npm run build` → **correcto** (`public/build`, sin errores).
 - `php artisan route:list` → `/dashboard` y `/logout` con middleware `auth`; `/login` con `guest`; alias `role` registrado (sin uso aún: no hay rutas de módulo hasta la Fase 3+).
 
+## Validación al cierre de la Fase 3
+
+- `composer test` → **38 pruebas / 227 assertions, todas verdes** (26 previas intactas + 12 nuevas de Fase 3 en `tests/Feature/CatalogosTest.php`).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → rutas `/admin/programas`, `/admin/periodos`, `/admin/tipos-documento`, `/admin/convenios` con middleware `auth` + `role:ADMIN`.
+- Migraciones 000004–000007 y seeders ejecutados en la BD de desarrollo; las pruebas corren **solo** contra `sistema_escolar_testing`.
+- Revisión de seguridad previa: la BD de desarrollo tenía **1 usuario** (`admin@uvz.local`, rol ADMIN, activo) — sin cuentas inesperadas heredadas del backfill de rol.
+
 ## Pendientes / registrados
 
-- **Fase 3 no iniciar** hasta aprobación del usuario.
+- **Fase 4 no iniciar** hasta aprobación del usuario.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías).
 - Policies de modelos de fases futuras: las 8 clases ya existen; Laravel las asocia por convención cuando los modelos se creen (sin código artificial).
 - Logo variante para fondos oscuros: **PENDIENTE** (el sitio no la publica; `branding.logo_dark` reutiliza el horizontal).
-- Semilla inicial del catálogo (3 licenciaturas UVZ) → `CatalogosSeeder` en **Fase 3**.
+- `duracion_periodos`, `periodos` iniciales y más tipos de documento: **PENDIENTES de fuente institucional** (se capturan/seedan cuando UVZ confirme datos; nada inventado).
 - Comprobante PDF con branding UVZ → **Fase 9**.
 - No existe repositorio git en el directorio (nada commiteado).
