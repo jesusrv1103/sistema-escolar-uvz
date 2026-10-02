@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** Tipo de documento del expediente de inscripción (catálogo, §4.11). */
 class TipoDocumento extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     /** Nombre plural personalizado: `tipos_documento` (§3). */
     protected $table = 'tipos_documento';

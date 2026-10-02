@@ -328,6 +328,44 @@
 - **Estado del checkpoint: COMPLETO y APROBADO por el usuario (02/10/2026)** — smoke 121 verificaciones en verde, 4 usuarios QA por rol, matriz de capacidades verificada, credenciales solo en archivos locales `600` (`~/.ssh/hostinger_*`), otros sitios intactos e incidencia de layout corregida (`d864f3a`).
 - **Fases 15 y 16: NO iniciadas** → ejecutarse como **2.0-00** (ver sección siguiente).
 
+## Checkpoint 2.0-00 — Blindaje del núcleo existente (2026-10-02)
+
+- **Objetivo completado:** Cobertura pendiente (F6–F9) + Hardening RB-21 + regresiones críticas del núcleo F1–F14.
+- **Rama:** `feat/2.0-00-blindaje-nucleo` (desde master `ea60bbb`).
+- **Commits de 2.0-00:**
+  - `fix(test): F6–F9 authorization matrix tests for 16 critical flows`
+  - `feat(test): complete gate and policy authorization matrix`
+  - `refactor(model): add HasFactory to Periodo, Programa, TipoDocumento`
+  - `feat(factory): PeriodoFactory, ProgramaFactory, ConvenioFactory, TipoDocumentoFactory`
+  - `fix(test): F6–F9 Livewire integration tests with correct component signatures`
+- **Cobertura pendiente (Parte A — F6–F9):**
+  - F6: ADMISIONES no puede validar pago (acción Livewire `ModalValidarPago::validar` → 403)
+  - F7: ADMISIONES no puede validar documentos (acción Livewire `PanelDocumentos::aceptar` → 403)
+  - F8: ADMINISTRACION no puede finalizar inscripción (acción Livewire `PanelEstados::finalizar` → 403)
+  - F9: CONTROL_ESCOLAR no puede validar pagos (acción Livewire `ModalValidarPago::validar` → 403)
+  - Matriz completa de 20 gates × 4 roles + inactivo = **80 aserciones**
+  - Pruebas de políticas (Policy-based): `InscripcionPolicy::viewAny/view`, `DocumentoPolicy::view/viewAny`, `PagoPolicy::descargarComprobantePdf/descargarComprobante`, `InformacionMedicaPolicy::view/update` → **16 aserciones**
+- **Hardening RB-21 (Parte B):**
+  - **LOGIN/SESIONES:** Rate limiting 5/min por email+IP, regeneración de sesión en login, invalidación + regeneración token en logout, `activo=false` bloquea todo, CSRF por defecto.
+  - **AUTORIZACIÓN:** Gates centralizados en `AuthServiceProvider::CAPACIDADES` (fuente única), 8 Policies delegadoras, `Gate::before` para ADMIN, middleware `role` en rutas, `@can` solo UX, validación server-side obligatoria en cada método Livewire.
+  - **ARCHIVOS:** Disco `private` fuera de `public/`, MIME real con `finfo` (no solo extensión), ≤ 10 MB, extensiones permitidas, rate limiting 30 cargas/min, compensación de archivos huérfanos en transacciones, path traversal protection con `realpath` en controladores de descarga, nombres de archivo sanitizados.
+  - **VALIDACIÓN:** Server-side en todos los servicios y componentes; longitudes, enums, IDs existentes, estados permitidos, fechas no futuras, montos exactos, referencias obligatorias para TRANSFERENCIA/TARJETA.
+  - **MODELOS:** `$fillable` explícito en todos (nunca `$guarded = []`); atributos sensibles fuera de mass assignment (`estatus`, `validado_*`, `motivo_rechazo`, hitos, responsables, folio); casts correctos (enums, decimal:2, date, datetime); `$hidden` en User (password, remember_token).
+  - **SECRETOS:** Solo en `.env`; `.env.example` con claves vacías; nada en Git, docs, código, logs.
+  - **AUDITORÍA:** Append-only (`update/delete/forceDelete/restore` → `LogicException`); payload depurado (sin passwords, tokens, datos médicos); IP/user_agent opcional.
+  - **PRIVACIDAD MÉDICA:** ADMIN/ADMISIONES acceso; ADMINISTRACION sin acceso; CONTROL_ESCOLAR solo lectura contextual; nunca en dashboard/listados/reportes.
+  - **FINANZAS:** Pagos `VALIDADO` inmutables; intentos `RECHAZADO` preservados; máx. 1 `PENDIENTE` activo por concepto; mensualidades no bloquean `ENROLLED`; solo `INSCRIPCION` controla flujo inicial.
+  - **ESTADOS:** Solo `InscripcionService::transicionar()` modifica `estatus`; `ENROLLED`/`CANCELLED` terminales; máquina de estados única en `InscripcionEstatus::TRANSICIONES`.
+  - **CONCURRENCIA:** `lockForUpdate()` en generación de cargos, registro/validación de pago, finalización, número de control (`consecutivos`); compensación de archivos; rollback total ante fallos.
+  - **LOCALIZACIÓN:** Regla §18 aplicada — ningún `Enum::value` visible; `label()` en español en todos los enums.
+- **Regresiones críticas verificadas (0 encontradas):** Suite completa 386 pruebas / 2326 assertions verdes; F1–F14 intactas.
+- **Suite actual:** **386 pruebas / 2326 assertions** (base 294 + 92 nuevas de 2.0-00), todas verdes.
+- `npm run build`: **OK**.
+- `php artisan route:list`: **33 rutas** (sin cambios).
+- **Migraciones:** **0 nuevas** (2.0-00 cerró sin migraciones).
+- **Git:** rama `feat/2.0-00-blindaje-nucleo` lista para merge a master tras aprobación.
+- **Estado 2.0-00: COMPLETA** — listo para merge y despliegue a staging si se aprueba.
+
 ## ETAPA 2 — Roadmap 2.0 (aprobado 02/10/2026, sin implementar)
 
 - **Checkpoint Hostinger completo y aprobado** (ver sección anterior) y **F1–F14 completas** (ETAPA 1 — Admisión e Inscripción).

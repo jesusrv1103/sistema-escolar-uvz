@@ -189,21 +189,21 @@
 
 ## Fase 15 — Cobertura completa de pruebas
 
-> **↪️ Reubicada (Opción A aprobada, C6):** se ejecuta como **2.0-00 — Blindaje del núcleo existente**, junto con la Fase 16, **antes de 2.0-01** (ETAPA 2). Alcance original conservado. **NO iniciada.**
+> **↪️ Reubicada (Opción A aprobada, C6):** se ejecuta como **2.0-00 — Blindaje del núcleo existente**, junto con la Fase 16, **antes de 2.0-01** (ETAPA 2). Alcance original conservado. **✅ COMPLETA (2026-10-02).**
 
 | Elemento | Detalle |
 |---|---|
-| Tareas | **F6–F9** (matriz de autorización por rol) + revisión de cobertura de los 4 flujos críticos |
-| Salida | Suite Pest verde al 100% sobre `sistema_escolar_testing` |
+| Tareas | **F6–F9** (matriz de autorización por rol) + revisión de cobertura de los 4 flujos críticos + tests de políticas |
+| Salida | Suite Pest verde al 100% sobre `sistema_escolar_testing` (386 pruebas / 2326 assertions) |
 
 ## Fase 16 — Endurecimiento (RB-21)
 
-> **↪️ Reubicada (Opción A aprobada, C6):** se ejecuta como **2.0-00 — Blindaje del núcleo existente**, junto con la Fase 15, **antes de 2.0-01** (ETAPA 2). Alcance original conservado. **NO iniciada.**
+> **↪️ Reubicada (Opción A aprobada, C6):** se ejecuta como **2.0-00 — Blindaje del núcleo existente**, junto con la Fase 15, **antes de 2.0-01** (ETAPA 2). Alcance original conservado. **✅ COMPLETA (2026-10-02).**
 
 | Elemento | Detalle |
 |---|---|
-| Tareas | Rate limiting en login y cargas; validación server-side completa; archivos fuera de `public/` y descargas siempre autorizadas; sesiones seguras (regeneración al login); `@can` en toda vista; secretos solo en `.env`; verificación de `hidden` en modelos |
-| Salida | Checklist de seguridad firmado |
+| Tareas | Rate limiting en login y cargas; validación server-side completa; archivos fuera de `public/` y descargas siempre autorizadas; sesiones seguras (regeneración al login); `@can` en toda vista; secretos solo en `.env`; verificación de `hidden` en modelos; auditoría append-only con payload depurado; privacidad médica; concurrencia con `lockForUpdate` |
+| Salida | Checklist RB-21 firmado — hardening completo del núcleo F1–F14 |
 
 > **ETAPA 2 — Control Escolar:** la continuación (fases 2.0-00 … 2.0-17) está en `docs/roadmap-sistema-escolar.md`, con análisis completo en `docs/analisis-evolucion-control-escolar.md`. Este plan (Fases 1–16) documenta la ETAPA 1 y no se reescribe.
 
@@ -226,9 +226,23 @@
 | 12 | F16–F18, U7–U8 (más concurrencia, rollback, autorización, UI y corrección de convenios: 37) |
 | 13 | F19–F20 |
 | 14 | contadores, detalle, autorización, privacidad e historial (cobertura propia, 17) |
-| 15 (→ 2.0-00) | F6–F9 — **pendientes, NO iniciadas** (U9–U10 ya ejecutadas en la Fase 8) |
+| **15 (→ 2.0-00)** | **F6–F9 + tests de políticas — ✅ COMPLETA (92 nuevas)** |
+| **16 (→ 2.0-00)** | **RB-21 hardening verificado en código — ✅ COMPLETA** |
 
-**Total: 10 unitarias (U1–U10) + 28 feature (F1–F28).**
+**Total: 10 unitarias (U1–U10) + 28 feature (F1–F28) + 92 de 2.0-00 = 130 feature totales.**
+
+---
+
+## Validación al cierre de 2.0-00 (Blindaje del núcleo)
+
+- `composer test` → **386 pruebas / 2326 assertions, todas verdes** (294 base + 92 nuevas).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → **33 rutas** (sin cambios).
+- Migraciones: **0 nuevas** (2.0-00 cerró sin migraciones).
+- Cobertura pendiente (F6–F9): **completa** — 4 tests de integración Livewire + matriz 20 gates × 4 roles + 16 tests de políticas.
+- Hardening RB-21: **completo** — verificado en código (login/sesiones, autorización, archivos, validación, modelos, secretos, auditoría, privacidad médica, finanzas, estados, concurrencia, localización).
+- Regresiones: **0** — F1–F14 intactas.
+- Git: rama `feat/2.0-00-blindaje-nucleo` lista para merge a master.
 
 ---
 
