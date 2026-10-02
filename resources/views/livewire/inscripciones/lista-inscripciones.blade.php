@@ -72,7 +72,9 @@
                         <td class="px-4 py-3 font-semibold text-brand-primary">{{ $inscripcion->id }}</td>
                         <td class="px-4 py-3">
                             {{ $inscripcion->alumno?->apellidos }}, {{ $inscripcion->alumno?->nombre }}
-                            <span class="block font-mono text-xs text-brand-muted">{{ $inscripcion->alumno?->curp }}</span>
+                            <span class="block font-mono text-xs text-brand-muted">
+                                {{ $inscripcion->alumno?->numero_control ?? 'Sin N.º de control' }} · CURP {{ $inscripcion->alumno?->curp }}
+                            </span>
                         </td>
                         <td class="px-4 py-3">{{ $inscripcion->programa?->nombre ?? '—' }}</td>
                         <td class="px-4 py-3">{{ $inscripcion->periodo?->nombre ?? '—' }}</td>

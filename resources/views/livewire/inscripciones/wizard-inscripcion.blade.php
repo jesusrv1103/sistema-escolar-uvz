@@ -35,6 +35,14 @@
         </div>
     @endif
 
+    {{-- Detalle operativo (Fase 14): estado general, convenio, pagos,
+         documentos e historial de auditoría — solo lectura, sin rutas nuevas. --}}
+    @if ($inscripcion !== null)
+        <livewire:inscripciones.detalle-inscripcion
+            :inscripcion="$inscripcion"
+            wire:key="detalle-{{ $inscripcion->id }}" />
+    @endif
+
     {{-- Indicador de pasos --}}
     <ol class="mb-6 grid gap-2 sm:grid-cols-6">
         @php
