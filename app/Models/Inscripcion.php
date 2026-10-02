@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Enums\EstatusConvenio;
+use App\Enums\EstatusObservacion;
 use App\Enums\InscripcionEstatus;
+use App\Enums\TipoObservacion;
 use App\Models\Concerns\HasAudit;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -97,6 +99,27 @@ class Inscripcion extends Model
     public function documentos(): HasMany
     {
         return $this->hasMany(Documento::class);
+    }
+
+    /** Observaciones / faltantes (§4.13): append-only, se crean y se resuelven. */
+    public function observaciones(): HasMany
+    {
+        return $this->hasMany(Observacion::class);
+    }
+
+    /**
+     * ¿Tiene alguna observación `FALTANTE` en estatus `ABIERTA`? (RB-8 punto 3)
+     *
+     * Única consulta reutilizable del bloqueo de finalización: la guardará
+     * `InscripcionService::finalizar()` en la Fase 12. Solo FALTANTE + ABIERTA
+     * bloquea; DOCUMENTO/PAGO/GENERAL abiertos y FALTANTE resueltos no.
+     */
+    public function tieneFaltantesAbiertos(): bool
+    {
+        return $this->observaciones()
+            ->where('tipo', TipoObservacion::FALTANTE->value)
+            ->where('estatus', EstatusObservacion::ABIERTA->value)
+            ->exists();
     }
 
     public function creadoPor(): BelongsTo

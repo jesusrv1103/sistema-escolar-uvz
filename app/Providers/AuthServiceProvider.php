@@ -4,9 +4,11 @@ namespace App\Providers;
 
 use App\Enums\RolUsuario;
 use App\Models\Documento;
+use App\Models\Observacion;
 use App\Models\Pago;
 use App\Models\User;
 use App\Policies\DocumentoPolicy;
+use App\Policies\ObservacionPolicy;
 use App\Policies\PagoPolicy;
 use App\Policies\UsuarioPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -73,10 +75,12 @@ class AuthServiceProvider extends ServiceProvider
         // Fase 10: DocumentoPolicy conectada al modelo real (carga, validación
         // four-eyes y descarga del archivo en disco privado).
         Gate::policy(Documento::class, DocumentoPolicy::class);
+        // Fase 11: ObservacionPolicy conectada al modelo real (crear/resolver
+        // por los 4 roles, §8.2; la UI y el servicio autorizan server-side).
+        Gate::policy(Observacion::class, ObservacionPolicy::class);
 
         // Las policies de modelos de fases futuras (Alumno, InformacionMedica,
-        // Inscripcion, Convenio, Documento, Observacion) ya existen en
-        // App\Policies y Laravel las resuelve por convención cuando los modelos
-        // se creen en sus fases; aquí solo se registran las que tienen modelo.
+        // Inscripcion, Convenio) ya existen en App\Policies y Laravel las
+        // resuelve por convención; aquí solo se registran las que tienen modelo.
     }
 }
