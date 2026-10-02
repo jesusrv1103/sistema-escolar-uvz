@@ -292,11 +292,63 @@
         @endif
     </div>
 
-    {{-- Convenio (Fase 7) — la lógica vive en ConvenioService --}}
+    {{-- Convenio y cargos (Fase 7) — la lógica vive en ConvenioService --}}
     @if ($inscripcion !== null)
         <livewire:inscripciones.modal-aplicar-convenio
             :inscripcion="$inscripcion"
             wire:key="convenio-{{ $inscripcion->id }}" />
+
+        <div class="mt-4 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
+            <h2 class="text-sm font-semibold text-brand-text">Cargos</h2>
+
+            @error('cargos')
+                <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+            @enderror
+
+            @if ($conceptosPago->isEmpty())
+                @if ($inscripcion->estatus === \App\Enums\InscripcionEstatus::DATA_COMPLETE)
+                    @can('generarCargos', $inscripcion)
+                        <p class="mt-1 text-xs text-brand-muted">
+                            Aún no hay cargos. Al generarlos se crearán 1 concepto de inscripción y 4 mensualidades
+                            (cuatrimestre UVZ) y la inscripción pasará a <strong>PENDING_PAYMENT</strong>.
+                        </p>
+                        <button type="button" wire:click="generarCargos" wire:loading.attr="disabled"
+                            class="mt-3 rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-secondary">
+                            <span wire:loading.remove wire:target="generarCargos">Generar cargos (→ PENDING_PAYMENT)</span>
+                            <span wire:loading wire:target="generarCargos">Generando…</span>
+                        </button>
+                    @endcan
+                @else
+                    <p class="mt-2 text-xs text-brand-muted">Sin cargos todavía: se generan cuando los datos están completos (DATA_COMPLETE).</p>
+                @endif
+            @else
+                <ul class="mt-3 divide-y divide-brand-line text-sm">
+                    @foreach ($conceptosPago as $concepto)
+                        <li class="flex flex-wrap items-center justify-between gap-3 py-2">
+                            <div>
+                                <span class="font-medium text-brand-text">{{ $concepto->concepto }}</span>
+                                <span class="text-xs text-brand-muted">
+                                    · {{ $concepto->tipo->value }}{{ $concepto->numero !== null ? ' · #'.$concepto->numero : '' }}
+                                    · vence {{ $concepto->fecha_vencimiento->format('d/m/Y') }}
+                                </span>
+                            </div>
+                            <div class="text-xs">
+                                <span class="text-brand-muted">
+                                    ${{ number_format((float) $concepto->monto, 2) }}
+                                    @if ((float) $concepto->descuento > 0)
+                                        − descuento ${{ number_format((float) $concepto->descuento, 2) }}
+                                    @endif
+                                </span>
+                                <span class="ml-2 font-semibold text-brand-text">${{ number_format((float) $concepto->monto_total, 2) }}</span>
+                                <span class="ml-2 rounded-full border border-brand-line bg-brand-surface px-2 py-0.5 text-[11px] font-semibold">
+                                    {{ $concepto->estatus->value }}
+                                </span>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
     @endif
 
     {{-- Navegación --}}

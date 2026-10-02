@@ -4,6 +4,8 @@ namespace App\Livewire\Inscripciones;
 
 use App\Enums\InscripcionEstatus;
 use App\Enums\TipoContacto;
+use App\Exceptions\CargosInvalidosException;
+use App\Exceptions\ConvenioInvalidoException;
 use App\Models\Alumno;
 use App\Models\Inscripcion;
 use App\Models\Periodo;
@@ -344,6 +346,31 @@ class WizardInscripcion extends Component
             : Gate::authorize('view', $inscripcion);
     }
 
+    /**
+     * Fase 7: genera los cargos (1 INSCRIPCION + 4 MENSUALIDADES) y pasa a
+     * `PENDING_PAYMENT` (RB-3/FC-4). Idempotente: una segunda ejecución se
+     * rechaza sin crear duplicados. La autorización es server-side.
+     */
+    public function generarCargos(): void
+    {
+        $inscripcion = $this->inscripcion();
+
+        if ($inscripcion === null) {
+            $this->addError('cargos', 'No hay una inscripción seleccionada.');
+
+            return;
+        }
+
+        Gate::authorize('generarCargos', $inscripcion);
+
+        try {
+            app(InscripcionService::class)->generarCargos($inscripcion);
+            session()->flash('wizard', 'Cargos generados (1 inscripción + 4 mensualidades): la inscripción pasó a PENDING_PAYMENT.');
+        } catch (ConvenioInvalidoException|CargosInvalidosException $e) {
+            $this->addError('cargos', $e->getMessage());
+        }
+    }
+
     private function inscripcion(): ?Inscripcion
     {
         return $this->inscripcionId !== null ? Inscripcion::find($this->inscripcionId) : null;
@@ -395,6 +422,10 @@ class WizardInscripcion extends Component
             'infoMedicaCompleta' => $alumno !== null && $alumno->informacionMedica()->exists(),
             'pasoMaximo' => $this->pasoMaximo(),
             'puedeEditar' => $puedeEditar,
+            // Cargos (Fase 7): 1 INSCRIPCION + 4 MENSUALIDADES cuando existen.
+            'conceptosPago' => $inscripcion === null
+                ? collect()
+                : $inscripcion->conceptosPago()->orderBy('tipo')->orderBy('numero')->get(),
         ]);
     }
 }
