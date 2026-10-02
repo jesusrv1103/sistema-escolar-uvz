@@ -7,6 +7,7 @@ use App\Enums\TipoConcepto;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Concepto de pago (cargo) generado automáticamente (§4.9, RB-3).
@@ -61,5 +62,26 @@ class ConceptoPago extends Model
     public function inscripcion(): BelongsTo
     {
         return $this->belongsTo(Inscripcion::class);
+    }
+
+    /**
+     * Intentos de pago (Fase 8): incluye los RECHAZADO históricos —nunca se
+     * eliminan— junto con el intento `PENDIENTE` vigente y, en su caso, el
+     * pago `VALIDADO` que liquida el concepto.
+     */
+    public function pagos(): HasMany
+    {
+        return $this->hasMany(Pago::class);
+    }
+
+    /**
+     * Lo que falta por liquidar: `monto_total` menos los pagos `VALIDADO`
+     * (siempre 0 o `monto_total`: no hay pagos parciales, D5).
+     */
+    public function getSaldoPendienteAttribute(): float
+    {
+        $pagado = $this->pagos()->validado()->sum('monto');
+
+        return max(round((float) $this->monto_total - (float) $pagado, 2), 0.0);
     }
 }

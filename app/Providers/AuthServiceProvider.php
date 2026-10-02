@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Enums\RolUsuario;
+use App\Models\Pago;
 use App\Models\User;
+use App\Policies\PagoPolicy;
 use App\Policies\UsuarioPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -63,10 +65,13 @@ class AuthServiceProvider extends ServiceProvider
         }
 
         Gate::policy(User::class, UsuarioPolicy::class);
+        // Fase 8: PagoPolicy conectada al modelo real (registro server-side,
+        // validación/rechazo four-eyes y descarga del comprobante privado).
+        Gate::policy(Pago::class, PagoPolicy::class);
 
         // Las policies de modelos de fases futuras (Alumno, InformacionMedica,
-        // Inscripcion, Convenio, Pago, Documento, Observacion) ya existen en
+        // Inscripcion, Convenio, Documento, Observacion) ya existen en
         // App\Policies y Laravel las resuelve por convención cuando los modelos
-        // se creen en sus fases; aquí solo se registra la que tiene modelo.
+        // se creen en sus fases; aquí solo se registran las que tienen modelo.
     }
 }
