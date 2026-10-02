@@ -7,6 +7,7 @@ use App\Enums\EstatusConceptoPago;
 use App\Enums\InscripcionEstatus;
 use App\Enums\TipoConcepto;
 use App\Exceptions\CargosInvalidosException;
+use App\Exceptions\CancelacionInvalidaException;
 use App\Exceptions\ConvenioInvalidoException;
 use App\Exceptions\FinalizacionInvalidaException;
 use App\Exceptions\MotivoRequeridoException;
@@ -306,6 +307,94 @@ class InscripcionService
                     'anio' => (int) substr($numero, 0, 4),
                     'conservado' => $conservado,
                 ],
+                $usuario,
+            );
+
+            return $inscripcion->refresh();
+        });
+    }
+
+    /**
+     * Cancela la inscripción → `CANCELLED` (FC-8/RB-11, Fase 13).
+     *
+     * Único punto de negocio de la cancelación. En UNA transacción:
+     *  1. autorización server-side `inscripcion.cancelar` (solo ADMIN vía
+     *     `Gate::before`; los demás roles y los inactivos 403, §8.2);
+     *  2. motivo obligatorio con trim (no vacío ni solo espacios, ≤ 2000);
+     *  3. `lockForUpdate()` de la inscripción y estado fresco;
+     *  4. rechazo explícito de los estados terminales `ENROLLED` y
+     *     `CANCELLED` (sin idempotencia silenciosa);
+     *  5. conceptos: SOLO `PENDIENTE → CANCELADO` (los `PAGADO` y los ya
+     *     `CANCELADO` quedan intactos; montos, descuentos y `pagado_at` no
+     *     se tocan);
+     *  6. transición por la máquina única (`transicionar()` escribe
+     *     `cancelada_por`, `cancelada_at`, `cancelacion_motivo` y la
+     *     auditoría `estado_cambiado` con el motivo);
+     *  7. auditoría `inscripcion_cancelada` con contexto mínimo.
+     *
+     * Pagos, documentos, observaciones y número de control: INTACTOS (sin
+     * deletes, sin cambios financieros, sin reembolsos — RB-11 los conserva
+     * como historial).
+     *
+     * Si cualquier paso falla (incluida la auditoría): ROLLBACK TOTAL.
+     *
+     * @throws CancelacionInvalidaException si el motivo es inválido o el estatus no es cancelable
+     * @throws AuthorizationException si el usuario no puede cancelar (403)
+     */
+    public function cancelar(Inscripcion $inscripcion, string $motivo, ?User $usuario = null): Inscripcion
+    {
+        // 1. Autorización server-side: el @can de la UI es solo UX.
+        Gate::authorize('inscripcion.cancelar');
+        $usuario ??= auth()->user();
+
+        // 2. Motivo server-side: trim + obligatorio (mismo patrón que los
+        //    rechazos de pagos/documentos/convenios: no vacío, ≤ 2000).
+        $motivo = trim($motivo);
+        $longitud = mb_strlen($motivo);
+
+        if ($motivo === '' || $longitud > 2000) {
+            throw new CancelacionInvalidaException('El motivo de la cancelación es obligatorio y no puede exceder 2000 caracteres.');
+        }
+
+        return DB::transaction(function () use ($inscripcion, $motivo, $usuario): Inscripcion {
+            // 3. Fila con lock: estado recién persistido y cancelaciones
+            //    concurrentes serializadas.
+            $inscripcion = Inscripcion::query()->lockForUpdate()->findOrFail($inscripcion->getKey());
+
+            // 4. Estados terminales: rechazo explícito (RB-11: ENROLLED no
+            //    cancelable; CANCELLED no se vuelve a cancelar).
+            if ($inscripcion->estatus->esTerminal()) {
+                throw new CancelacionInvalidaException(sprintf(
+                    'La inscripción está %s: es un estado terminal y no puede cancelarse.',
+                    $inscripcion->estatus->value,
+                ));
+            }
+
+            // 5. Conceptos: únicamente PENDIENTE → CANCELADO (update sobre la
+            //    relación: no toca PAGADO/CANCELADO ni ningún monto).
+            $conceptosCancelados = $inscripcion->conceptosPago()
+                ->where('estatus', EstatusConceptoPago::PENDIENTE->value)
+                ->update(['estatus' => EstatusConceptoPago::CANCELADO->value]);
+
+            // 6. Transición por la máquina existente (valida el mapa de
+            //    transiciones y exige motivo) con complementos + auditoría
+            //    `estado_cambiado` anidados en ESTA transacción.
+            $inscripcion = $this->transicionar(
+                $inscripcion,
+                InscripcionEstatus::CANCELLED,
+                $motivo,
+                $usuario,
+            );
+
+            // 7. Auditoría de negocio (RB-12): contexto mínimo sin duplicar
+            //    el motivo (ya vive en `cancelacion_motivo` y en el payload
+            //    de `estado_cambiado`).
+            $this->auditoria->registrar(
+                $inscripcion,
+                'inscripcion_cancelada',
+                [],
+                [],
+                ['conceptos_cancelados' => $conceptosCancelados],
                 $usuario,
             );
 
