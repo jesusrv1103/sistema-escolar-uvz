@@ -296,6 +296,23 @@
 - Sin mocks: contadores, autorización, historial y privacidad probados con `DashboardService`, gates/policies, `AuditoriaService` y modelos reales.
 - NO se hizo: Fase 15; gráficas, BI, Excel/CSV, reportes, filtros avanzados, estadísticas financieras, promedios, tendencias, notificaciones, email, portales, módulos académicos, APIs, cache/Redis, migraciones nuevas; `PagoService` y la máquina de estados **sin cambios**.
 
+## Checkpoint post-F14 — Corrección transversal de interfaz en español (2026-10-02)
+
+- **Corrección transversal de interfaz es_MX completada** (solo presentación, sin tocar valores internos/BD/máquinas).
+- **Commit:** `c996c48` (`fix(i18n): interfaz en español — label() en 15 enums y sin Enum::value visible`).
+- **15 BackedEnums** con `public function label(): string` (fuente única): `InscripcionEstatus`, `EstatusPago`, `EstatusDocumento`, `EstatusObservacion`, `EstatusConvenio`, `EstatusConceptoPago`, `RolUsuario`, `Sexo`, `TipoSangre`, `TipoConcepto`, `TipoContacto`, `TipoConvenio`, `TipoObservacion`, `MetodoPago`, `TipoConsecutivo`; `Sexo`/`TipoSangre` conservan `etiquetas()` derivada de `label()`.
+- **lang/es_MX/** incorporado: `validation.php`, `auth.php`, `passwords.php`, `pagination.php` (claves crudas eliminadas).
+- **Regla permanente** registrada en `docs/reglas-desarrollo.md` **§18**: *prohibido mostrar `Enum::value` al usuario*; usa exclusivamente `Enum::label()` en vistas, selects, badges, PDFs y auditoría; aplica a Roadmap 2.0 y enums futuros.
+- **Suite actual:** **294 pruebas / 2208 assertions**, todas verdes (+6 `UiEspanolTest.php` acordadas: opciones técnicas ausentes, badges en español, validaciones en español, PDF sin tokens, selects con `label()`, auditoría traducida).
+- `npm run build`: **OK**.
+- `php artisan route:list`: **33 rutas**.
+- **Staging actualizado** (`darkcyan-mongoose-808972.hostingersite.com`) y **smoke validado**: login, dashboard, alumnos, inscripciones, detalle, pagos, documentos, revisión final, auditoría/historial; **0 HTTP 500**.
+- **PDF comprobante** validado: descarga 200, cabecera `%PDF`, texto extraído sin tokens técnicos (`ENROLLED`, `CANCELLED`, `PENDING_PAYMENT`, `TRANSFERENCIA`, `EFECTIVO`, etc.).
+- **0 `production.ERROR` nuevos** (log estable en 119 entradas).
+- **Sin migraciones ni cambios de BD** (solo presentación: `app/`, `resources/views/`, `lang/`).
+- **Otros dominios intactos**: `~/public_html` del home apunta a `agroalimentario.com.mx` (sin tocar); mtimes de los 18 dominios en `$HOME/domains/` idénticos antes/después salvo el objetivo.
+- **2.0-00 continúa NO INICIADA**.
+
 ## Checkpoint de despliegue Hostinger (2026-10-02)
 
 - **Fecha y alcance:** 2026-10-02 · staging/preproducción en `darkcyan-mongoose-808972.hostingersite.com` (Hostinger shared, 19 dominios en la cuenta) **sin datos reales**; estado aprobado hasta Fase 14.
