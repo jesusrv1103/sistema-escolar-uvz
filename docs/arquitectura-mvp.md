@@ -882,6 +882,7 @@ Para pasar a `ENROLLED` **debe ser obligatorio únicamente**:
 
 ### RB-9 — Asignación de número de control
 - Formato **`YYYY####`** (ej. `20260001`): 4 dígitos de año + 4 dígitos secuenciales.
+- **Aclaración Fase 12 (decisión aprobada):** el **`YYYY` se deriva EXCLUSIVAMENTE de `inscripciones.periodo.fecha_inicio->year`** — el año del periodo académico de ingreso — y **NUNCA** de la fecha en que se ejecuta la finalización. Es determinista para todos los alumnos del mismo periodo, no depende de cuándo el personal administrativo finalice el trámite y respalda el carácter permanente del número de control. Ejemplo: `periodo.fecha_inicio = 2027-01-11` ⇒ primer número **`20270001`**, aunque la revisión final se realice en diciembre de 2026. En `consecutivos`, `anio` = ese mismo año.
 - Secuencial y **único** a nivel institucional.
 - Se asigna **una sola vez**, al completar exitosamente la **primera** inscripción (`ENROLLED`), dentro de esa misma transacción.
 - En inscripciones posteriores (otros periodos) **se conserva el mismo** número de control.
@@ -1529,7 +1530,7 @@ Lectura/edición de `informacion_medicas` restringida a **ADMIN** y **ADMISIONES
 
 **P1 — Comprobante PDF — APROBADO:** usar `barryvdh/laravel-dompdf` en una versión **compatible con Laravel 12**.
 
-**P2 — Concurrencia del número de control — APROBADO con ajuste:** se agrega la tabla mínima **`consecutivos`** (`id`, `tipo`, `anio`, `ultimo_valor`, `timestamps`, **`UNIQUE (tipo, anio)`**), con `tipo = NUMERO_CONTROL`. `NumeroControlService` debe: (1) iniciar transacción; (2) obtener el consecutivo del año con `lockForUpdate()`; (3) incrementar `ultimo_valor`; (4) generar `YYYY####` con 4 dígitos; (5) asignarlo al alumno; (6) mantener `UNIQUE` en `alumnos.numero_control`; (7) completar todo dentro de la misma transacción de finalización. **No calcular con `MAX(numero_control)`.**
+**P2 — Concurrencia del número de control — APROBADO con ajuste:** se agrega la tabla mínima **`consecutivos`** (`id`, `tipo`, `anio`, `ultimo_valor`, `timestamps`, **`UNIQUE (tipo, anio)`**), con `tipo = NUMERO_CONTROL`. `NumeroControlService` debe: (1) iniciar transacción; (2) obtener el consecutivo del año con `lockForUpdate()`; (3) incrementar `ultimo_valor`; (4) generar `YYYY####` con 4 dígitos; (5) asignarlo al alumno; (6) mantener `UNIQUE` en `alumnos.numero_control`; (7) completar todo dentro de la misma transacción de finalización. **No calcular con `MAX(numero_control)`.** **Año del consecutivo (Fase 12, decisión aprobada):** `anio` = año de `periodos.fecha_inicio` del periodo de la inscripción (misma regla que el `YYYY`, ver RB-9); la fila ausente se crea con `insert-or-ignore` + `UNIQUE` antes del `lockForUpdate()`, seguro ante dos procesos que inicializan el mismo año.
 
 **P3 — Base de pruebas — APROBADO:** `sistema_escolar_testing` (MySQL), exclusiva para pruebas; **nunca** contra la BD de desarrollo o producción.
 
