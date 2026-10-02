@@ -1,7 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9 y 10 **COMPLETAS**; **Fase 11 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9, 10 y 11 **COMPLETAS**; **Fase 12 NO iniciada** — requiere aprobación explícita.
 
 ---
 
@@ -143,12 +143,14 @@
 
 **✅ COMPLETA (02/10/2026):** migración `documentos` (UNIQUE `(inscripcion_id, tipo_documento_id)`, FK `cascade/restrict`, sin soft delete) + modelo `Documento` con `estatus`/`validado_*`/`motivo_rechazo` **fuera de `$fillable`** y relaciones en `Inscripcion`/`TipoDocumento`. `DocumentoService` (`subir()/aceptar()/rechazar()`) es el **único punto de negocio**: validación server-side (tamaño ≤ 10 MB, extensión admitida y **MIME real con `finfo`**), ruta interna UUID en **disco `private`** (el nombre original solo es metadato), rate limiting de cargas (30/min), **upsert por clave lógica** —una recarga reutiliza ESA MISMA fila, la deja `PENDIENTE` y limpia `validado_*`/`motivo_rechazo`— y **patrón de compensación**: archivo nuevo ANTES de la transacción, ante fallo de BD se borra el nuevo y el anterior jamás se toca; solo tras COMMIT se retira el reemplazado. Transiciones SIEMPRE vía `InscripcionService::transicionar()`: `PENDING_DOCUMENTS → DOCUMENT_REVIEW` cuando TODOS los obligatorios activos estén cargados (los opcionales no bloquean), `DOCUMENT_REVIEW → FINAL_REVIEW` cuando todos los obligatorios estén `ACEPTADO` (con `documentos_validados_at`), y rechazo `DOCUMENT_REVIEW → PENDING_DOCUMENTS` con el motivo como motivo explícito. `PanelDocumentos` (Livewire, ruta `inscripciones.documentos` integrada al wizard y al listado): muestra tipo, obligatorio/opcional, estatus, nombre original, fecha, responsable, motivo y acciones por permisos (histórico de tipos desactivados incluido, RB-18 sin datos médicos); `Documentos\DescargaArchivosController` (`documentos.archivo`, 2 rutas nuevas en total): auth + policy `view`, ruta SOLO desde BD, verificación de pertenencia al disco privado y anti path traversal. **192 pruebas verdes** (F13/F14/F15 + 26 de cobertura adicional: formatos, MIME, compensación, roles, descargas y auditoría).
 
-## Fase 11 — Observaciones
+## Fase 11 — Observaciones ✅ COMPLETA
 
 | Elemento | Detalle |
 |---|---|
-| Tareas | `Observacion` (CRUD + resolver), `ListaObservaciones`; solo `FALTANTE` abierto bloquea la finalización |
+| Tareas | `Observacion` (**APPEND-ONLY §4.13/RB-15**: crear, listar/ver y resolver — sin editar/borrar), `ListaObservaciones`; solo `FALTANTE` abierto bloquea la finalización |
 | Migración | `observaciones` (append-only, sin soft delete) |
+
+**✅ COMPLETA (02/10/2026):** migración `observaciones` (`inscripcion_id` FK **cascade**, `tipo(20)`, `detalle` (text), `estatus(20)` default `ABIERTA`, `creada_por`/`resuelta_por` FK a `users`, `resuelta_at` nullable, timestamps; **sin soft delete**). El plan original decía "CRUD + resolver", pero **manda la arquitectura (§4.13/RB-15): APPEND-ONLY** — solo **crear, listar/ver y resolver**. Modelo `Observacion` con `$fillable` mínimo (`estatus`/`resuelta_*` **fuera**), endurecido como `Auditoria` (`update()`/`delete()`/`forceDelete()`/`restore()` → `LogicException`) y enum mínimo `EstatusObservacion` (`ABIERTA`/`RESUELTA`, **sin reapertura** en el MVP). `ObservacionService` (`crear()/resolver()`) es el **único punto de negocio**: validación server-side (`tipo` ∈ `TipoObservacion`, `detalle` 5–2000 con trim), autorización de los 4 roles según matriz §8.2 (`Gate::before` + capacidades `observacion.crear/resolver`, policy `ObservacionPolicy` conectada al modelo real), cada operación en **UNA transacción** con `lockForUpdate` + auditoría `observacion_creada`/`observacion_resuelta` en la misma transacción (RB-12, **ROLLBACK TOTAL** si la auditoría falla; payload con tipo/estatus/inscripción, **sin texto libre**), doble resolución **rechazada explícitamente**, `creada_por` = usuario autenticado server-side y **jamás** modifica `inscripciones.estatus`. Precondición: **no se crean sobre `CANCELLED`** (estado terminal: lectura y resolución de lo previo sí están permitidas); en `ENROLLED` se permiten **sin efectos sobre el proceso**. Guarda RB-8 punto 3 lista para la Fase 12: **`Inscripcion::tieneFaltantesAbiertos()`** (solo `FALTANTE` + `ABIERTA` bloquea; `DOCUMENTO`/`PAGO`/`GENERAL` no). `ListaObservaciones` (Livewire, ruta **`inscripciones.observaciones`** integrada al wizard y al listado): alta con validación, filtros de estatus/tipo, responsables y fechas, botón **Resolver**; binding horizontal por inscripción; sin datos médicos/CURP (RB-18). **219 pruebas verdes** (27 nuevas: ciclo de vida, validaciones, bloqueo `FALTANTE`, 4 roles, inactivos, listado sin datos sensibles, auditoría y rollback).
 
 ## Fase 12 — Revisión final y número de control ★
 
@@ -204,6 +206,7 @@
 | 8 | F11–F12, F25 |
 | 9 | F26 |
 | 10 | F13–F15 |
+| 11 | ciclo de vida de observaciones (cobertura propia, 27) |
 | 12 | F16–F18, U7–U8 |
 | 13 | F19–F20 |
 | 15 | F6–F9 + U9–U10 |
@@ -227,4 +230,4 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de la Fase 10:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ **COMPLETA** · **Fase 11 ⬜ NO iniciada, pendiente de aprobación del usuario.**
+> **Estado al cierre de la Fase 11:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ · Fase 11 ✅ **COMPLETA** · **Fase 12 ⬜ NO iniciada, pendiente de aprobación del usuario.**

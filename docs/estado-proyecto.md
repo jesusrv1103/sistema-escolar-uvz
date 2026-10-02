@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 10** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 11** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -19,7 +19,8 @@
 | Fase 8 — Pagos | ✅ **COMPLETA** (153 pruebas, build correcto, 1 ruta nueva: comprobante privado) |
 | Fase 9 — Comprobante de pago PDF | ✅ **COMPLETA** (163 pruebas, build correcto, 1 ruta nueva: `pagos.comprobante-pdf`) |
 | Fase 10 — Documentos | ✅ **COMPLETA** (192 pruebas, build correcto, 2 rutas nuevas: `documentos.archivo`, `inscripciones.documentos`) |
-| Fases 11–16 | ⬜ pendientes (esperan aprobación) |
+| Fase 11 — Observaciones | ✅ **COMPLETA** (219 pruebas, build correcto, 1 ruta nueva: `inscripciones.observaciones`) |
+| Fases 12–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -214,16 +215,37 @@
 - Sin mocks: los rollback/compensación se probaron con **fallo real de FK** (usuario fantasma) sobre `Storage::fake('private')`, con servicios, policies y transiciones reales; sin escritura en `public/` ni binarios en BD.
 - NO se crearon: observaciones, consecutivos, número de control, `ENROLLED`, cancelación, dashboard ni versionado documental.
 
+## Fase 11 — observaciones (implementado)
+
+- **Interpretación aprobada (la arquitectura manda sobre el plan):** el plan decía "CRUD + resolver", pero §4.13/RB-15 definen observaciones **APPEND-ONLY** → solo **crear, listar/ver y resolver**: sin editar `detalle`/`tipo`, sin delete/soft delete/force delete en UI, servicio ni policy, y **sin reapertura** (enum mínimo nuevo `EstatusObservacion`: `ABIERTA`/`RESUELTA`, sin reutilizar enums con otra semántica).
+- **Migración** `2026_10_02_000016_create_observaciones_table` (§4.13): `inscripcion_id` (FK **cascade**), `tipo(20)` (`TipoObservacion`), `detalle` (text), `estatus(20)` default `ABIERTA`, `creada_por`/`resuelta_por` (FK a `users`, la segunda nullable), `resuelta_at` nullable, `timestamps`; **sin soft delete**; sin columnas fuera de arquitectura.
+- **Modelo/relaciones:** `Observacion` (`$fillable` mínimo: `inscripcion_id`/`tipo`/`detalle`/`creada_por` — `estatus`/`resuelta_*` **fuera**, los escribe solo el servicio; casts a `TipoObservacion`/`EstatusObservacion`/`datetime`; tabla `observaciones` explícita porque el pluralizador de Eloquent no aplica en español) endurecido como `Auditoria` (`update()`/`delete()`/`forceDelete()`/`restore()` → `LogicException`); `Inscripcion::observaciones()` + **`Inscripcion::tieneFaltantesAbiertos()`** (única consulta reutilizable de la guarda RB-8 punto 3, lista para `InscripcionService::finalizar()` de la Fase 12); `ObservacionPolicy` **registrada en `AuthServiceProvider`** sobre las capacidades ya existentes `observacion.crear`/`observacion.resolver` (los 4 roles + ADMIN vía `Gate::before`, inactivos no pasan).
+- **`ObservacionService`** (único punto de negocio; la UI no escribe estatus ni responsables):
+  - `crear()` — gate `observacion.crear` (los 4 roles); valida `tipo` ∈ `TipoObservacion` y `detalle` con trim de 5–2000; transacción con `lockForUpdate` sobre la inscripción; **precondición: la inscripción no está `CANCELLED`** (estado terminal — lectura y resolución de lo previo sí están permitidas); nace `ABIERTA` con `creada_por` = usuario autenticado server-side y `resuelta_* = null`; auditoría `observacion_creada` en la **MISMA transacción** (RB-12, **ROLLBACK TOTAL** si falla) con payload depurado tipo/estatus/inscripción **sin texto libre**.
+  - `resolver()` — gate `observacion.resolver` (los 4 roles); solo `ABIERTA` ⇒ `RESUELTA` con `resuelta_por`/`resuelta_at` + auditoría `observacion_resuelta`; **doble resolución rechazada explícitamente**; detalle/tipo intactos (append-only); **jamás** modifica `inscripciones.estatus`; sin restricción de etapa (cerrar histórico también en `ENROLLED`/`CANCELLED`, **sin efectos sobre el proceso**).
+- **UI:** `ListaObservaciones` (Livewire, ruta `GET /inscripciones/{inscripcion}/observaciones` → `inscripciones.observaciones`, enlazada desde el wizard y el listado): alta con validación server-side (trim previo en el componente porque Laravel 12 **no** incluye la regla `trim` en el validador), filtros de estatus/tipo, tipo/detalle/estatus/responsables/fechas, botón **Resolver** solo en `ABIERTA` con `@can`, binding horizontal por inscripción; **sin** información médica, CURP, datos bancarios, rutas ni secretos (RB-18) y **sin acciones de edición/borrado**.
+- **Pruebas nuevas (27)** en `tests/Feature/ObservacionTest.php`: los 4 tipos nacen `ABIERTA` sin resolución; `creada_por` = usuario autenticado (no parámetro de la petición); límites 5/2000 + trim; tipo fuera del enum; validación del formulario; resolver con responsable/fecha sin alterar contenido; doble resolución rechazada (servicio y UI); `delete`/`forceDelete`/`restore`/`update` bloqueados + servicio sin métodos de baja/edición + única ruta GET; **FALTANTE `ABIERTA` bloqueante, `RESUELTA` no, `DOCUMENTO`/`PAGO`/`GENERAL` no bloquean**; ninguna observación cambia `inscripciones.estatus`; `ENROLLED` sin efectos + lectura histórica; `CANCELLED` sin creaciones nuevas; los 4 roles crean y resuelven (policy conectada al modelo); inactivo 403 (servicio y ruta); auth exigida + los 4 roles abren el listado; listado con ciclo completo y **sin datos sensibles**; filtros; auditoría crear/resolver con payload sin detalle; **rollback real ante fallo de auditoría** (evento `creating` del modelo real ⇒ 0 filas).
+
+## Validación al cierre de la Fase 11
+
+- `composer test` → **219 pruebas / 1593 assertions, todas verdes** (192 previas intactas + 27 nuevas de Fase 11).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → **32 rutas** (31 previas + 1 nueva: `inscripciones.observaciones`).
+- Migración 000016 ejecutada también en la BD de desarrollo; las pruebas corren **exclusivamente** contra `sistema_escolar_testing`.
+- Sin mocks de servicios: auditoría/rollback probados con fallo real en la escritura de `auditoria` (evento `creating` del modelo real), services, policies y gates reales; sin datos médicos ni rutas en la vista.
+- NO se crearon: consecutivos, `NumeroControlService`, número de control, `finalizar()`, `ENROLLED` por flujo, cancelación, dashboard ni estados nuevos; `PagoService`/`DocumentoService` sin cambios; una observación **nunca** modificó `inscripciones.estatus`.
+
 ## Pendientes / registrados
 
-- **Fase 11 no iniciar** hasta aprobación del usuario.
+- **Fase 12 no iniciar** hasta aprobación del usuario.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
-- Policies de modelos de fases futuras: las 8 clases ya existen; Laravel las asocia por convención cuando los modelos se creen (sin código artificial).
+- Policies: las 8 clases existen desde la Fase 2; `PagoPolicy`, `DocumentoPolicy` y `ObservacionPolicy` están **registradas explícitamente** en `AuthServiceProvider` (modelo real) y el resto se resuelve por convención cuando los modelos las usen (sin código artificial).
 - Logo variante para fondos oscuros: **PENDIENTE** (el sitio no la publica; `branding.logo_dark` reutiliza el horizontal).
 - `duracion_periodos`, `periodos` iniciales y más tipos de documento: **PENDIENTES de fuente institucional** (se capturan/seedan cuando UVZ confirme datos; nada inventado).
 - Lectura **contextual** de información médica para CONTROL_ESCOLAR: **PENDIENTE** del flujo de revisión final (Fase futura; en Fase 4 no existe pantalla general).
-- Guardas de negocio pendientes en la máquina de estados (observaciones, número de control): **PENDIENTES** de sus fases; en Fase 5 **no se simularon** con datos ficticios (§7.3.5). Las guardas de **pagos `INSCRIPCION`** y de **documentos obligatorios** quedaron implementadas en las Fases 8 y 10.
+- Guardas de negocio pendientes en la máquina de estados (número de control): **PENDIENTES** de su fase (Fase 12); en Fase 5 **no se simularon** con datos ficticios (§7.3.5). Las guardas de **pagos `INSCRIPCION`** y de **documentos obligatorios** quedaron implementadas en las Fases 8 y 10; la consulta de **observaciones `FALTANTE` + `ABIERTA`** está lista desde la Fase 11 (`Inscripcion::tieneFaltantesAbiertos()`), pendiente de conectarla en `finalizar()` (Fase 12).
 - Comprobante PDF con branding UVZ → **Fase 9 ✅ COMPLETA** (bajo demanda, solo pagos `VALIDADO`).
 - Documentos: recepción/reemplazo/validación con `DocumentoService`, `PanelDocumentos` y descarga privada → **Fase 10 ✅ COMPLETA** (UNIQUE por tipo, compensación de archivos, F13–F15).
-- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977`, de Fase 7 en `fe6c977`→`d8337f0`, de Fase 8 en `d8337f0`→`87bb211` y de Fase 9 en `87bb211`→`2f13e84`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-10-documentos`, **sin merge a master**; se conservan `feat/fase-9-comprobante-pdf`, `feat/fase-8-pagos`, `feat/fase-7-convenios-cargos`, `feat/fase-6-wizard-inscripcion`, `feat/fase-5-nucleo-inscripcion` y `feat/fase-4-expediente-alumno`); sin remotos ni push.
+- Observaciones: crear/listar/resolver con `ObservacionService`, `ListaObservaciones` y política conectada → **Fase 11 ✅ COMPLETA** (APPEND-ONLY, 27 pruebas, sola guarda `FALTANTE`+`ABIERTA` reutilizable).
+- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977`, de Fase 7 en `fe6c977`→`d8337f0`, de Fase 8 en `d8337f0`→`87bb211`, de Fase 9 en `87bb211`→`2f13e84` y de Fase 10 en `2f13e84`→`3632f4f`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-11-observaciones`, **sin merge a master**; se conservan `feat/fase-10-documentos`, `feat/fase-9-comprobante-pdf`, `feat/fase-8-pagos`, `feat/fase-7-convenios-cargos`, `feat/fase-6-wizard-inscripcion`, `feat/fase-5-nucleo-inscripcion` y `feat/fase-4-expediente-alumno`); sin remotos ni push.
