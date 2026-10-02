@@ -71,7 +71,13 @@
     </header>
 
     <main class="mx-auto max-w-6xl px-4 py-8">
-        @yield('content')
+        {{-- Render full-page de Livewire: inyecta el componente como $slot
+             (rama @component con slot "slot"); las páginas clásicas usan
+             @extends + @section('content'). Sin esta rama doble, el contenido
+             full-page quedaba fuera del layout (main vacío). --}}
+        @isset($slot){{ $slot }}@else
+            @yield('content')
+        @endisset
     </main>
 </body>
 
