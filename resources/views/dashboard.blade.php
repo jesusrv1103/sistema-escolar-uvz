@@ -13,15 +13,14 @@
             Bienvenido(a), <span class="font-medium text-brand-text">{{ auth()->user()->name }}</span>.
             Este es el panel administrativo de admisiones e inscripción.
         </p>
-        <p class="mt-1 text-sm text-brand-muted">
-            Los contadores operativos (inscripciones pendientes, pagos por validar, documentos pendientes e
-            inscripciones completadas) se incorporan en la Fase 14.
-        </p>
 
         <p class="mt-6 font-display text-sm italic text-brand-muted">
             {{ config('branding.slogan') }} · {{ config('branding.hashtag') }}
         </p>
     </div>
+
+    {{-- Contadores operativos (Fase 14): únicos 4 indicadores, desde DashboardService --}}
+    <livewire:dashboard.panel-operativo />
 
     <div class="rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
         <h2 class="text-sm font-semibold text-brand-text">Operación diaria</h2>
