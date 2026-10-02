@@ -10,6 +10,8 @@ use App\Livewire\Catalogos\Convenios;
 use App\Livewire\Catalogos\Periodos;
 use App\Livewire\Catalogos\Programas;
 use App\Livewire\Catalogos\TiposDocumento;
+use App\Livewire\Inscripciones\ListaInscripciones;
+use App\Livewire\Inscripciones\WizardInscripcion;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
@@ -32,6 +34,14 @@ Route::middleware('auth')->prefix('alumnos')->name('alumnos.')->group(function (
     Route::get('/{alumno}', FormAlumno::class)->name('ver');
     Route::get('/{alumno}/contactos', FormContactos::class)->name('contactos');
     Route::get('/{alumno}/info-medica', FormInfoMedica::class)->name('info-medica');
+});
+
+// Inscripciones (Fase 6): listado con filtros + wizard hasta DATA_COMPLETE.
+// La autorización fina (InscripcionPolicy / gates) vive en cada componente.
+Route::middleware('auth')->prefix('inscripciones')->name('inscripciones.')->group(function () {
+    Route::get('/', ListaInscripciones::class)->name('lista');
+    Route::get('/nueva', WizardInscripcion::class)->name('nueva');   // antes de {inscripcion}
+    Route::get('/{inscripcion}', WizardInscripcion::class)->name('ver');
 });
 
 // Catálogos administrables (Fase 3) — solo ADMIN.

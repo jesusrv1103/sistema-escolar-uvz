@@ -33,6 +33,43 @@ class InscripcionService
     }
 
     /**
+     * Crea el borrador de inscripción en `DRAFT` (FC-2, §4.8).
+     *
+     * - `estatus` NO se envía: lo da el default de columna (`DRAFT`).
+     * - Los montos son *snapshots* capturados aquí (no existe catálogo de tarifas).
+     * - Los datos académicos (alumno/periodo/programa) ya fueron validados por
+     *   la capa de presentación (§12.4 + RB-13/RB-14); `UNIQUE(alumno_id,
+     *   periodo_id)` es la última línea de defensa.
+     *
+     * @param  array<string, mixed>  $datos
+     */
+    public function crear(array $datos, ?User $usuario = null): Inscripcion
+    {
+        $usuario ??= auth()->user();
+
+        return DB::transaction(function () use ($datos, $usuario): Inscripcion {
+            $inscripcion = Inscripcion::create($datos + ['creado_por' => $usuario?->getKey()]);
+            $inscripcion->refresh();   // trae los defaults de columna (`estatus` = DRAFT)
+
+            $this->auditoria->registrar(
+                $inscripcion,
+                'inscripcion_creada',
+                [],
+                [
+                    'alumno_id' => $inscripcion->alumno_id,
+                    'periodo_id' => $inscripcion->periodo_id,
+                    'programa_id' => $inscripcion->programa_id,
+                    'estatus' => $inscripcion->estatus->value,
+                ],
+                [],
+                $usuario,
+            );
+
+            return $inscripcion;
+        });
+    }
+
+    /**
      * Ejecuta la transición o lanza excepción explícita. Nunca deja la
      * inscripción en el nuevo estado si falla la auditoría (transacción).
      */
