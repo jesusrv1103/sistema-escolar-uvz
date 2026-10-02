@@ -1,7 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6 y 7 **COMPLETAS**; **Fase 8 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8 y 9 **COMPLETAS**; **Fase 10 NO iniciada** — requiere aprobación explícita.
 
 ---
 
@@ -121,15 +121,17 @@
 
 **✅ COMPLETA (02/10/2026):** `FolioPagoService` (folio `PAG-YYYYMMDD-########`: fecha de **validación** con timezone de la app + `pago.id` con padding a 8; sin `consecutivos`, sin `MAX()`, sin `NumeroControlService`); `PagoService` con `registrar()/validar()/rechazar()` en una transacción por operación, `lockForUpdate()` (un único intento `PENDIENTE` activo por concepto; históricos `RECHAZADO` preservados y permiten nuevo intento), monto exacto = `monto_total` (sin parciales), comprobante opcional PDF/JPG/JPEG/PNG ≤ 10 MB con MIME real (`finfo`) a **disco privado**, ruta interna por sistema y **compensación de archivos huérfanos** si la transacción falla; efecto de proceso **solo para `INSCRIPCION`** vía `InscripcionService::transicionar()` (registro → `PAYMENT_REVIEW`; validación → `PAYMENT_VALIDATED → PENDING_DOCUMENTS` con `pagos_validados_at`; rechazo → `PENDING_PAYMENT` con motivo); `ModalRegistrarPago` + `ModalValidarPago` integrados en el listado de cargos del wizard (sin información médica, RB-18); descarga del comprobante por **1 ruta nueva** mínima con policy, resolución desde BD y defensa contra path traversal. **153 pruebas verdes** (F11/F12/F25 + U9/U10 + 19 reglas de alta confianza adicionales).
 
-## Fase 9 — Comprobante de pago PDF
+## Fase 9 — Comprobante de pago PDF ✅ COMPLETA
 
 | Elemento | Detalle |
 |---|---|
-| Tareas | `ComprobantePagoService` + `resources/views/pdf/comprobante-pago.blade.php` + `ComprobantePagoController` (descarga autorizada) |
+| Tareas | `ComprobantePagoService` + `resources/views/pdf/comprobante-pago.blade.php` + `ComprobantePdfController` (descarga autorizada) |
 | Contenido | alumno, programa, concepto, monto, forma de pago, referencia, fecha, folio. **Solo pagos `VALIDADO`.** Sin facturación fiscal |
 | Branding | Logo UVZ + "Universidad Villa de Zacatecas" + colores y datos institucionales **desde `config('branding.*')`** (arquitectura §23.5) |
 | Dependencia | `barryvdh/laravel-dompdf` en versión compatible con Laravel 12 (**P1 aprobado**) |
 | Pruebas | **F26** PDF solo con pago `VALIDADO` |
+
+**✅ COMPLETA (02/10/2026):** `barryvdh/laravel-dompdf` **3.1.2** (dompdf 3.1.6) instalado vía Composer. `ComprobantePagoService` (`datos()` + `generar()`) exige pago `VALIDADO` con folio/validación/integridad completas, carga solo las relaciones necesarias, prepara los datos (branding desde `config('branding.*')`, logo como **data URI local** sin exponer rutas ni usar internet) y renderiza **bajo demanda** — sin persistir el PDF en BD ni en disco, sin modificar el pago y sin auditoría adicional. Vista Blade independiente con CSS propio DomPDF (sin Tailwind/Vite), contenido escapado, sin datos médicos/sensibles y con los avisos "Comprobante administrativo de pago / No constituye factura fiscal". `Pagos\ComprobantePdfController` invokable (nombre elegido por el usuario por colisión con el controlador de evidencia de Fase 8, **cuya ruta/semántica no se tocó**): `auth` + policy `descargarComprobantePdf` (4 roles con lectura) y nombre de descarga `comprobante-<FOLIO>.pdf`; ruta nueva `GET /pagos/{pago}/comprobante-pdf` (`pagos.comprobante-pdf`); no `VALIDADO` ⇒ 404. **163 pruebas verdes** (F26 + 9 de cobertura adicional en `ComprobantePagoTest`).
 
 ## Fase 10 — Documentos
 
@@ -223,4 +225,4 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de la Fase 7:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ **COMPLETA** · **Fase 8 ⬜ NO iniciada, pendiente de aprobación del usuario.**
+> **Estado al cierre de la Fase 9:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ **COMPLETA** · **Fase 10 ⬜ NO iniciada, pendiente de aprobación del usuario.**

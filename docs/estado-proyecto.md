@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 8** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 9** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -17,7 +17,8 @@
 | Fase 6 — Wizard de inscripción | ✅ **COMPLETA** (85 pruebas, build correcto, 3 rutas nuevas) |
 | Fase 7 — Convenios y generación de cargos | ✅ **COMPLETA** (113 pruebas, build correcto, sin rutas nuevas) |
 | Fase 8 — Pagos | ✅ **COMPLETA** (153 pruebas, build correcto, 1 ruta nueva: comprobante privado) |
-| Fases 9–16 | ⬜ pendientes (esperan aprobación) |
+| Fase 9 — Comprobante de pago PDF | ✅ **COMPLETA** (163 pruebas, build correcto, 1 ruta nueva: `pagos.comprobante-pdf`) |
+| Fases 10–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -66,6 +67,7 @@
 ## Stack y entorno
 
 - Laravel 12.69.3, PHP 8.2.34, Composer 2.8.5, Node 22.
+- **barryvdh/laravel-dompdf 3.1.2** (dompdf 3.1.6) — dependencia de PDF aprobada en **P1**, instalada en la Fase 9.
 - **Livewire 4.4.7** (actualizado desde `^3.0` en Fase 1.1; la Fase 1 no tenía componentes Livewire).
 - Tailwind CSS 4 + Vite 7; Pest 3.8 (`composer test`).
 - MySQL 8.0.46 en **Docker solo para desarrollo local**: contenedor `sistema-escolar-mysql`, `127.0.0.1:3308`, usuario y contraseña definidos en `.env` (no se documentan secretos en `docs/`); BD `sistema_escolar` (desarrollo) y `sistema_escolar_testing` (pruebas) **separadas**.
@@ -171,9 +173,27 @@
 - Migración 000014 ejecutada también en la BD de desarrollo; las pruebas corren **exclusivamente** contra `sistema_escolar_testing`.
 - Sin mocks para servicios, estados, auditoría ni restricciones de BD: los rollbacks se probaron con fallos reales (FK de usuario fantasma y transición imposible).
 
+## Fase 9 — comprobante de pago PDF (implementado)
+
+- **Dependencia P1 aprobada instalada:** `barryvdh/laravel-dompdf` **3.1.2** (dompdf 3.1.6, compatible con Laravel 12 + PHP 8.2). Sin otros paquetes PDF.
+- **`ComprobantePagoService`** (`app/Services/`): `datos(Pago)` verifica que el pago esté `VALIDADO` y con integridad mínima (folio, `validado_at`, `validado_por`, concepto → inscripción → alumno/programa, monto > 0) y prepara el array de la vista; `generar(Pago)` renderiza con DomPDF **bajo demanda**. Operación de lectura: **no** modifica `Pago`/`ConceptoPago`/`Inscripcion`, **no** escribe auditoría (la arquitectura no audita descargas) y **no** persiste el PDF en BD ni en disco. incumplir las garantías ⇒ `PagoInvalidoException`.
+- **Vista** `resources/views/pdf/comprobante-pago.blade.php`: HTML independiente con CSS propio compatible con DomPDF (sin Tailwind/Vite); encabezado institucional (logo + "Universidad Villa de Zacatecas" + "Comprobante de pago" + folio), datos de identificación (folio, fechas de pago/validación, alumno, número de control —`NULL` ⇒ "Por asignar"—, programa, tipo), detalle (concepto, método, referencia si existe, monto en MXN) y pie con contacto institucional + "Comprobante administrativo de pago / No constituye factura fiscal". Sin QR, sello, CFDI ni datos fiscales inventados; **sin CURP, domicilio del alumno, información médica, contactos, notas ni motivo de rechazo**; todo dato dinámico escapado con `{{ }}` (sin `{!! !!}` sobre datos de BD).
+- **Branding:** nombre, slogan, logo, colores (primario/secundario/acento/texto/tenue/borde/fondo) y contacto salen **únicamente** de `config('branding.*')` (§23.2/§23.5). El logo se resuelve como **data URI local** verificada dentro de `public/` (sin URLs públicas, sin internet y sin exponer rutas del servidor en el PDF); si no existe, el documento se genera sin logo.
+- **Controlador y ruta:** `Pagos\ComprobantePdfController` invokable (nombre elegido por el usuario tras detectar la colisión con el controlador de evidencia de Fase 8, cuya ruta/semántica **no se tocó**): `auth` + `Gate::authorize('descargarComprobantePdf')`, delega al servicio y devuelve `download()` con nombre determinista `comprobante-<FOLIO>.pdf` (folio sanitizado, nunca el nombre del alumno); pago no `VALIDADO` ⇒ **404**. Ruta nueva `GET /pagos/{pago}/comprobante-pdf` (`pagos.comprobante-pdf`), separada de `/pagos/{pago}/comprobante` (evidencia de Fase 8).
+- **Autorización:** `PagoPolicy::descargarComprobantePdf` delega en `view()` → los 4 roles con lectura del pago (ADMIN/ADMISIONES/ADMINISTRACION/CONTROL_ESCOLAR, matriz §8.2); sin URLs firmadas públicas; cuenta inactiva ⇒ 403 (RB-21).
+- **Pruebas nuevas (10)** en `tests/Feature/ComprobantePagoTest.php`: **F26** (`test_comprobante_pdf_solo_para_pago_validado` cubierto por los tests `F26:` — VALIDADO ⇒ `application/pdf` + cabecera `%PDF-` + descarga por folio; PENDIENTE/RECHAZADO ⇒ 404 y excepción del servicio), los 4 roles descargan, `auth` obligatorio + inactivos 403, datos del comprobante (folio, monto, método MXN, branding y logo data URI), `referencia`/`numero_control` `NULL` sin romper el PDF, escapado de contenido y **ausencia de información médica**, PDF sin persistencia ni modificación de pago/auditoría, independencia de la ruta de evidencia de Fase 8 e integridad incompleta (VALIDADO sin folio ⇒ 404).
+
+## Validación al cierre de la Fase 9
+
+- `composer test` → **163 pruebas / 1203 assertions, todas verdes** (153 previas intactas + 10 nuevas de Fase 9).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → **29 rutas** (28 previas + 1 nueva: `pagos.comprobante-pdf`).
+- Pruebas ejecutadas **exclusivamente** contra `sistema_escolar_testing`.
+- Sin nuevos artefactos en `storage` (el PDF solo viaja en la respuesta), sin cambios en `PagoService` ni en el módulo de la Fase 8.
+
 ## Pendientes / registrados
 
-- **Fase 9 no iniciar** hasta aprobación del usuario.
+- **Fase 10 no iniciar** hasta aprobación del usuario.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies de modelos de fases futuras: las 8 clases ya existen; Laravel las asocia por convención cuando los modelos se creen (sin código artificial).
@@ -181,5 +201,5 @@
 - `duracion_periodos`, `periodos` iniciales y más tipos de documento: **PENDIENTES de fuente institucional** (se capturan/seedan cuando UVZ confirme datos; nada inventado).
 - Lectura **contextual** de información médica para CONTROL_ESCOLAR: **PENDIENTE** del flujo de revisión final (Fase futura; en Fase 4 no existe pantalla general).
 - Guardas de negocio pendientes en la máquina de estados (documentos, observaciones, número de control): **PENDIENTES** de sus fases; en Fase 5 **no se simularon** con datos ficticios (§7.3.5). La guarda de **pagos `INSCRIPCION`** quedó implementada en Fase 8.
-- Comprobante PDF con branding UVZ → **Fase 9**.
-- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977` y de Fase 7 en `fe6c977`→`d8337f0`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-8-pagos`, **sin merge a master**; se conservan `feat/fase-7-convenios-cargos` y `feat/fase-6-wizard-inscripcion`); sin remotos ni push.
+- Comprobante PDF con branding UVZ → **Fase 9 ✅ COMPLETA** (bajo demanda, solo pagos `VALIDADO`).
+- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977`, de Fase 7 en `fe6c977`→`d8337f0` y de Fase 8 en `d8337f0`→`87bb211`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-9-comprobante-pdf`, **sin merge a master**; se conservan `feat/fase-8-pagos`, `feat/fase-7-convenios-cargos`, `feat/fase-6-wizard-inscripcion`, `feat/fase-5-nucleo-inscripcion` y `feat/fase-4-expediente-alumno`); sin remotos ni push.
