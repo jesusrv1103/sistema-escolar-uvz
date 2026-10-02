@@ -1,7 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fase 1, 1.1, 2 y 3 **COMPLETAS**; **Fase 4 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fases 1, 1.1, 2, 3 y 4 **COMPLETAS**; **Fase 5 NO iniciada** — requiere aprobación explícita.
 
 ---
 
@@ -68,13 +68,18 @@
 | Pruebas | `tests/Feature/CatalogosTest.php` (12): CRUD de los 4 catálogos, 403 a otros roles (rutas y componente), claves duplicadas, fechas inválidas, valores de convenio fuera de rango, soft delete, seeders idempotentes y semilla UVZ |
 | Estado | ✅ **COMPLETA** — `composer test` 38 pruebas / 227 assertions verdes; `npm run build` OK; `route:list` OK |
 
-## Fase 4 — Expediente del alumno
+## Fase 4 — Expediente del alumno ✅ COMPLETA
 
 | Elemento | Detalle |
 |---|---|
 | Tareas | `Alumno`, `Contacto`, `InformacionMedica` + componentes Livewire (FormAlumno, FormContactos, FormInfoMedica, ListaAlumnos) + **`InformacionMedicaPolicy`** (ADMIN/ADMISIONES ✔, CONTROL_ESCOLAR lectura en revisión final, **ADMINISTRACION ✖**) + `@can` en Blade |
 | Migraciones | `alumnos` (CURP unique, `numero_control` char(8) unique nullable), `contactos`, `informacion_medicas` |
 | Pruebas | **F1** CURP inválida, **F2** CURP duplicada, **F3** contactos + info médica, **F27** ADMINISTRACION 403 en info médica |
+| Enums nuevos | **Aprobados en Fase 4:** `Sexo` (`MASCULINO` \| `FEMENINO`), `TipoSangre` (`A+`…`O-`, 8 con RH) |
+| Rutas | `/alumnos`, `/alumnos/nuevo`, `/alumnos/{alumno}`, `/alumnos/{alumno}/contactos`, `/alumnos/{alumno}/info-medica` (todas `auth`; autorización en cada componente) |
+| Info médica | Pantalla y acciones exigen el gate **`informacionMedica.edit`** (ADMIN/ADMISIONES): ADMINISTRACION ✖ siempre; CONTROL_ESCOLAR sin pantalla general en Fase 4 (su lectura contextual llega con la revisión final; conserva `informacionMedica.view`) |
+| CURP | Sintaxis local (`Alumno::REGEX_CURP`, 18 chars, normalización a mayúsculas) + `unique` local; sin consultas RENAPO; datos ficticios en factories/pruebas (`ZZZZ…`) |
+| Estado | ✅ **COMPLETA** — `composer test` 54 pruebas / 304 assertions verdes; `npm run build` OK; `route:list` OK |
 
 ## Fase 5 — Núcleo del flujo de inscripción
 
@@ -211,4 +216,4 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de la Fase 3:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ **COMPLETA** · **Fase 4 ⬜ NO iniciada, pendiente de aprobación del usuario.**
+> **Estado al cierre de la Fase 4:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ **COMPLETA** · **Fase 5 ⬜ NO iniciada, pendiente de aprobación del usuario.**

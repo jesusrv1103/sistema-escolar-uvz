@@ -157,7 +157,7 @@ Convención: `unique` = índice único; `nullable` = admite NULL; *(snapshot)* =
 | `apellidos` | varchar(100) | not null | |
 | `curp` | char(18) | **unique**, not null | valida formato en app |
 | `fecha_nacimiento` | date | not null | |
-| `sexo` | varchar(10) | not null | BackedEnum |
+| `sexo` | varchar(10) | not null | BackedEnum `Sexo` (**`MASCULINO` \| `FEMENINO`**, valores aprobados en Fase 4) |
 | `nacionalidad` | varchar(60) | not null, default `Mexicana` | |
 | `correo` | varchar(150) | nullable | |
 | `telefono` | varchar(20) | nullable | |
@@ -197,7 +197,7 @@ Una sola tabla con `tipo` evita duplicar columnas `tutor_*` y `emergencia_*`.
 |---|---|---|---|
 | `id` | bigint | PK | |
 | `alumno_id` | bigint | **unique**, FK → `alumnos.id`, **cascade** | garantiza 1:1 |
-| `tipo_sangre` | varchar(5) | nullable | BackedEnum |
+| `tipo_sangre` | varchar(5) | nullable | BackedEnum `TipoSangre` (**`A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, `O-`**, valores aprobados en Fase 4; `null` = sin capturar) |
 | `alergias` | text | nullable | |
 | `condiciones` | text | nullable | enfermedades/condiciones previas |
 | `medicamentos` | text | nullable | |

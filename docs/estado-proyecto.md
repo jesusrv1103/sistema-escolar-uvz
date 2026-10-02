@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 3** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 4** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -12,7 +12,8 @@
 | Fase 1.1 — Livewire 4 + identidad institucional | ✅ **COMPLETA** (15 pruebas, build correcto) |
 | Fase 2 — Seguridad y autorización base | ✅ **COMPLETA** (26 pruebas, build correcto, `route:list` OK) |
 | Fase 3 — Catálogos | ✅ **COMPLETA** (38 pruebas, build correcto, `route:list` OK) |
-| Fases 4–16 | ⬜ pendientes (esperan aprobación) |
+| Fase 4 — Expediente del alumno | ✅ **COMPLETA** (54 pruebas, build correcto, `route:list` OK) |
+| Fases 5–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -36,6 +37,17 @@
 - **Seeders idempotentes**: `CatalogosSeeder` (3 programas UVZ con claves internas `DER`, `SAI`, `CF`; `duracion_periodos = NULL` para no inventar datos; sin semilla de `periodos` por no existir fechas institucionales) y `TiposDocumentoSeeder` (solo `ACTA_NAC`, lo definido en arquitectura §4.11).
 - **Validación server-side** (arquitectura §12.12): claves únicas y con formato, `fecha_fin >= fecha_inicio`, convenio `PORCENTAJE` 0 < v ≤ 100 / `MONTO` v > 0, campos obligatorios, autorización ADMIN.
 - **Semántica documentada**: `cerrado_at` bloquea **solo** inscripciones (RB-13 / riesgo R2); la aprobación de un convenio no vive en el catálogo.
+
+## Fase 4 — expediente del alumno (implementado)
+
+- **Enums nuevos (valores aprobados por el usuario en Fase 4):** `Sexo` (`MASCULINO` | `FEMENINO`) y `TipoSangre` (`A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, `O-`); registrados en arquitectura §4.2/§4.4.
+- **Migraciones** `2026_10_01_000008`–`000010`: `alumnos` (`numero_control` char(8) **nullable/unique y NULL en toda la Fase 4**; CURP unique; soft deletes), `contactos` (FK cascade, sin soft delete) e `informacion_medicas` (`alumno_id` unique ⇒ 1:1, cascade, sin soft delete).
+- **Modelos:** `Alumno` (constante `REGEX_CURP`, normalizadores de CURP/correo, `scopeBuscar`, relaciones contactos/informacionMedica/creadoPor, **sin `numero_control` en `$fillable`**), `Contacto`, `InformacionMedica` (`$table = informacion_medicas`). Sin `$guarded = []`.
+- **Componentes Livewire 4:** `ListaAlumnos` (búsqueda con `debounce`, listado con `select` explícito y **sin datos médicos**), `FormAlumno` (alta/edición, campos deshabilitados en solo lectura), `FormContactos` (TUTOR y EMERGENCIA independientes, `updateOrCreate` por tipo) y `FormInfoMedica`.
+- **Rutas:** `/alumnos`, `/alumnos/nuevo`, `/alumnos/{alumno}`, `/alumnos/{alumno}/contactos`, `/alumnos/{alumno}/info-medica` (todas con `auth`; la autorización fina vive en cada componente vía Policy/Gate).
+- **Autorización médica (RB-18):** pantalla y acciones exigen `informacionMedica.edit` → ADMIN ✔, ADMISIONES ✔, **ADMINISTRACION ✖ (403)**, **CONTROL_ESCOLAR ✖ en Fase 4** (sin pantalla general: su lectura contextual se habilitará con la revisión final; conserva `informacionMedica.view`). `@can` solo complementa.
+- **CURP:** validación sintáctica local (18 caracteres + estructura + unicidad local, normalización a mayúsculas), sin consultas RENAPO ni afirmación de existencia oficial; factories/pruebas usan CURPs ficticias `ZZZZ…`.
+- **Privacidad:** la información médica no aparece en listados, búsquedas ni dashboard; `actualizado_por` registra quién la editó; sin datos reales en seeders/pruebas.
 
 ## Stack y entorno
 
@@ -68,13 +80,21 @@
 - Migraciones 000004–000007 y seeders ejecutados en la BD de desarrollo; las pruebas corren **solo** contra `sistema_escolar_testing`.
 - Revisión de seguridad previa: la BD de desarrollo tenía **1 usuario** (`admin@uvz.local`, rol ADMIN, activo) — sin cuentas inesperadas heredadas del backfill de rol.
 
+## Validación al cierre de la Fase 4
+
+- `composer test` → **54 pruebas / 304 assertions, todas verdes** (38 previas intactas + 16 nuevas de Fase 4 en `tests/Feature/AlumnoTest.php`: F1, F2, F3, F27, CONTROL_ESCOLAR sin pantalla médica, roles con lectura, 1:1, soft delete, `numero_control` NULL y listado sin datos médicos).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → 5 rutas nuevas bajo `/alumnos…` con `auth`; autorización verificada server-side.
+- Migraciones 000008–000010 ejecutadas en la BD de desarrollo; las pruebas corren **solo** contra `sistema_escolar_testing`.
+
 ## Pendientes / registrados
 
-- **Fase 4 no iniciar** hasta aprobación del usuario.
+- **Fase 5 no iniciar** hasta aprobación del usuario.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies de modelos de fases futuras: las 8 clases ya existen; Laravel las asocia por convención cuando los modelos se creen (sin código artificial).
 - Logo variante para fondos oscuros: **PENDIENTE** (el sitio no la publica; `branding.logo_dark` reutiliza el horizontal).
 - `duracion_periodos`, `periodos` iniciales y más tipos de documento: **PENDIENTES de fuente institucional** (se capturan/seedan cuando UVZ confirme datos; nada inventado).
+- Lectura **contextual** de información médica para CONTROL_ESCOLAR: **PENDIENTE** del flujo de revisión final (Fase futura; en Fase 4 no existe pantalla general).
 - Comprobante PDF con branding UVZ → **Fase 9**.
 - No existe repositorio git en el directorio (nada commiteado).
