@@ -1,7 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fases 1, 1.1, 2, 3, 4, 5 y 6 **COMPLETAS**; **Fase 7 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6 y 7 **COMPLETAS**; **Fase 8 NO iniciada** — requiere aprobación explícita.
 
 ---
 
@@ -101,13 +101,14 @@
 | Reglas | Bloquea periodo con `cerrado_at` (RB-13) y duplicidad alumno+periodo (RB-14) |
 | Pruebas | **F4** pasos completos → `DATA_COMPLETE`, **F5** paso incompleto no avanza, **F22** duplicidad, **F28** periodo cerrado |
 
-## Fase 7 — Convenios y generación de cargos
+## Fase 7 — Convenios y generación de cargos ✅ COMPLETA
 
 | Elemento | Detalle |
 |---|---|
-| Tareas | `ConvenioService` (aplicar → `PENDIENTE_APROBACION`; aprobar/rechazar por ADMINISTRACION → `APROBADO`/`RECHAZADO`); `ModalAplicarConvenio`; `ConvenioPolicy`; `InscripcionService::generarCargos()` |
-| Cargos | **Automáticos**: 1 concepto `INSCRIPCION` (nace `PAGADO` si monto = 0) + N `MENSUALIDAD` con vencimientos; descuento **solo si convenio APROBADO**; precondición: convenio resuelto antes de `PENDING_PAYMENT` |
-| Pruebas | **U4–U6** cálculo de convenio (incl. sin aprobar ⇒ descuento 0), **F23** requiere aprobación antes de cargos, **F24** ADMISIONES no aprueba |
+| Tareas | `ConvenioService` (aplicar → `PENDIENTE_APROBACION`; aprobar/rechazar por ADMINISTRACION → `APROBADO`/`RECHAZADO`); `ModalAplicarConvenio`; `InscripcionService::generarCargos()` (acción y lista de cargos en el wizard) |
+| Decisión UVZ | **UVZ opera por CUATRIMESTRES**: 1 `INSCRIPCION` + exactamente **4** `MENSUALIDAD` (meses derivados de `periodos.fecha_inicio`), vencimiento el **día 10** centralizado en `config/escolar.php` (`escolar.dia_vencimiento_mensualidad`; clamp al último día del mes); convenio **solo sobre INSCRIPCION**; `duracion_periodos` se conserva |
+| Cargos | **Automáticos**: 1 concepto `INSCRIPCION` (nace `PAGADO` si total = 0; vence en `periodos.fecha_inicio`) + 4 `MENSUALIDAD` con descuento 0; descuento **solo si convenio APROBADO** (`PORCENTAJE`: `monto × valor / 100`; `MONTO`: `min(valor, monto)`; redondeo a 2 decimales, nunca total negativo); precondición: convenio resuelto antes de `PENDING_PAYMENT`; **idempotencia** (sin duplicados) y **rollback total** ante fallo |
+| Pruebas | **U4–U6** cálculo de convenio (incl. sin aprobar ⇒ descuento 0), **F23** requiere aprobación antes de cargos, **F24** ADMISIONES no aprueba + inactivos/vigencia/un-convenio/snapshot/rechazo/auditoría/modal + generación (5 conceptos, vencimientos, $0 → PAGADO, duplicados, rollback, autorización, integraciones) |
 
 ## Fase 8 — Pagos
 
@@ -220,4 +221,4 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de la Fase 5:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ **COMPLETA** · **Fase 6 ⬜ NO iniciada, pendiente de aprobación del usuario.**
+> **Estado al cierre de la Fase 7:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ **COMPLETA** · **Fase 8 ⬜ NO iniciada, pendiente de aprobación del usuario.**

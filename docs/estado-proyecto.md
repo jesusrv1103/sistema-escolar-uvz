@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 6** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 7** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -15,7 +15,8 @@
 | Fase 4 — Expediente del alumno | ✅ **COMPLETA** (54 pruebas, build correcto, `route:list` OK) |
 | Fase 5 — Núcleo del flujo de inscripción | ✅ **COMPLETA** (69 pruebas, build correcto, `route:list` OK) |
 | Fase 6 — Wizard de inscripción | ✅ **COMPLETA** (85 pruebas, build correcto, 3 rutas nuevas) |
-| Fases 7–16 | ⬜ pendientes (esperan aprobación) |
+| Fase 7 — Convenios y generación de cargos | ✅ **COMPLETA** (113 pruebas, build correcto, sin rutas nuevas) |
+| Fases 8–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -126,9 +127,29 @@
 - Pruebas ejecutadas **exclusivamente** contra `sistema_escolar_testing`.
 - Ambigüedades detectadas y resueltas con el usuario **antes** de implementar: distribución de los 6 pasos (División A con enlaces al expediente Fase 4) y validación de montos (`decimal:0,2`).
 
+## Fase 7 — convenios y generación de cargos (implementado)
+
+- **Decisión UVZ registrada en arquitectura §4.9/RB-3/FC-4:** UVZ opera por **CUATRIMESTRES** → cada inscripción genera **1 concepto `INSCRIPCION` + exactamente 4 `MENSUALIDAD`** (los cuatro meses derivados de `periodos.fecha_inicio`: +0, +1, +2, +3), con vencimiento el **día 10** definido en **`config/escolar.php`** (`escolar.dia_vencimiento_mensualidad`, clamp al último día válido del mes; regla de negocio **sin** `.env` y sin hardcodeo en servicios/vistas); convenio/promoción **únicamente sobre `INSCRIPCION`**; mensualidades **sin descuento**; mensualidades pendientes **no bloquean** `ENROLLED`; `duracion_periodos` **se conserva**.
+- **Migración** `2026_10_01_000013_create_conceptos_pago_table` (§4.9): FK `inscripcion_id` **cascade**, `tipo/numero/concepto/monto/descuento/monto_total/fecha_vencimiento/estatus/pagado_at`, **sin soft delete** (R15), **sin UNIQUE compuesto** (los genera el servicio en transacción). **Sin tabla `pagos`** (Fase 8).
+- **Modelo/enum:** `ConceptoPago` (`$table = conceptos_pago`, casts enum/decimal/date, `belongsTo Inscripcion`) + relación `Inscripcion::conceptosPago()` (hasMany) + `ConceptoPagoFactory` (solo escenarios sintéticos); enum nuevo **`EstatusConceptoPago`** (`PENDIENTE|PAGADO|CANCELADO`) — no se reutiliza `EstatusPago` (semántica de `pagos`).
+- **`ConvenioService`** (FC-3, punto único de autorización server-side vía gates `convenio.aplicar`/`convenio.aprobar`): `aplicar()` (ADMISIONES/ADMIN → `PENDIENTE_APROBACION`, `convenio_aplicado_por/at`, `monto_descuento` 0, exigencias: etapa previa a cargos, convenio activo/no eliminado/vigente, **máximo uno por inscripción**), `aprobar()` (ADMINISTRACION/ADMIN → `APROBADO`, `convenio_aprobado_por/at`, descuento congelado: `PORCENTAJE = monto × valor / 100`, `MONTO = min(valor, monto)`, redondeo a 2 decimales, nunca negativo ni mayor al monto) y `rechazar()` (`RECHAZADO`, motivo 5–2000 obligatorio, `monto_descuento = 0`); cada operación en `DB::transaction` + auditoría `convenio_aplicado/convenio_aprobado/convenio_rechazado` (RB-12).
+- **`ModalAplicarConvenio`** (Livewire 4, hijo del wizard): lista solo convenios **activos, no eliminados y vigentes** con nombre/tipo/valor; muestra el estado (pendiente/aprobado/rechazado + descuento + motivo); acciones aplicar/aprobar/rechazar; lógica en `ConvenioService` (el componente solo autoriza lectura y traduce excepciones a errores); **sin información médica** (RB-18).
+- **Four-eyes estricto (matriz §8.2):** ADMISIONES aplica y **no aprueba ni rechaza** (F24 = 403 server-side); ADMINISTRACION aprueba/rechaza y **no asume el papel de ADMISIONES**; ADMIN vía `Gate::before`.
+- **`InscripcionService::generarCargos()`** (RB-3/FC-4, UNA transacción): valida estatus `DATA_COMPLETE` (fila con `lockForUpdate`), convenio resuelto (`PENDIENTE_APROBACION` ⇒ **bloqueo F23**), **idempotencia** (si ya hay cargos ⇒ rechazo explícito sin duplicar); crea 1 `INSCRIPCION` (vence en `periodos.fecha_inicio`; `descuento` solo si convenio `APROBADO`; `monto_total = max(monto − descuento, 0)`; **total 0 ⇒ nace `PAGADO` con `pagado_at`**) + 4 `MENSUALIDAD` (`numero` 1–4, concepto legible "Mensualidad N - mes YYYY", `descuento` 0, vencimientos el día configurado), transiciona a `PENDING_PAYMENT` (auditoría `estado_cambiado`) y registra `cargos_generados`; **cualquier fallo ⇒ ROLLBACK TOTAL** (probado con fallo real de FK, sin mocks). **No adelanta** el flujo posterior (Fase 8).
+- **UI en el wizard:** acciones `generarCargos` (gate `inscripcion.generarCargos` = ADMISIONES + ADMIN) con errores junto al control, listado de cargos generados y tarjeta "Convenio y cargos"; sin rutas nuevas.
+- **Pruebas nuevas (28):** `CalculoConvenioTest` (U4 porcentaje con redondeo, U5 monto limitado al monto de inscripción, U6 pendiente ⇒ descuento 0), `ConvenioTest` (F23 bloqueo + resolución, F24 403, ADMINISTRACION no aplica, inactivo/eliminado, vigencia, un solo convenio, etapa previa, snapshot inmutable, rechazo con motivo ⇒ descuento 0, auditoría con responsable, listado del modal solo vigentes, modal sin datos médicos) y `GeneracionCargosTest` (5 conceptos 1+4, vencimientos con día configurable y clamp, concepto legible, descuento solo en INSCRIPCION, rechazado sin descuento, $0 ⇒ PAGADO + mensualidades PENDIENTE, segunda generación sin duplicados, duplicado previo rechazado, ROLLBACK total real, autorización server-side, 2 integraciones completas).
+
+## Validación al cierre de la Fase 7
+
+- `composer test` → **113 pruebas / 917 assertions, todas verdes** (85 previas intactas + 28 nuevas de Fase 7).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → **27 rutas** (sin rutas nuevas: el modal es componente hijo del wizard).
+- Migración 000013 ejecutada en la BD de desarrollo; las pruebas corren **exclusivamente** contra `sistema_escolar_testing`.
+- Ambigüedad resuelta sin inventar reglas: la arquitectura no fija fecha de vencimiento para el concepto `INSCRIPCION` → se usó `periodos.fecha_inicio` (solución mínima documentada en §4.9); no hubo contradicción con la máquina de estados ($0 nace `PAGADO` pero el flujo NO adelanta Fase 8).
+
 ## Pendientes / registrados
 
-- **Fase 7 no iniciar** hasta aprobación del usuario.
+- **Fase 8 no iniciar** hasta aprobación del usuario.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies de modelos de fases futuras: las 8 clases ya existen; Laravel las asocia por convención cuando los modelos se creen (sin código artificial).
@@ -137,4 +158,4 @@
 - Lectura **contextual** de información médica para CONTROL_ESCOLAR: **PENDIENTE** del flujo de revisión final (Fase futura; en Fase 4 no existe pantalla general).
 - Guardas de negocio pendientes en la máquina de estados (pagos `INSCRIPCION`, documentos, observaciones, número de control): **PENDIENTES** de sus fases; en Fase 5 **no se simularon** con datos ficticios (§7.3.5).
 - Comprobante PDF con branding UVZ → **Fase 9**.
-- Git local activo: `master` acumula las fases aprobadas (merge `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-6-wizard-inscripcion`, **sin merge a master**); sin remotos ni push.
+- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d` y de Fase 6 en `2d19d0d`→`fe6c977`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-7-convenios-cargos`, **sin merge a master**); sin remotos ni push.

@@ -4,6 +4,8 @@
 > Entorno de desarrollo detectado: directorio de proyecto vacío (greenfield), PHP 8.2.34, Composer 2.8.5, MySQL 8.0.46, Node 22.23.2 / npm 10.9.8 → compatible con **Laravel 12 + Livewire 4 + Tailwind CSS**.
 >
 > **Versión 3 — decisiones finales incorporadas**: corrección de mensualidades (§11 RB-3/RB-5/RB-8, §7 y §13), decisiones D1–D6, ajustes 7–18, seguridad de información médica y **P1/P2/P3 aprobados** (§22). **Plan de implementación aprobado** → **Fase 1 autorizada** (`docs/plan-implementacion.md`).
+>
+> **Fase 7 registrada**: decisiones UVZ cuatrimestrales aprobadas → **UVZ opera por CUATRIMESTRES**, 4 mensualidades por inscripción con vencimiento el **día 10 configurable** (`config/escolar.php`), convenio aplicado **únicamente al concepto INSCRIPCION** y descuento fijo limitado al monto de inscripción (§4.9, RB-3, FC-4). La abstracción `duracion_periodos` **se conserva**.
 
 ---
 
@@ -307,6 +309,15 @@ Una sola tabla con `tipo` evita duplicar columnas `tutor_*` y `emergencia_*`.
 - `tipo = MENSUALIDAD` → **obligación futura**: puede quedar `PENDIENTE` indefinidamente sin impedir que el alumno llegue a `ENROLLED`.
 - Generados **automáticamente** por `InscripcionService` (no captura manual).
 - Si `monto_inscripcion = 0`, el concepto `INSCRIPCION` nace directamente `PAGADO` para no bloquear el flujo.
+
+**Decisiones UVZ aprobadas (registradas en la Fase 7):**
+- **UVZ opera actualmente por CUATRIMESTRES.** Cada inscripción genera **exactamente 4** conceptos `MENSUALIDAD`: los cuatro meses del cuatrimestre, derivados del mes de `periodos.fecha_inicio` (mes 1 = mes de inicio, +1, +2, +3). Los vencimientos se derivan del **PERIODO**, nunca de la fecha de captura.
+- **Día institucional de vencimiento: el día 10 de cada mes**, centralizado en **`config/escolar.php`** (`escolar.dia_vencimiento_mensualidad`); **no** se hardcodea en servicios ni vistas y **no** vive en `.env` (es regla de negocio). Si el día configurado no existe en un mes futuro, se usa el **último día válido** del mes.
+- **Los convenios/promociones aplican únicamente al concepto `INSCRIPCION`.** Las mensualidades **NO** reciben descuento de convenio en el MVP: su `descuento` nace y permanece en 0.
+- `descuento` del concepto `INSCRIPCION` = `inscripciones.monto_descuento`, **congelado** al aprobar el convenio: `PORCENTAJE` → `monto_inscripcion * valor / 100`; `MONTO` → `min(valor, monto_inscripcion)`; redondeo monetario a 2 decimales y **nunca** un `monto_total` negativo (`monto_total = max(monto - descuento, 0)`).
+- Vencimiento del concepto `INSCRIPCION`: **`periodos.fecha_inicio`** (solución mínima técnicamente consistente: el documento no fija una fecha institucional distinta y no se inventó una regla de negocio nueva).
+- `mensualidades.pendientes` **NO bloquean** `ENROLLED` (RB-8).
+- **NO** se renombra `duracion_periodos` a `duracion_cuatrimestres`: la abstracción genérica se conserva.
 
 *Sin `UNIQUE` compuesto:* los conceptos los genera el servicio dentro de una transacción; un unique estricto con `numero` nullable resulta incómodo en MySQL.
 
@@ -817,8 +828,10 @@ Un alumno no puede avanzar de `DRAFT` a `DATA_COMPLETE` sin tener: datos persona
 ### RB-3 — Generación de cargos *(CORREGIDA)*
 Al pasar de `DATA_COMPLETE` a `PENDING_PAYMENT`, `InscripcionService` genera **en una sola transacción**:
 - **1 concepto `INSCRIPCION`** (obligatorio para completar la inscripción) con el monto *snapshot* `monto_inscripcion`;
-- **N conceptos `MENSUALIDAD`** como **obligaciones futuras**, con vencimientos calculados desde el periodo y el monto *snapshot* `monto_mensualidad`;
-- el descuento del convenio **solo si `convenio_estatus = APROBADO`** (si no, descuento 0).
+- **N conceptos `MENSUALIDAD`** como **obligaciones futuras**, con vencimientos calculados desde el periodo y el monto *snapshot* `monto_mensualidad` — **UVZ opera por cuatrimestres ⇒ N = 4** exactamente (decisión UVZ, §4.9), venciendo el **día 10** (`config('escolar.dia_vencimiento_mensualidad')`) de los cuatro meses derivados de `periodos.fecha_inicio`;
+- el descuento del convenio **solo si `convenio_estatus = APROBADO`** (si no, descuento 0) y **únicamente sobre el concepto `INSCRIPCION`** (las mensualidades nunca lo reciben, decisión UVZ);
+- **idempotencia**: si ya existen cargos, la generación se rechaza explícitamente sin crear duplicados ni cambiar el estado;
+- **precondición**: si hay convenio aplicado debe estar `APROBADO` o `RECHAZADO`; `PENDIENTE_APROBACION` **bloquea** la generación (F23).
 
 **Las mensualidades generadas no bloquean la inscripción inicial:** pueden permanecer `PENDIENTE` mientras el alumno avanza y queda `ENROLLED`.
 Si `monto_inscripcion = 0`, el concepto `INSCRIPCION` nace `PAGADO` para no bloquear el flujo.
@@ -1123,10 +1136,12 @@ ADMISIONES → avanzar desde DATA_COMPLETE
   → InscripcionService::generarCargos()   **UNA transacción**
       → PRECONDICIÓN: si hay convenio, convenio_estatus debe ser APROBADO o RECHAZADO
             (PENDIENTE_APROBACION ⇒ se detiene y se notifica en UI)
-      → crear ConceptoPago tipo INSCRIPCION (obligatorio; PAGADO si monto = 0)
-      → crear N ConceptoPago tipo MENSUALIDAD (obligaciones futuras, vencimientos del periodo)
-      → aplicar descuento SOLO si convenio APROBADO
-      → transicionar(DATA_COMPLETE → PENDING_PAYMENT) + auditoria
+      → PRECONDICIÓN: si ya existen cargos ⇒ se rechaza (sin duplicados)
+      → crear ConceptoPago tipo INSCRIPCION (obligatorio; PAGADO si monto = 0; vence en periodo.fecha_inicio)
+      → crear 4 ConceptoPago tipo MENSUALIDAD (cuatrimestre UVZ: cuatro meses desde
+            periodo.fecha_inicio, vencimiento el día config('escolar.dia_vencimiento_mensualidad'))
+      → aplicar descuento SOLO si convenio APROBADO y SOLO al concepto INSCRIPCION
+      → transicionar(DATA_COMPLETE → PENDING_PAYMENT) + auditoria (cargos_generados)
   → si falla: ROLLBACK completo (nada se creó)
 ```
 
@@ -1386,7 +1401,7 @@ Las 6 decisiones bloqueantes **ya fueron aprobadas**; se resumen aquí con su re
 | 4 | **Alumnos**: `alumnos`, `contactos`, `informacion_medicas` + pantallas Livewire (pasos 2–6) + restricción de info médica | F1–F3, F27 |
 | 5 | **Núcleo**: `inscripciones`, máquina de estados, `InscripcionService`, `AuditoriaService`, trait `HasAudit` | U1–U3, F21 |
 | 6 | Wizard de inscripción Livewire (pasos 1–6) con validación por paso | F4–F5, F22, F28 |
-| 7 | **Convenio**: `ConvenioService` (aplicar/aprobar/rechazar) + **generación de cargos automática** (INSCRIPCION + MENSUALIDADES) | U4–U6, F23–F24 |
+| 7 | **Convenio**: `ConvenioService` (aplicar/aprobar/rechazar) + **generación de cargos automática** (1 `INSCRIPCION` + **4** `MENSUALIDAD`, cuatrimestre UVZ con día configurable) | U4–U6, F23–F24 |
 | 8 | **Pagos**: registro + validación/rechazo + folio + efecto de estado **solo para INSCRIPCION** | F11–F12, F25 |
 | 9 | **Comprobante de pago PDF** (dependencia P1) bajo demanda, solo `VALIDADO` | F26 |
 | 10 | **Documentos**: carga (10 MB, formatos) + validación/rechazo + obligatorios | F13–F15 |
