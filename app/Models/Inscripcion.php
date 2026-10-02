@@ -8,6 +8,7 @@ use App\Models\Concerns\HasAudit;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -84,6 +85,12 @@ class Inscripcion extends Model
     public function convenio(): BelongsTo
     {
         return $this->belongsTo(Convenio::class);
+    }
+
+    /** Cargos generados (§4.9): 1 INSCRIPCION + 4 MENSUALIDADES (Fase 7). */
+    public function conceptosPago(): HasMany
+    {
+        return $this->hasMany(ConceptoPago::class);
     }
 
     public function creadoPor(): BelongsTo
