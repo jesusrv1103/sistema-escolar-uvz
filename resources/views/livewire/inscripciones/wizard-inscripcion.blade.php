@@ -298,6 +298,14 @@
             :inscripcion="$inscripcion"
             wire:key="convenio-{{ $inscripcion->id }}" />
 
+        {{-- Pagos (Fase 8): captura y revisión four-eyes sobre los cargos --}}
+        <livewire:pagos.modal-registrar-pago
+            :inscripcion="$inscripcion"
+            wire:key="pago-registrar-{{ $inscripcion->id }}" />
+        <livewire:pagos.modal-validar-pago
+            :inscripcion="$inscripcion"
+            wire:key="pago-validar-{{ $inscripcion->id }}" />
+
         <div class="mt-4 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
             <h2 class="text-sm font-semibold text-brand-text">Cargos</h2>
 

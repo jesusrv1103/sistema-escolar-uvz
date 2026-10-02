@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Pagos\ComprobantePagoController;
 use App\Livewire\Alumnos\FormAlumno;
 use App\Livewire\Alumnos\FormContactos;
 use App\Livewire\Alumnos\FormInfoMedica;
@@ -42,6 +43,14 @@ Route::middleware('auth')->prefix('inscripciones')->name('inscripciones.')->grou
     Route::get('/', ListaInscripciones::class)->name('lista');
     Route::get('/nueva', WizardInscripcion::class)->name('nueva');   // antes de {inscripcion}
     Route::get('/{inscripcion}', WizardInscripcion::class)->name('ver');
+});
+
+// Comprobante de pago cargado (Fase 8): archivo PRIVADO servido por un
+// controlador mínimo con policy; la ruta interna se resuelve desde BD
+// (nunca desde el cliente) y se impide path traversal. NO es el PDF
+// institucional (Fase 9).
+Route::middleware('auth')->prefix('pagos')->name('pagos.')->group(function () {
+    Route::get('/{pago}/comprobante', [ComprobantePagoController::class, 'show'])->name('comprobante');
 });
 
 // Catálogos administrables (Fase 3) — solo ADMIN.
