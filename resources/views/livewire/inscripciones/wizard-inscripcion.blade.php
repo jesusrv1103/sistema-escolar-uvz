@@ -292,6 +292,13 @@
         @endif
     </div>
 
+    {{-- Convenio (Fase 7) — la lógica vive en ConvenioService --}}
+    @if ($inscripcion !== null)
+        <livewire:inscripciones.modal-aplicar-convenio
+            :inscripcion="$inscripcion"
+            wire:key="convenio-{{ $inscripcion->id }}" />
+    @endif
+
     {{-- Navegación --}}
     <div class="mt-4 flex items-center justify-between">
         <button type="button" wire:click="atras" @disabled($paso === 1)
