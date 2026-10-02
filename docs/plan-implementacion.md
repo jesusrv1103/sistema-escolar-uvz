@@ -1,7 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8 y 9 **COMPLETAS**; **Fase 10 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9 y 10 **COMPLETAS**; **Fase 11 NO iniciada** — requiere aprobación explícita.
 
 ---
 
@@ -133,13 +133,15 @@
 
 **✅ COMPLETA (02/10/2026):** `barryvdh/laravel-dompdf` **3.1.2** (dompdf 3.1.6) instalado vía Composer. `ComprobantePagoService` (`datos()` + `generar()`) exige pago `VALIDADO` con folio/validación/integridad completas, carga solo las relaciones necesarias, prepara los datos (branding desde `config('branding.*')`, logo como **data URI local** sin exponer rutas ni usar internet) y renderiza **bajo demanda** — sin persistir el PDF en BD ni en disco, sin modificar el pago y sin auditoría adicional. Vista Blade independiente con CSS propio DomPDF (sin Tailwind/Vite), contenido escapado, sin datos médicos/sensibles y con los avisos "Comprobante administrativo de pago / No constituye factura fiscal". `Pagos\ComprobantePdfController` invokable (nombre elegido por el usuario por colisión con el controlador de evidencia de Fase 8, **cuya ruta/semántica no se tocó**): `auth` + policy `descargarComprobantePdf` (4 roles con lectura) y nombre de descarga `comprobante-<FOLIO>.pdf`; ruta nueva `GET /pagos/{pago}/comprobante-pdf` (`pagos.comprobante-pdf`); no `VALIDADO` ⇒ 404. **163 pruebas verdes** (F26 + 9 de cobertura adicional en `ComprobantePagoTest`).
 
-## Fase 10 — Documentos
+## Fase 10 — Documentos ✅ COMPLETA
 
 | Elemento | Detalle |
 |---|---|
 | Tareas | `DocumentoService` (MIME real con `finfo`, ≤ 10 MB, formatos PDF/JPG/JPEG/PNG, disco privado), `PanelDocumentos`, `DescargaArchivosController` |
 | Reglas | Upsert por `(inscripcion_id, tipo_documento_id)`; `PENDING_DOCUMENTS → DOCUMENT_REVIEW` solo con todos los obligatorios cargados; rechazo con motivo |
 | Pruebas | **F13** carga completa, **F14** obligatorio faltante bloquea, **F15** rechazo con motivo |
+
+**✅ COMPLETA (02/10/2026):** migración `documentos` (UNIQUE `(inscripcion_id, tipo_documento_id)`, FK `cascade/restrict`, sin soft delete) + modelo `Documento` con `estatus`/`validado_*`/`motivo_rechazo` **fuera de `$fillable`** y relaciones en `Inscripcion`/`TipoDocumento`. `DocumentoService` (`subir()/aceptar()/rechazar()`) es el **único punto de negocio**: validación server-side (tamaño ≤ 10 MB, extensión admitida y **MIME real con `finfo`**), ruta interna UUID en **disco `private`** (el nombre original solo es metadato), rate limiting de cargas (30/min), **upsert por clave lógica** —una recarga reutiliza ESA MISMA fila, la deja `PENDIENTE` y limpia `validado_*`/`motivo_rechazo`— y **patrón de compensación**: archivo nuevo ANTES de la transacción, ante fallo de BD se borra el nuevo y el anterior jamás se toca; solo tras COMMIT se retira el reemplazado. Transiciones SIEMPRE vía `InscripcionService::transicionar()`: `PENDING_DOCUMENTS → DOCUMENT_REVIEW` cuando TODOS los obligatorios activos estén cargados (los opcionales no bloquean), `DOCUMENT_REVIEW → FINAL_REVIEW` cuando todos los obligatorios estén `ACEPTADO` (con `documentos_validados_at`), y rechazo `DOCUMENT_REVIEW → PENDING_DOCUMENTS` con el motivo como motivo explícito. `PanelDocumentos` (Livewire, ruta `inscripciones.documentos` integrada al wizard y al listado): muestra tipo, obligatorio/opcional, estatus, nombre original, fecha, responsable, motivo y acciones por permisos (histórico de tipos desactivados incluido, RB-18 sin datos médicos); `Documentos\DescargaArchivosController` (`documentos.archivo`, 2 rutas nuevas en total): auth + policy `view`, ruta SOLO desde BD, verificación de pertenencia al disco privado y anti path traversal. **192 pruebas verdes** (F13/F14/F15 + 26 de cobertura adicional: formatos, MIME, compensación, roles, descargas y auditoría).
 
 ## Fase 11 — Observaciones
 
@@ -225,4 +227,4 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de la Fase 9:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ **COMPLETA** · **Fase 10 ⬜ NO iniciada, pendiente de aprobación del usuario.**
+> **Estado al cierre de la Fase 10:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ **COMPLETA** · **Fase 11 ⬜ NO iniciada, pendiente de aprobación del usuario.**

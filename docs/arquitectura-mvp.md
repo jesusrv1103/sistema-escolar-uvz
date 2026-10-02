@@ -1050,6 +1050,8 @@ Toda acción está limitada por la matriz de §8. El rol se verifica tanto a niv
 | integridad | MIME real verificado server-side (`finfo`), no solo la extensión |
 | Validación | `motivo_rechazo` **required** cuando se rechaza |
 
+> **Interpretación aprobada (Fase 10 — aclaración de "no registrado ya", coherente con RB-7/FC-6):** "no registrado ya" se refiere a que **jamás existan DOS filas** para el mismo tipo en una inscripción, no a prohibir la recarga. Se conserva `UNIQUE(inscripcion_id, tipo_documento_id)`: la primera carga **crea** el `Documento` y toda recarga **actualiza ESA MISMA fila** (vuelve a `PENDIENTE`, limpia `validado_por`/`validado_at`/`motivo_rechazo`); el reemplazo está permitido en las etapas del flujo de documentos —especialmente tras un `RECHAZADO`—, el archivo anterior se elimina **solo después del COMMIT** de la nueva carga, la trazabilidad del reemplazo vive en `auditoria` (`documento_subido`/`documento_reemplazado`) y **no** se crea histórico con filas duplicadas ni tabla de versiones.
+
 ### 12.9 Observaciones
 
 | Campo | Regla |

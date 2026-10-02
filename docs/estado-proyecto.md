@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 9** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 10** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -18,7 +18,8 @@
 | Fase 7 — Convenios y generación de cargos | ✅ **COMPLETA** (113 pruebas, build correcto, sin rutas nuevas) |
 | Fase 8 — Pagos | ✅ **COMPLETA** (153 pruebas, build correcto, 1 ruta nueva: comprobante privado) |
 | Fase 9 — Comprobante de pago PDF | ✅ **COMPLETA** (163 pruebas, build correcto, 1 ruta nueva: `pagos.comprobante-pdf`) |
-| Fases 10–16 | ⬜ pendientes (esperan aprobación) |
+| Fase 10 — Documentos | ✅ **COMPLETA** (192 pruebas, build correcto, 2 rutas nuevas: `documentos.archivo`, `inscripciones.documentos`) |
+| Fases 11–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -191,15 +192,38 @@
 - Pruebas ejecutadas **exclusivamente** contra `sistema_escolar_testing`.
 - Sin nuevos artefactos en `storage` (el PDF solo viaja en la respuesta), sin cambios en `PagoService` ni en el módulo de la Fase 8.
 
+## Fase 10 — documentos (implementado)
+
+- **Interpretación aprobada de reemplazo (§12.8 vs RB-7/FC-6, registrada en arquitectura §12.8):** UN solo registro por `(inscripcion_id, tipo_documento_id)`; la primera carga **crea** el `Documento` y la recarga **actualiza ESA MISMA fila** (vuelve `PENDIENTE`, limpia `validado_por/validado_at/motivo_rechazo`, conserva `UNIQUE`); el reemplazo está permitido en las etapas del flujo de documentos (especialmente tras un `RECHAZADO`), la trazabilidad vive en `auditoria` (acciones `documento_subido` / `documento_reemplazado` con `estado_anterior`) y el archivo anterior se elimina **solo después del COMMIT**. Sin tabla de versiones.
+- **Migración** `2026_10_01_000015_create_documentos_table` (§4.12): `inscripcion_id` (FK **cascade**), `tipo_documento_id` (FK **restrict**), `ruta`, `nombre_original`, `mime`, `tamano_kb` (≤ 10240), `estatus(20)` default `PENDIENTE`, `validado_por`/`subido_por` (FK a `users`), `validado_at`, `motivo_rechazo`, `timestamps`; **UNIQUE `(inscripcion_id, tipo_documento_id)`**; **sin soft delete**; sin observaciones (Fase 11).
+- **Modelo/relaciones:** `Documento` (`fillable` explícito **sin** `estatus`/`validado_*`/`motivo_rechazo` — los escribe solo el servicio; cast `EstatusDocumento`; `belongsTo Inscripcion/TipoDocumento/subidoPor/validadoPor`) + `Inscripcion::documentos()` y `TipoDocumento::documentos()` (hasMany); `DocumentoPolicy` registrada en `AuthServiceProvider`.
+- **`DocumentoService`** (único punto de negocio; la UI no escribe ruta, metadata, estatus ni `inscripciones.estatus`):
+  - `subir()` — gates `documento.cargar` (los 4 roles; operativo ADMISIONES) + rate limiting 30 cargas/min; precondiciones: inscripción existente en `PENDING_DOCUMENTS`/`DOCUMENT_REVIEW`/`FINAL_REVIEW` (nunca `ENROLLED`/`CANCELLED` ni etapas previas al pago) y tipo existente/activo/no eliminado; archivo obligatorio PDF/JPG/JPEG/PNG ≤ 10 MB con **extensión + MIME real `finfo`**; disco **`private`** con nombre interno UUID (el nombre original solo es metadato); **upsert por clave lógica**; **patrón de compensación** (archivo nuevo antes de la transacción → fallo de BD ⇒ se borra el nuevo y el anterior jamás se toca → COMMIT ⇒ se retira el reemplazado); tras cada carga, si la inscripción está en `PENDING_DOCUMENTS` y **TODOS los obligatorios activos** están cargados ⇒ `DOCUMENT_REVIEW` **vía `InscripcionService::transicionar()`**.
+  - `aceptar()` — gates `documento.validar` (CONTROL_ESCOLAR + ADMIN); documento `PENDIENTE` + inscripción en `DOCUMENT_REVIEW` + archivo presente en disco; `ACEPTADO` con `validado_por/at`; auditoría `documento_aceptado`; si **todos los obligatorios** quedan `ACEPTADO` ⇒ `FINAL_REVIEW` vía `transicionar()` (escribe `documentos_validados_at`); los **opcionales no bloquean**.
+  - `rechazar()` — gates `documento.validar`; motivo `required` 5–2000; `RECHAZADO` conservando el archivo (evidencia) + auditoría `documento_rechazado`; si la inscripción está en `DOCUMENT_REVIEW` ⇒ retroceso a `PENDING_DOCUMENTS` **con el motivo como motivo explícito**; después ADMISIONES puede reemplazarlo.
+- **UI:** `PanelDocumentos` (Livewire, ruta `GET /inscripciones/{inscripcion}/documentos` → `inscripciones.documentos`, enlazado desde el wizard y el listado): tipo, obligatorio/opcional, estatus, nombre original, fecha/responsable de carga, motivo de rechazo, descargar y acciones subir/reemplazar/aceptar/rechazar **según permisos server-side**; muestra el **histórico** de tipos desactivados/eliminados (§20); **sin información médica** (RB-18) y sin dashboard nuevo.
+- **Descarga privada:** `Documentos\DescargaArchivosController` (1 ruta nueva `GET /documentos/{documento}/archivo` → `documentos.archivo`): `auth` + `DocumentoPolicy::view` (4 roles), ruta resuelta **solo desde BD**, verificación de pertenencia real al disco `private` (anti path traversal), 404 si no existe y nombre de descarga sanitizado desde el nombre original. **No** toca `/pagos/{pago}/comprobante{,-pdf}`.
+- **Pruebas nuevas (29)** en `tests/Feature/DocumentoTest.php`: **F13** carga completa ⇒ `DOCUMENT_REVIEW` con archivos/metadata/auditoría; **F14** obligatorio faltante bloquea (`PENDING_DOCUMENTS` y sin `FINAL_REVIEW`) + un obligatorio no `ACEPTADO` no cierra la revisión; **F15** rechazo con motivo ⇒ `RECHAZADO` + retroceso + archivo conservado (motivo vacío/corto rechazado); los 4 formatos con su MIME real; extensión prohibida / MIME falso / >10 MB; disco `private` con ruta UUID y nombre original no usado como path; misma fila en reemplazo + limpieza de `RECHAZADO` + borrado del archivo viejo tras COMMIT; **compensación real** (FK de usuario fantasma: sin filas ni huérfanos al subir; al reemplazar se conserva el archivo viejo y se elimina el nuevo); tipos inactivos/eliminados sin carga e histórico visible; opcional no bloquea (`documentos_validados_at` al cerrar); 4 roles cargan; ADMISIONES/ADMINISTRACION 403 en aceptar/rechazar (servicio y panel); CONTROL_ESCOLAR/ADMIN validan; panel (recibe archivo, estados/motivo, sin carga fuera de etapas, sin datos médicos); descarga por los 4 roles con nombre original, auth/inactivo, traversal/inexistente, independencia de rutas de pagos; ciclo completo con auditoría.
+
+## Validación al cierre de la Fase 10
+
+- `composer test` → **192 pruebas / 1378 assertions, todas verdes** (163 previas intactas + 29 nuevas de Fase 10).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → **31 rutas** (29 previas + 2 nuevas: `documentos.archivo`, `inscripciones.documentos`).
+- Migración 000015 ejecutada también en la BD de desarrollo; las pruebas corren **exclusivamente** contra `sistema_escolar_testing`.
+- Sin mocks: los rollback/compensación se probaron con **fallo real de FK** (usuario fantasma) sobre `Storage::fake('private')`, con servicios, policies y transiciones reales; sin escritura en `public/` ni binarios en BD.
+- NO se crearon: observaciones, consecutivos, número de control, `ENROLLED`, cancelación, dashboard ni versionado documental.
+
 ## Pendientes / registrados
 
-- **Fase 10 no iniciar** hasta aprobación del usuario.
+- **Fase 11 no iniciar** hasta aprobación del usuario.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies de modelos de fases futuras: las 8 clases ya existen; Laravel las asocia por convención cuando los modelos se creen (sin código artificial).
 - Logo variante para fondos oscuros: **PENDIENTE** (el sitio no la publica; `branding.logo_dark` reutiliza el horizontal).
 - `duracion_periodos`, `periodos` iniciales y más tipos de documento: **PENDIENTES de fuente institucional** (se capturan/seedan cuando UVZ confirme datos; nada inventado).
 - Lectura **contextual** de información médica para CONTROL_ESCOLAR: **PENDIENTE** del flujo de revisión final (Fase futura; en Fase 4 no existe pantalla general).
-- Guardas de negocio pendientes en la máquina de estados (documentos, observaciones, número de control): **PENDIENTES** de sus fases; en Fase 5 **no se simularon** con datos ficticios (§7.3.5). La guarda de **pagos `INSCRIPCION`** quedó implementada en Fase 8.
+- Guardas de negocio pendientes en la máquina de estados (observaciones, número de control): **PENDIENTES** de sus fases; en Fase 5 **no se simularon** con datos ficticios (§7.3.5). Las guardas de **pagos `INSCRIPCION`** y de **documentos obligatorios** quedaron implementadas en las Fases 8 y 10.
 - Comprobante PDF con branding UVZ → **Fase 9 ✅ COMPLETA** (bajo demanda, solo pagos `VALIDADO`).
-- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977`, de Fase 7 en `fe6c977`→`d8337f0` y de Fase 8 en `d8337f0`→`87bb211`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-9-comprobante-pdf`, **sin merge a master**; se conservan `feat/fase-8-pagos`, `feat/fase-7-convenios-cargos`, `feat/fase-6-wizard-inscripcion`, `feat/fase-5-nucleo-inscripcion` y `feat/fase-4-expediente-alumno`); sin remotos ni push.
+- Documentos: recepción/reemplazo/validación con `DocumentoService`, `PanelDocumentos` y descarga privada → **Fase 10 ✅ COMPLETA** (UNIQUE por tipo, compensación de archivos, F13–F15).
+- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977`, de Fase 7 en `fe6c977`→`d8337f0`, de Fase 8 en `d8337f0`→`87bb211` y de Fase 9 en `87bb211`→`2f13e84`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-10-documentos`, **sin merge a master**; se conservan `feat/fase-9-comprobante-pdf`, `feat/fase-8-pagos`, `feat/fase-7-convenios-cargos`, `feat/fase-6-wizard-inscripcion`, `feat/fase-5-nucleo-inscripcion` y `feat/fase-4-expediente-alumno`); sin remotos ni push.
