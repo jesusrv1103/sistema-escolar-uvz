@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 4** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 5** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -13,7 +13,8 @@
 | Fase 2 — Seguridad y autorización base | ✅ **COMPLETA** (26 pruebas, build correcto, `route:list` OK) |
 | Fase 3 — Catálogos | ✅ **COMPLETA** (38 pruebas, build correcto, `route:list` OK) |
 | Fase 4 — Expediente del alumno | ✅ **COMPLETA** (54 pruebas, build correcto, `route:list` OK) |
-| Fases 5–16 | ⬜ pendientes (esperan aprobación) |
+| Fase 5 — Núcleo del flujo de inscripción | ✅ **COMPLETA** (69 pruebas, build correcto, `route:list` OK) |
+| Fases 6–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -48,6 +49,16 @@
 - **Autorización médica (RB-18):** pantalla y acciones exigen `informacionMedica.edit` → ADMIN ✔, ADMISIONES ✔, **ADMINISTRACION ✖ (403)**, **CONTROL_ESCOLAR ✖ en Fase 4** (sin pantalla general: su lectura contextual se habilitará con la revisión final; conserva `informacionMedica.view`). `@can` solo complementa.
 - **CURP:** validación sintáctica local (18 caracteres + estructura + unicidad local, normalización a mayúsculas), sin consultas RENAPO ni afirmación de existencia oficial; factories/pruebas usan CURPs ficticias `ZZZZ…`.
 - **Privacidad:** la información médica no aparece en listados, búsquedas ni dashboard; `actualizado_por` registra quién la editó; sin datos reales en seeders/pruebas.
+
+## Fase 5 — núcleo del flujo de inscripción (implementado)
+
+- **Migraciones** `2026_10_01_000011`–`000012`: `inscripciones` (estados, montos snapshot, campos de convenio, hitos, responsables, **`UNIQUE(alumno_id, periodo_id)`**, índices `estatus` / `(periodo_id, estatus)` / `convenio_estatus`, soft deletes) y `auditoria` (morph, **sin `updated_at`**, sin soft delete, índice `(auditable_type, auditable_id)`).
+- **Modelos:** `Inscripcion` (`$table` explícito; `estatus` y responsables **fuera de `$fillable`** — solo los escribe el servicio; casts enum/decimal/datetime; 9 `belongsTo` + `morphMany` auditoría) y `Auditoria` (append-only: `update()`/`delete()`/`forceDelete()`/`restore()` lanza `LogicException`).
+- **Máquina de estados:** única matriz `InscripcionEstatus::TRANSICIONES` (19 aristas de §7.2); helpers `puedeIrA`, `esRetroceso`, `requiereMotivo` (retrocesos y toda cancelación exigen motivo); `ENROLLED`/`CANCELLED` terminales. Las guardas de pagos/documentos/NC **no se simulan**.
+- **Servicios:** `InscripcionService` (único punto que modifica `estatus`: valida → `DB::transaction` → estatus + hitos/responsables → auditoría; excepciones explícitas `TransicionInvalidaException` / `MotivoRequeridoException`) y `AuditoriaService` (único punto de escritura de `auditoria`; ip/agent solo con contexto HTTP; payload depurado de passwords/tokens/datos médicos). Trait `HasAudit` (relación + acceso al servicio).
+- **Hitos en la transición:** `DATA_COMPLETE`→`datos_completados_at`, `PAYMENT_VALIDATED`→`pagos_validados_at`, `FINAL_REVIEW`→`documentos_validados_at`, `ENROLLED`→`finalizada_at`+`validada_por`, `CANCELLED`→`cancelada_por/at/motivo` (una sola vez; dentro de la transacción).
+- **Sin alcance:** sin Wizard, sin `conceptos_pago`, pagos, documentos, observaciones, consecutivos ni número de control.
+- **Pruebas:** 15 nuevas — `MaquinaEstadosTest` (U1, U2, U3 terminal + retrocesos con motivo), `AuditoriaTest` (F21 con las 19 aristas, transición inválida sin rastro, rollback si falla auditoría, append-only, payload sin datos sensibles) e `InscripcionTest` (UNIQUE de BD, `estatus` no mas-asignable, casts, relaciones, soft delete, `InscripcionPolicy` conectada al modelo).
 
 ## Stack y entorno
 
@@ -87,6 +98,13 @@
 - `php artisan route:list` → 5 rutas nuevas bajo `/alumnos…` con `auth`; autorización verificada server-side.
 - Migraciones 000008–000010 ejecutadas en la BD de desarrollo; las pruebas corren **solo** contra `sistema_escolar_testing`.
 
+## Validación al cierre de la Fase 5
+
+- `composer test` → **69 pruebas / 609 assertions, todas verdes** (54 previas intactas + 15 nuevas de Fase 5: `tests/Unit/MaquinaEstadosTest.php` U1–U3 y motivo de retrocesos; `tests/Feature/AuditoriaTest.php` F21, atomicidad y append-only; `tests/Feature/InscripcionTest.php` UNIQUE, casts, relaciones, soft delete y policy).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → **24 rutas** (sin rutas nuevas: la Fase 5 es dominio + persistencia, sin pantallas).
+- Migraciones 000011–000012 ejecutadas en la BD de desarrollo; las pruebas corren **solo** contra `sistema_escolar_testing`.
+
 ## Pendientes / registrados
 
 - **Fase 5 no iniciar** hasta aprobación del usuario.
@@ -96,5 +114,6 @@
 - Logo variante para fondos oscuros: **PENDIENTE** (el sitio no la publica; `branding.logo_dark` reutiliza el horizontal).
 - `duracion_periodos`, `periodos` iniciales y más tipos de documento: **PENDIENTES de fuente institucional** (se capturan/seedan cuando UVZ confirme datos; nada inventado).
 - Lectura **contextual** de información médica para CONTROL_ESCOLAR: **PENDIENTE** del flujo de revisión final (Fase futura; en Fase 4 no existe pantalla general).
+- Guardas de negocio pendientes en la máquina de estados (pagos `INSCRIPCION`, documentos, observaciones, número de control): **PENDIENTES** de sus fases; en Fase 5 **no se simularon** con datos ficticios (§7.3.5).
 - Comprobante PDF con branding UVZ → **Fase 9**.
 - Git local activo: `master` acumula las fases aprobadas y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-5-nucleo-inscripcion`); sin remotos ni push.

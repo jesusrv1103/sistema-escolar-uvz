@@ -1,7 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fases 1, 1.1, 2, 3 y 4 **COMPLETAS**; **Fase 5 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fases 1, 1.1, 2, 3, 4 y 5 **COMPLETAS**; **Fase 6 NO iniciada** — requiere aprobación explícita.
 
 ---
 
@@ -81,13 +81,17 @@
 | CURP | Sintaxis local (`Alumno::REGEX_CURP`, 18 chars, normalización a mayúsculas) + `unique` local; sin consultas RENAPO; datos ficticios en factories/pruebas (`ZZZZ…`) |
 | Estado | ✅ **COMPLETA** — `composer test` 54 pruebas / 304 assertions verdes; `npm run build` OK; `route:list` OK |
 
-## Fase 5 — Núcleo del flujo de inscripción
+## Fase 5 — Núcleo del flujo de inscripción ✅ COMPLETA
 
 | Elemento | Detalle |
 |---|---|
 | Tareas | Modelo `Inscripcion`, **máquina de estados única** (constante `TRANSICIONES`), `InscripcionService::transicionar()`, `AuditoriaService`, trait `HasAudit` |
 | Migración | `inscripciones` (estados, montos snapshot, campos de convenio, hitos, responsables, **UNIQUE (alumno_id, periodo_id)**), `auditoria` (morph, sin `updated_at`) |
 | Pruebas | **U1–U3** matriz de transiciones, **F21** auditoría completa por transición |
+| Estado máquina | `InscripcionEstatus::TRANSICIONES` (19 aristas de §7.2); retrocesos y `CANCELLED` exigen motivo; `ENROLLED`/`CANCELLED` terminales; guardas de módulos futuros **no** simuladas |
+| Servicios | `InscripcionService` (valida → transacción → estatus + hitos/responsables → auditoría; excepciones `TransicionInvalida`/`MotivoRequerido`) y `AuditoriaService` (único punto de escritura, payload depurado, ip/agent opcionales) |
+| Sin alcance | Sin Wizard, sin `conceptos_pago`, sin pagos/documentos/observaciones/consecutivos (Fases 6–12) |
+| Estado | ✅ **COMPLETA** — `composer test` 69 pruebas / 609 assertions verdes; `npm run build` OK; `route:list` OK |
 
 ## Fase 6 — Wizard de inscripción
 
@@ -216,4 +220,4 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de la Fase 4:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ **COMPLETA** · **Fase 5 ⬜ NO iniciada, pendiente de aprobación del usuario.**
+> **Estado al cierre de la Fase 5:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ **COMPLETA** · **Fase 6 ⬜ NO iniciada, pendiente de aprobación del usuario.**
