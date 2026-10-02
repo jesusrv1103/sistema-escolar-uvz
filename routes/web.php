@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Pagos\ComprobantePagoController;
+use App\Http\Controllers\Pagos\ComprobantePdfController;
 use App\Livewire\Alumnos\FormAlumno;
 use App\Livewire\Alumnos\FormContactos;
 use App\Livewire\Alumnos\FormInfoMedica;
@@ -51,6 +52,10 @@ Route::middleware('auth')->prefix('inscripciones')->name('inscripciones.')->grou
 // institucional (Fase 9).
 Route::middleware('auth')->prefix('pagos')->name('pagos.')->group(function () {
     Route::get('/{pago}/comprobante', [ComprobantePagoController::class, 'show'])->name('comprobante');
+    // Comprobante institucional PDF (Fase 9): se genera BAJO DEMANDA para
+    // pagos VALIDADO, sin persistir copia; semántica propia y separada de la
+    // evidencia cargada anterior.
+    Route::get('/{pago}/comprobante-pdf', ComprobantePdfController::class)->name('comprobante-pdf');
 });
 
 // Catálogos administrables (Fase 3) — solo ADMIN.
