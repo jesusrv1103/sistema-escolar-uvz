@@ -342,6 +342,11 @@
             </a>
         </div>
 
+        {{-- Cancelación (Fase 13): solo ADMIN, estados no terminales, motivo obligatorio --}}
+        <livewire:inscripciones.modal-cancelar-inscripcion
+            :inscripcion="$inscripcion"
+            wire:key="cancelar-{{ $inscripcion->id }}" />
+
         <div class="mt-4 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
             <h2 class="text-sm font-semibold text-brand-text">Cargos</h2>
 
