@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 12** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 13** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -21,7 +21,8 @@
 | Fase 10 — Documentos | ✅ **COMPLETA** (192 pruebas, build correcto, 2 rutas nuevas: `documentos.archivo`, `inscripciones.documentos`) |
 | Fase 11 — Observaciones | ✅ **COMPLETA** (219 pruebas, build correcto, 1 ruta nueva: `inscripciones.observaciones`) |
 | Fase 12 — Revisión final y número de control | ✅ **COMPLETA** (256 pruebas, build correcto, 1 ruta nueva: `inscripciones.revision-final`) |
-| Fases 13–16 | ⬜ pendientes (esperan aprobación) |
+| Fase 13 — Cancelación | ✅ **COMPLETA** (271 pruebas, build correcto, sin rutas nuevas) |
+| Fases 14–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -255,9 +256,27 @@
 - Sin mocks: guardas/rollback probados con servicios reales, evento `creating` real de `auditoria`, `QueryException` real de MySQL y `FOR UPDATE` capturado de la conexión real.
 - NO se hizo: `cancelar()`, reembolsos, dashboard, reportes, constancia PDF, portal alumno, módulos académicos; folio de pagos y `PagoService` intactos; sin información médica en el panel.
 
+## Fase 13 — cancelación (implementado)
+
+- **Regla de negocio aplicada (FC-8/RB-11):** cualquier estado **NO final** de la máquina existente puede ir a `CANCELLED`; `ENROLLED` y `CANCELLED` son terminales y **no se cancelan** (rechazo explícito de ambos; sin idempotencia silenciosa). **Sin transiciones nuevas** fuera de la máquina de estados.
+- **`CancelacionInvalidaException`** (excepción de dominio nueva): motivo inválido o estatus no cancelable; la UI la traduce en error de formulario y siempre ocurre dentro de la transacción ⇒ ROLLBACK TOTAL.
+- **`InscripcionService::cancelar(Inscripcion, string $motivo, ?User)`** — único punto de negocio: authorize `inscripcion.cancelar` (capacidad **ya existente** sin roles asignados ⇒ solo ADMIN vía `Gate::before`; ADMISIONES/ADMINISTRACION/CONTROL_ESCOLAR y usuarios inactivos 403; **sin permisos duplicados**) → motivo con **trim server-side**, obligatorio (no vacío ni solo espacios) y ≤ 2000 (mismo patrón que los rechazos de pagos/documentos/convenios) → **EN UNA transacción**: `lockForUpdate()` de la inscripción con estado fresco → rechazo explícito de los estados terminales → conceptos **únicamente `PENDIENTE → CANCELADO`** → transición a `CANCELLED` **reutilizando `transicionar()`** (escribe `cancelada_por`/`cancelada_at`/`cancelacion_motivo` + auditoría `estado_cambiado` con el motivo) → auditoría **`inscripcion_cancelada`** con contexto mínimo (`conceptos_cancelados`, sin duplicar el motivo); si la auditoría falla ⇒ **ROLLBACK TOTAL**.
+- **Efectos conservados íntegramente:** pagos `VALIDADO`/`RECHAZADO` intactos (id, estatus, folio, referencia, monto, `validado_por/at`, `registrado_por`, comprobante) **sin deletes ni soft deletes**; conceptos `PAGADO` sin tocar `monto`/`descuento`/`monto_total`/`pagado_at`; documentos y observaciones sin borrar ni modificar; número de control sin tocar; **sin reembolsos, sin notas de crédito, sin reversión de pagos ni reapertura**.
+- **UI:** `ModalCancelarInscripcion` (Livewire, componente hijo del wizard, **sin ruta nueva**): panel visible **solo para ADMIN** (`Gate::allows`) y **solo en estados cancelables** (`estatus->puedeIrA(CANCELLED)`) con los tres avisos (definitiva en el MVP, no implica reembolso, pagos validados permanecen registrados) + modal con motivo obligatorio (trim previo + `required|string|max:2000`); tras cancelar muestra `CANCELLED` con confirmación y **sin botón de reapertura**; la acción autoriza server-side (forzar la llamada Livewire ⇒ 403): el `@can`/ocultar el botón es solo UX.
+- **Pruebas nuevas (15)** en `tests/Feature/CancelacionTest.php`: **F19** ADMIN + motivo ⇒ `CANCELLED` con `cancelada_*`, `estado_cambiado` e `inscripcion_cancelada`; 403 de ADMISIONES/ADMINISTRACION/CONTROL_ESCOLAR y de usuario inactivo (aunque sea ADMIN); motivo vacío / solo espacios / 2001 caracteres rechazados; `ENROLLED` y `CANCELLED` rechazados explícitamente; 5 etapas cancelables por la máquina (DRAFT, PENDING_PAYMENT, PAYMENT_REVIEW, PENDING_DOCUMENTS, FINAL_REVIEW); **F20** conceptos mixtos (INSCRIPCION y mensualidad 1 `PAGADO` intactos, mensualidades 2–4 `PENDIENTE → CANCELADO` sin alterar montos/descuentos/`pagado_at`) y pagos mixtos (`VALIDADO` con folio + `RECHAZADO` idénticos campo a campo, observación abierta y NC intactos); **rollback real** por fallo de `Auditoria::creating` (sin mocks de la lógica principal); UI (panel solo ADMIN/estados cancelables, cierre en `CANCELLED` sin reapertura, motivo exigido, 403 forzado, vista del wizard con el panel).
+
+## Validación al cierre de la Fase 13
+
+- `composer test` → **271 pruebas / 1985 assertions, todas verdes** (256 previas intactas + 15 nuevas de Fase 13).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → **33 rutas** (sin rutas nuevas: el modal es componente hijo del wizard).
+- Pruebas ejecutadas **exclusivamente** contra `sistema_escolar_testing`.
+- Sin mocks: autorización, efectos, máquina de estados y rollback probados con servicios reales y el evento `creating` real de `auditoria`.
+- NO se hizo: dashboard, gráficas, reportes, reembolsos, notas de crédito, reversión de pagos, reapertura de `CANCELLED`, cancelación de `ENROLLED`, devolución de número de control, eliminación de documentos u observaciones; `PagoService` **sin cambios**.
+
 ## Pendientes / registrados
 
-- **Fase 13 no iniciar** hasta aprobación del usuario.
+- **Fase 14 no iniciar** hasta aprobación del usuario.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies: las 8 clases existen desde la Fase 2; `PagoPolicy`, `DocumentoPolicy` y `ObservacionPolicy` están **registradas explícitamente** en `AuthServiceProvider` (modelo real) y el resto se resuelve por convención cuando los modelos las usen (sin código artificial).
@@ -269,4 +288,5 @@
 - Documentos: recepción/reemplazo/validación con `DocumentoService`, `PanelDocumentos` y descarga privada → **Fase 10 ✅ COMPLETA** (UNIQUE por tipo, compensación de archivos, F13–F15).
 - Observaciones: crear/listar/resolver con `ObservacionService`, `ListaObservaciones` y política conectada → **Fase 11 ✅ COMPLETA** (APPEND-ONLY, 27 pruebas, sola guarda `FALTANTE`+`ABIERTA` reutilizable).
 - Revisión final y número de control: `NumeroControlService`, `finalizar()` con guardas RB-8 y `PanelEstados` → **Fase 12 ✅ COMPLETA** (256 pruebas totales, 37 nuevas, 1 ruta nueva; año `YYYY` = `periodos.fecha_inicio`; convenio `RECHAZADO` resuelto sin descuento, no bloquea).
-- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977`, de Fase 7 en `fe6c977`→`d8337f0`, de Fase 8 en `d8337f0`→`87bb211`, de Fase 9 en `87bb211`→`2f13e84`, de Fase 10 en `2f13e84`→`3632f4f` y de Fase 11 en `3632f4f`→`d00b3e2`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-12-revision-final-numero-control`, **sin merge a master**; se conservan `feat/fase-11-observaciones`, `feat/fase-10-documentos`, `feat/fase-9-comprobante-pdf`, `feat/fase-8-pagos`, `feat/fase-7-convenios-cargos`, `feat/fase-6-wizard-inscripcion`, `feat/fase-5-nucleo-inscripcion` y `feat/fase-4-expediente-alumno`); sin remotos ni push.
+- Cancelación: `InscripcionService::cancelar()`, `ModalCancelarInscripcion` y pruebas F19/F20 → **Fase 13 ✅ COMPLETA** (271 pruebas totales, 15 nuevas, sin rutas nuevas; solo ADMIN con motivo; solo `PENDIENTE → CANCELADO`; pagos/documentos/observaciones/NC intactos; sin reembolsos ni reapertura).
+- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977`, de Fase 7 en `fe6c977`→`d8337f0`, de Fase 8 en `d8337f0`→`87bb211`, de Fase 9 en `87bb211`→`2f13e84`, de Fase 10 en `2f13e84`→`3632f4f`, de Fase 11 en `3632f4f`→`d00b3e2` y de Fase 12 en `d00b3e2`→`d625084`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-13-cancelacion`, **sin merge a master**; se conservan `feat/fase-12-revision-final-numero-control`, `feat/fase-11-observaciones`, `feat/fase-10-documentos`, `feat/fase-9-comprobante-pdf`, `feat/fase-8-pagos`, `feat/fase-7-convenios-cargos`, `feat/fase-6-wizard-inscripcion`, `feat/fase-5-nucleo-inscripcion` y `feat/fase-4-expediente-alumno`); sin remotos ni push.
