@@ -2,10 +2,14 @@
 
 namespace App\Policies;
 
+use App\Models\Documento;
 use App\Models\User;
 
 /**
- * Documentos (§8.2): los 4 roles cargan y leen; CONTROL_ESCOLAR valida.
+ * Documentos (§8.2): los 4 roles cargan (`documento.cargar`) y leen;
+ * solo CONTROL_ESCOLAR valida/rechaza (`documento.validar`); ADMIN pasa
+ * siempre por `Gate::before` (D1). Las capacidades viven en
+ * `AuthServiceProvider` (lógica única).
  */
 class DocumentoPolicy
 {
@@ -14,7 +18,8 @@ class DocumentoPolicy
         return $user->activo;
     }
 
-    public function view(User $user): bool
+    /** Lectura/descarga del documento (incluye el archivo en disco privado). */
+    public function view(User $user, ?Documento $documento = null): bool
     {
         return $user->activo;
     }

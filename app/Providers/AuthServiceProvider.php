@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Enums\RolUsuario;
+use App\Models\Documento;
 use App\Models\Pago;
 use App\Models\User;
+use App\Policies\DocumentoPolicy;
 use App\Policies\PagoPolicy;
 use App\Policies\UsuarioPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -68,6 +70,9 @@ class AuthServiceProvider extends ServiceProvider
         // Fase 8: PagoPolicy conectada al modelo real (registro server-side,
         // validación/rechazo four-eyes y descarga del comprobante privado).
         Gate::policy(Pago::class, PagoPolicy::class);
+        // Fase 10: DocumentoPolicy conectada al modelo real (carga, validación
+        // four-eyes y descarga del archivo en disco privado).
+        Gate::policy(Documento::class, DocumentoPolicy::class);
 
         // Las policies de modelos de fases futuras (Alumno, InformacionMedica,
         // Inscripcion, Convenio, Documento, Observacion) ya existen en

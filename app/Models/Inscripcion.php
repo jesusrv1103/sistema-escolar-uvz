@@ -93,6 +93,12 @@ class Inscripcion extends Model
         return $this->hasMany(ConceptoPago::class);
     }
 
+    /** Documentos del expediente (§4.12): uno por tipo, reemplazables. */
+    public function documentos(): HasMany
+    {
+        return $this->hasMany(Documento::class);
+    }
+
     public function creadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'creado_por');

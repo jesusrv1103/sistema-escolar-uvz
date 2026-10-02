@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** Tipo de documento del expediente de inscripción (catálogo, §4.11). */
@@ -28,5 +29,11 @@ class TipoDocumento extends Model
             'obligatorio' => 'boolean',
             'activo' => 'boolean',
         ];
+    }
+
+    /** Registros de este tipo en los expedientes (uno por inscripción). */
+    public function documentos(): HasMany
+    {
+        return $this->hasMany(Documento::class);
     }
 }
