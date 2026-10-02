@@ -1,7 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fases 1, 1.1, 2, 3, 4 y 5 **COMPLETAS**; **Fase 6 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fases 1, 1.1, 2, 3, 4, 5 y 6 **COMPLETAS**; **Fase 7 NO iniciada** — requiere aprobación explícita.
 
 ---
 
@@ -93,7 +93,7 @@
 | Sin alcance | Sin Wizard, sin `conceptos_pago`, sin pagos/documentos/observaciones/consecutivos (Fases 6–12) |
 | Estado | ✅ **COMPLETA** — `composer test` 69 pruebas / 609 assertions verdes; `npm run build` OK; `route:list` OK |
 
-## Fase 6 — Wizard de inscripción
+## Fase 6 — Wizard de inscripción ✅ COMPLETA
 
 | Elemento | Detalle |
 |---|---|

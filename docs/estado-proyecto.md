@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 5** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 6** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -14,7 +14,8 @@
 | Fase 3 — Catálogos | ✅ **COMPLETA** (38 pruebas, build correcto, `route:list` OK) |
 | Fase 4 — Expediente del alumno | ✅ **COMPLETA** (54 pruebas, build correcto, `route:list` OK) |
 | Fase 5 — Núcleo del flujo de inscripción | ✅ **COMPLETA** (69 pruebas, build correcto, `route:list` OK) |
-| Fases 6–16 | ⬜ pendientes (esperan aprobación) |
+| Fase 6 — Wizard de inscripción | ✅ **COMPLETA** (85 pruebas, build correcto, 3 rutas nuevas) |
+| Fases 7–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -105,9 +106,29 @@
 - `php artisan route:list` → **24 rutas** (sin rutas nuevas: la Fase 5 es dominio + persistencia, sin pantallas).
 - Migraciones 000011–000012 ejecutadas en la BD de desarrollo; las pruebas corren **solo** contra `sistema_escolar_testing`.
 
+## Fase 6 — wizard de inscripción (implementado)
+
+- **División aprobada de los 6 pasos** (los documentos solo fijan de forma inequívoca: paso 3 = "Datos de contacto" (tutor), paso 4 = "Contacto de emergencia", "pasos 2–6" = pantallas de alumno y "paso 6 validado → `datos_completados_at`"; la distribución completa fue propuesta y aprobada con el usuario): **1** selección y montos (crea el borrador `DRAFT`) · **2** datos personales · **3** contacto tutor · **4** contacto de emergencia · **5** información médica (solo estado del registro) · **6** revisión final → `DATA_COMPLETE`.
+- **Componentes Livewire 4** en `app/Livewire/Inscripciones/`: `WizardInscripcion` (validación por paso, server-side, errores junto al campo) y `ListaInscripciones` (filtros `#[Url]`: búsqueda de alumno, periodo y estatus; máx. 50 filas; **sin información médica**). Vistas en `resources/views/livewire/inscripciones/`.
+- **Rutas** `/inscripciones`, `/inscripciones/nueva`, `/inscripciones/{inscripcion}` (con `auth`; autorización fina vía `InscripcionPolicy`/gates en cada acción) + navegación mínima: enlace "Inscripciones" en la cabecera y tarjeta en el dashboard (sin rediseño global).
+- **Borrador en BD, no en sesión (riesgo R8):** la creación del `DRAFT` pasa por `InscripcionService::crear()` (transacción + auditoría `inscripcion_creada`); al reabrir, el wizard se posiciona en el **primer paso incompleto** (reanudación derivada del estado real, sin columnas ni tablas nuevas de wizard); retroceder visualmente no borra datos ni duplica la inscripción.
+- **Reutilización sin duplicar lógica:** alumno, contactos e información médica se capturan en los componentes de Fase 4 (el wizard enlaza a ellos); el wizard solo verifica **completitud por paso** (RB-2) contra BD. CURP única, alumnos no duplicados, `numero_control` sigue `NULL`.
+- **Reglas aplicadas:** RB-13 (periodo con `cerrado_at`, inactivo o eliminado bloquea crear **y** modificar, con mensaje propio), RB-14 (duplicidad alumno+periodo validada antes de guardar + respaldo `UNIQUE` de BD), §12.4 (`required`, `numeric`, `min:0` y `decimal:0,2` — comportamiento aprobado con el usuario: acepta `1500` y `1500.50`, rechaza más de 2 decimales), solo programas/periodos activos y no eliminados, montos como **snapshots** (sin catálogo de tarifas, sin convenios ni descuentos: `monto_descuento` en 0).
+- **Finalizar:** al completar los 6 pasos, `InscripcionService::transicionar(DATA_COMPLETE)` escribe `datos_completados_at` y la auditoría `estado_cambiado` en la misma transacción. **No** pasa a `PENDING_PAYMENT` (Fase 7).
+- **Autorización:** ADMISIONES es el rol protagonista (`inscripcion.create`/`inscripcion.update`); ADMIN conserva el acceso global vía `Gate::before`; los demás roles abren el listado en lectura (matriz §8.2) y reciben **403** en acciones sensibles (server-side). Sin ampliar permisos médicos: ADMINISTRACION ✖, CONTROL_ESCOLAR sin pantalla médica; el wizard **nunca** carga ni muestra contenido médico (RB-18) y el listado tampoco.
+- **Factories de prueba nuevas:** `ContactoFactory` e `InformacionMedicaFactory` (solo datos sintéticos) + `HasFactory` en `Contacto`/`InformacionMedica`; `InscripcionFactory::programaPrueba()/periodoPrueba()` ahora públicos para las pruebas.
+
+## Validación al cierre de la Fase 6
+
+- `composer test` → **85 pruebas / 756 assertions, todas verdes** (69 previas intactas + 16 nuevas: `WizardInscripcionTest` — F4, F5, creación `DRAFT` + snapshots, persistencia/reanudación/retroceso, programa inactivo, periodo inactivo, montos inválidos, transición final vía `InscripcionService` con auditoría, 403 de roles en wizard y acceso de lectura al listado, acciones sensibles server-side, listado sin información médica y filtros por alumno/periodo/estatus; `DuplicidadTest` — F22; `PeriodoTest` — F28).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → **27 rutas** (24 previas + 3 nuevas: `inscripciones.lista`, `inscripciones.nueva`, `inscripciones.ver`).
+- Pruebas ejecutadas **exclusivamente** contra `sistema_escolar_testing`.
+- Ambigüedades detectadas y resueltas con el usuario **antes** de implementar: distribución de los 6 pasos (División A con enlaces al expediente Fase 4) y validación de montos (`decimal:0,2`).
+
 ## Pendientes / registrados
 
-- **Fase 5 no iniciar** hasta aprobación del usuario.
+- **Fase 7 no iniciar** hasta aprobación del usuario.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies de modelos de fases futuras: las 8 clases ya existen; Laravel las asocia por convención cuando los modelos se creen (sin código artificial).
@@ -116,4 +137,4 @@
 - Lectura **contextual** de información médica para CONTROL_ESCOLAR: **PENDIENTE** del flujo de revisión final (Fase futura; en Fase 4 no existe pantalla general).
 - Guardas de negocio pendientes en la máquina de estados (pagos `INSCRIPCION`, documentos, observaciones, número de control): **PENDIENTES** de sus fases; en Fase 5 **no se simularon** con datos ficticios (§7.3.5).
 - Comprobante PDF con branding UVZ → **Fase 9**.
-- Git local activo: `master` acumula las fases aprobadas y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-5-nucleo-inscripcion`); sin remotos ni push.
+- Git local activo: `master` acumula las fases aprobadas (merge `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-6-wizard-inscripcion`, **sin merge a master**); sin remotos ni push.
