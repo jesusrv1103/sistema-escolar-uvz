@@ -28,6 +28,7 @@
         <env name="DB_HOST" value="127.0.0.1"/>
         <env name="DB_PORT" value="3308"/>
         <env name="DB_DATABASE" value="sistema_escolar_testing"/>
+        <!-- Credenciales de BD: leídas de .env (nunca se versionan) -->
         <env name="DB_USERNAME" value="sistema_escolar"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
