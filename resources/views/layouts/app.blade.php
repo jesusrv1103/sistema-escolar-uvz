@@ -44,6 +44,8 @@
             </a>
 
             <div class="flex items-center gap-3 text-sm">
+                <a href="{{ route('alumnos.lista') }}"
+                    class="hidden font-medium text-brand-primary hover:text-brand-secondary sm:block">Alumnos</a>
                 @can('usuario.manage')
                     <a href="{{ route('admin.programas') }}"
                         class="hidden font-medium text-brand-primary hover:text-brand-secondary sm:block">Catálogos</a>

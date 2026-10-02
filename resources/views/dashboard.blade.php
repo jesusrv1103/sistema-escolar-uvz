@@ -23,6 +23,13 @@
         </p>
     </div>
 
+    <div class="rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
+        <h2 class="text-sm font-semibold text-brand-text">Operación diaria</h2>
+        <div class="mt-3 flex flex-wrap gap-2 text-sm">
+            <a href="{{ route('alumnos.lista') }}" class="rounded-md border border-brand-line px-3 py-1.5 font-medium text-brand-primary hover:bg-brand-surface">Alumnos (expediente)</a>
+        </div>
+    </div>
+
     @can('usuario.manage')
         <div class="mt-6 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
             <h2 class="text-sm font-semibold text-brand-text">Catálogos administrativos</h2>
