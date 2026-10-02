@@ -97,4 +97,4 @@
 - `duracion_periodos`, `periodos` iniciales y más tipos de documento: **PENDIENTES de fuente institucional** (se capturan/seedan cuando UVZ confirme datos; nada inventado).
 - Lectura **contextual** de información médica para CONTROL_ESCOLAR: **PENDIENTE** del flujo de revisión final (Fase futura; en Fase 4 no existe pantalla general).
 - Comprobante PDF con branding UVZ → **Fase 9**.
-- No existe repositorio git en el directorio (nada commiteado).
+- Git local activo: `master` acumula las fases aprobadas y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-5-nucleo-inscripcion`); sin remotos ni push.
