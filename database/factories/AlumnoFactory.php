@@ -22,14 +22,20 @@ class AlumnoFactory extends Factory
     {
         $sexo = fake()->randomElement([Sexo::MASCULINO, Sexo::FEMENINO]);
 
-        // Secuencia determinista => CURP única por proceso y sin datos reales.
+        // Secuencia determinista en el proceso + bloque aleatorio: CURP única
+        // incluso entre procesos, y evidentemente ficticia (prefijo ZZZZ…).
         $secuencia = self::$secuencia++;
         $curp = sprintf(
-            'ZZZZ%02d%02d%02d%sZZZZZ%s%d',
+            'ZZZZ%02d%02d%02d%s%s%s%d',
             60 + intdiv($secuencia, 336) % 40,   // YY
             1 + intdiv($secuencia, 28) % 12,      // MM
             1 + $secuencia % 28,                  // DD
             $sexo === Sexo::MASCULINO ? 'H' : 'M',
+            strtoupper(fake()->randomLetter()
+                .fake()->randomLetter()
+                .fake()->randomLetter()
+                .fake()->randomLetter()
+                .fake()->randomLetter()),
             chr(65 + $secuencia % 26),
             $secuencia % 10,
         );
