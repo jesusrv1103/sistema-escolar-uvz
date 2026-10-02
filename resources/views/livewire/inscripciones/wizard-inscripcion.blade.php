@@ -306,6 +306,18 @@
             :inscripcion="$inscripcion"
             wire:key="pago-validar-{{ $inscripcion->id }}" />
 
+        {{-- Documentos (Fase 10): recepción, reemplazo y validación del expediente --}}
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
+            <div>
+                <h2 class="text-sm font-semibold text-brand-text">Documentos</h2>
+                <p class="mt-1 text-xs text-brand-muted">Recepción y validación de los documentos obligatorios del expediente.</p>
+            </div>
+            <a href="{{ route('inscripciones.documentos', $inscripcion) }}"
+                class="rounded-md border border-brand-line px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-surface">
+                Abrir panel de documentos
+            </a>
+        </div>
+
         <div class="mt-4 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
             <h2 class="text-sm font-semibold text-brand-text">Cargos</h2>
 

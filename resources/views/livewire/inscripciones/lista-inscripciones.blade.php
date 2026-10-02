@@ -86,7 +86,11 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-xs text-brand-muted">{{ $inscripcion->created_at?->format('d/m/Y H:i') }}</td>
-                        <td class="px-4 py-3 text-right">
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <a href="{{ route('inscripciones.documentos', $inscripcion) }}" class="font-medium text-brand-primary hover:underline">
+                                Documentos
+                            </a>
+                            <span class="mx-1 text-brand-muted">·</span>
                             <a href="{{ route('inscripciones.ver', $inscripcion) }}" class="font-medium text-brand-primary hover:underline">
                                 {{ $inscripcion->estatus === \App\Enums\InscripcionEstatus::DRAFT ? 'Continuar' : 'Ver' }}
                             </a>

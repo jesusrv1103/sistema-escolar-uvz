@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Documentos\DescargaArchivosController;
 use App\Http\Controllers\Pagos\ComprobantePagoController;
 use App\Http\Controllers\Pagos\ComprobantePdfController;
 use App\Livewire\Alumnos\FormAlumno;
@@ -12,6 +13,7 @@ use App\Livewire\Catalogos\Convenios;
 use App\Livewire\Catalogos\Periodos;
 use App\Livewire\Catalogos\Programas;
 use App\Livewire\Catalogos\TiposDocumento;
+use App\Livewire\Documentos\PanelDocumentos;
 use App\Livewire\Inscripciones\ListaInscripciones;
 use App\Livewire\Inscripciones\WizardInscripcion;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +46,14 @@ Route::middleware('auth')->prefix('inscripciones')->name('inscripciones.')->grou
     Route::get('/', ListaInscripciones::class)->name('lista');
     Route::get('/nueva', WizardInscripcion::class)->name('nueva');   // antes de {inscripcion}
     Route::get('/{inscripcion}', WizardInscripcion::class)->name('ver');
+    // Documentos del expediente (Fase 10): recepción, reemplazo y validación.
+    Route::get('/{inscripcion}/documentos', PanelDocumentos::class)->name('documentos');
+});
+
+// Descarga del archivo de un documento (Fase 10): disco PRIVADO, policy y
+// ruta resuelta desde BD. NO confundir con las rutas de pagos (Fases 8/9).
+Route::middleware('auth')->prefix('documentos')->name('documentos.')->group(function () {
+    Route::get('/{documento}/archivo', DescargaArchivosController::class)->name('archivo');
 });
 
 // Comprobante de pago cargado (Fase 8): archivo PRIVADO servido por un
