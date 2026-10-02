@@ -135,12 +135,10 @@ class ModalValidarPago extends Component
     {
         return Pago::query()
             ->pendiente()
-            ->where('concepto_pago_id', function ($consulta): void {
-                $consulta->select('id')
-                    ->from('conceptos_pago')
-                    ->where('inscripcion_id', $this->inscripcionId);
-            })
             ->whereKey($pagoId)
+            ->whereHas('conceptoPago', function ($consulta): void {
+                $consulta->where('inscripcion_id', $this->inscripcionId);
+            })
             ->first();
     }
 
