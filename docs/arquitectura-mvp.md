@@ -6,6 +6,8 @@
 > **Versión 3 — decisiones finales incorporadas**: corrección de mensualidades (§11 RB-3/RB-5/RB-8, §7 y §13), decisiones D1–D6, ajustes 7–18, seguridad de información médica y **P1/P2/P3 aprobados** (§22). **Plan de implementación aprobado** → **Fase 1 autorizada** (`docs/plan-implementacion.md`).
 >
 > **Fase 7 registrada**: decisiones UVZ cuatrimestrales aprobadas → **UVZ opera por CUATRIMESTRES**, 4 mensualidades por inscripción con vencimiento el **día 10 configurable** (`config/escolar.php`), convenio aplicado **únicamente al concepto INSCRIPCION** y descuento fijo limitado al monto de inscripción (§4.9, RB-3, FC-4). La abstracción `duracion_periodos` **se conserva**.
+>
+> **Fase 8 registrada**: pagos implementados → folio **`PAG-YYYYMMDD-########`** generado **solo al validar** (fecha de validación con el timezone de la aplicación + `pago.id` con padding a 8 dígitos; `UNIQUE(folio)` en BD como defensa final, sin tabla `consecutivos`, sin `MAX()`, sin reutilizar `NumeroControlService`), **un único intento activo por concepto** (a lo sumo UN `PENDIENTE` a la vez, bloqueado con `lockForUpdate()`, o UN `VALIDADO` que liquida el concepto) e **historial de intentos `RECHAZADO` preservado** (nunca se sobrescribe ni elimina; tras un rechazo se admite un nuevo intento) — §4.10, RB-4, RB-10.
 
 ---
 
@@ -343,6 +345,10 @@ Una sola tabla con `tipo` evita duplicar columnas `tutor_*` y `emergencia_*`.
 | `created_at` / `updated_at` | | | |
 
 **Sin soft deletes:** los registros financieros no se borran; se rechazan o cancelan con motivo y quedan en auditoría.
+
+**Folio (Fase 8, decisión aprobada):** formato exacto **`PAG-YYYYMMDD-########`** (ej. `PAG-20261001-00000127`). `YYYYMMDD` corresponde a la fecha/hora de **validación** con el timezone configurado de la aplicación (NO `fecha_pago`); `########` es el `id` del pago con padding a **8 dígitos**. El ID garantiza la unicidad lógica y el `UNIQUE(folio)` de BD es la defensa final; longitud 21 ≤ `varchar(30)`. **Sin** tabla `consecutivos`, **sin** `MAX()` y **sin** reutilizar `NumeroControlService`. El folio es **inmutable** una vez asignado y un pago `RECHAZADO` **jamás** lo recibe.
+
+**Reintentos (Fase 8, decisión aprobada):** "un pago por concepto" significa **un solo intento activo**: a lo sumo UN pago `PENDIENTE` a la vez (controlado con `lockForUpdate()` sobre el concepto dentro de la transacción de registro) y UN pago `VALIDADO` que liquide el concepto. Los intentos `RECHAZADO` se conservan como historial —nunca se sobrescriben ni se eliminan, incluido su comprobante— y **no bloquean** un nuevo intento posterior. Por eso la tabla **NO** tiene `UNIQUE(concepto_pago_id)`: impediría conservar los intentos rechazados.
 
 **Comprobante PDF (aprobado):** se genera **bajo demanda** a partir de los datos ya validados (no se persiste una copia), solo para pagos `VALIDADO`. Campos mínimos: alumno, programa, concepto, monto, forma de pago, referencia, fecha, folio. **Sin facturación fiscal.**
 
@@ -787,7 +793,8 @@ tests/
 |---|---|---|
 | `InscripcionService` | Service | Crear borrador, marcar datos completos, **generar cargos automática y distinguible** (INSCRIPCION + MENSUALIDADES), **transicionar estado** (guardas + transacción + auditoría), `finalizar()` |
 | `ConvenioService` | Service | Aplicar convenio (ADMISIONES → `PENDIENTE_APROBACION`), aprobar/rechazar (ADMINISTRACION → `APROBADO`/`RECHAZADO` + trazabilidad), aplicar descuento **solo si aprobado** |
-| `PagoService` | Service | Registrar pago; **validar** (transacción: pago → `VALIDADO`, folio único, concepto → `PAGADO`); **mover el estado del proceso solo si el concepto es `INSCRIPCION`**; **rechazar** con motivo |
+| `PagoService` | Service | Registrar pago (intentos, `lockForUpdate`, comprobante a disco privado); **validar** (transacción: pago → `VALIDADO`, folio único, concepto → `PAGADO`); **mover el estado del proceso solo si el concepto es `INSCRIPCION`**; **rechazar** con motivo |
+| `FolioPagoService` | Service | Generar el folio `PAG-YYYYMMDD-########` **solo al validar** (fecha de validación con timezone de la app + `id` con padding a 8; sin `consecutivos`, sin `MAX()`, sin `NumeroControlService`) |
 | `ComprobantePagoService` | Service | Generar PDF de comprobante **solo** para pagos `VALIDADO` (alumno, programa, concepto, monto, forma de pago, referencia, fecha, folio) |
 | `DocumentoService` | Service | Subir archivo (valida MIME/tamaño 10 MB), validar, rechazar con motivo, verificar obligatorios |
 | `NumeroControlService` | Service | Generar NC **`YYYY####`** secuencial y único mediante la tabla **`consecutivos`** (`lockForUpdate` + incremento), **una sola vez**, dentro de la transacción final. Nunca con `MAX()` |
@@ -840,6 +847,8 @@ La generación es **automática**; no hay captura manual de mensualidades (D4).
 ### RB-4 — Un solo pago por concepto
 Cada concepto se cubre con **un único pago**. En el MVP **no** hay pagos parciales, anticipos, enganches ni división de pagos (D5). El diseño (pagos referidos a `concepto_pago_id`) queda preparado para ampliarse a parcialidades sin rehacer el módulo.
 
+**Semántica de reintentos (Fase 8):** el concepto se liquida mediante **un solo pago completo**, pero conserva su historial de intentos: solo puede existir **un intento `PENDIENTE` activo a la vez** (bloqueo con `lockForUpdate()` en `PagoService::registrar()`), solo un pago `VALIDADO` liquida el concepto, y los intentos `RECHAZADO` permanecen íntegros —**sin UNIQUE(concepto_pago_id)**— permitiendo registrar un nuevo intento después de cada rechazo.
+
 ### RB-5 — Validación de pago (four-eyes) *(CORREGIDA)*
 - Solo **ADMINISTRACION** (o ADMIN) puede pasar un pago de `PENDIENTE` a `VALIDADO`.
 - Al validar, **en una transacción**: se marca el pago `VALIDADO`, se genera el `folio` **único**, se marca el concepto `PAGADO` (un solo pago por concepto ⇒ saldo en cero) y se registra `auditoria`.
@@ -880,6 +889,8 @@ Para pasar a `ENROLLED` **debe ser obligatorio únicamente**:
 
 ### RB-10 — Folio de pago
 El `folio` del pago se genera **solo al validar**, es único y no se modifica después. Si el pago se rechaza, nunca existe folio. **No existe folio de inscripción** (D7): la inscripción se identifica por su `id`, el alumno por su número de control y cada pago por su folio.
+
+**Formato exacto (Fase 8, decisión aprobada):** `PAG-YYYYMMDD-########` — `YYYYMMDD` es la fecha/hora de **validación** con el timezone configurado de la aplicación y `########` es el `id` del pago con padding a 8 dígitos (id 127 ⇒ `PAG-20261001-00000127`). Implementación central en `FolioPagoService` (método único, reutilizable): sin tabla `consecutivos`, sin `MAX()`, sin `NumeroControlService`; la unicidad la garantiza el ID y el `UNIQUE(folio)` de BD es la defensa final (R12).
 
 ### RB-11 — Cancelación *(AMPLIADA)*
 - Solo **ADMIN** puede cancelar; `motivo` obligatorio.

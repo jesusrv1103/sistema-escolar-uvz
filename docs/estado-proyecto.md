@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 7** (01/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 8** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -16,7 +16,8 @@
 | Fase 5 — Núcleo del flujo de inscripción | ✅ **COMPLETA** (69 pruebas, build correcto, `route:list` OK) |
 | Fase 6 — Wizard de inscripción | ✅ **COMPLETA** (85 pruebas, build correcto, 3 rutas nuevas) |
 | Fase 7 — Convenios y generación de cargos | ✅ **COMPLETA** (113 pruebas, build correcto, sin rutas nuevas) |
-| Fases 8–16 | ⬜ pendientes (esperan aprobación) |
+| Fase 8 — Pagos | ✅ **COMPLETA** (153 pruebas, build correcto, 1 ruta nueva: comprobante privado) |
+| Fases 9–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -147,15 +148,38 @@
 - Migración 000013 ejecutada en la BD de desarrollo; las pruebas corren **exclusivamente** contra `sistema_escolar_testing`.
 - Ambigüedad resuelta sin inventar reglas: la arquitectura no fija fecha de vencimiento para el concepto `INSCRIPCION` → se usó `periodos.fecha_inicio` (solución mínima documentada en §4.9); no hubo contradicción con la máquina de estados ($0 nace `PAGADO` pero el flujo NO adelanta Fase 8).
 
+## Fase 8 — pagos (implementado)
+
+- **Decisiones complementarias registradas en arquitectura (§4.10/RB-4/RB-10/§10):** folio **`PAG-YYYYMMDD-########`** (ej. `PAG-20261001-00000127`) generado **solo al validar**, con la fecha/hora de **validación** en el timezone de la aplicación y el `pago.id` con padding a 8 dígitos; unicidad lógica por ID + `UNIQUE(folio)` como defensa final; **sin** tabla `consecutivos`, **sin** `MAX()`, **sin** reutilizar `NumeroControlService`; folio **inmutable** y un `RECHAZADO` **jamás** recibe folio. **Reintentos:** un concepto se liquida con UN solo pago completo (sin parciales/anticipos), admite **a lo sumo UN intento `PENDIENTE` activo** a la vez (`lockForUpdate()`) o UN `VALIDADO`, y conserva sus intentos `RECHAZADO` como **historial intacto** (sin `UNIQUE(concepto_pago_id)`; tras un rechazo se permite un nuevo intento).
+- **Alcance aclarado:** `conceptos_pago` **NO se recreó** (ya existía desde la Fase 7); la única infraestructura nueva es la tabla **`pagos`**.
+- **Migración** `2026_10_01_000014_create_pagos_table` (§4.10): `concepto_pago_id` (FK restrict), `monto decimal(10,2)`, `fecha_pago`, `metodo(20)`, `referencia(100)` nullable, `comprobante_ruta`/`comprobante_nombre_original` nullable, `estatus(20)` default `PENDIENTE`, `folio(30)` **unique** nullable, `validado_por`/`registrado_por` (FK a `users`), `validado_at`, `motivo_rechazo`, `notas`; **sin soft delete** (R15).
+- **Modelo/relaciones:** `Pago` (`fillable` explícito **sin** estatus/folio/validado_*/motivo — los escribe el servicio; casts `MetodoPago`/`EstatusPago`/`decimal:2`/`date`/`datetime`; scopes `pendiente/validado/rechazado`; `belongsTo ConceptoPago`, `registradoPor`, `validadoPor`; `HasAudit`) + `ConceptoPago::pagos()` (hasMany con el historial) y accessor `saldoPendiente`; `PagoFactory` (solo escenarios).
+- **`FolioPagoService`**: método único `generar(Pago)` con el formato exacto del folio (método pequeño y reutilizable, sin sobrearquitectura).
+- **`PagoService`** (único punto de negocio; la UI no toca estatus/folio/estados):
+  - `registrar()` — gates `pago.registrar` server-side (ADMIN ✔, ADMISIONES ✔, ADMINISTRACION ✔, CONTROL_ESCOLAR ✖); transacción con `lockForUpdate()` sobre concepto e intentos: rechaza concepto ≠ `PENDIENTE` (incluye el caso `$0` nacido `PAGADO`), concepto ya liquidado y segundo intento `PENDIENTE`; **permite** nuevo intento si solo hay `RECHAZADO`; valida monto > 0 **exactamente** = `monto_total`, fecha no futura, método válido y referencia obligatoria para `TRANSFERENCIA`/`TARJETA`; comprobante opcional validado con extensión + **MIME real (`finfo`)** + ≤ 10 MB, guardado en **disco `private`** con ruta UUID generada por el sistema y nombre original solo como metadato; **compensación**: si la transacción falla después de escribir el archivo, éste se elimina; efecto de proceso **solo `INSCRIPCION`** → `PAYMENT_REVIEW` vía `InscripcionService::transicionar()`; auditoría `pago_registrado`.
+  - `validar()` — gates `pago.validar` (ADMINISTRACION + ADMIN); locks de pago y concepto, monto exacto, **folio**, pago `VALIDADO` + `validado_por/at`, concepto `PAGADO` + `pagado_at`, auditoría `pago_validado` y, **solo `INSCRIPCION`**, `PAYMENT_REVIEW → PAYMENT_VALIDATED → PENDING_DOCUMENTS` (dos transiciones vía máquina de estados; `pagos_validados_at`); **ROLLBACK TOTAL** ante cualquier fallo (probado con transición imposible y con FK real de usuario fantasma).
+  - `rechazar()` — gates `pago.validar`; motivo obligatorio (no vacío ni solo espacios, ≤ 2000); pago `RECHAZADO` con `folio/validado_* = null` y motivo; auditoría `pago_rechazado`; **solo `INSCRIPCION`** → `PAYMENT_REVIEW → PENDING_PAYMENT` con el **motivo del rechazo** como motivo de la transición; `MENSUALIDAD` no toca la inscripción.
+- **UI Livewire 4:** `ModalRegistrarPago` (conceptos `PENDIENTE` de la inscripción, fecha/método/referencia/notas/comprobante; **monto NO editable** — se toma del servidor) y `ModalValidarPago` (datos de alumno/programa/concepto/monto/método/referencia/fecha/comprobante, acciones validar/rechazar con motivo); integración mínima en la tarjeta de cargos del wizard; autorización server-side en cada acción (`@can` solo complementa); **sin información médica** (RB-18).
+- **Comprobante cargado (evidencia privada):** 1 ruta nueva `GET /pagos/{pago}/comprobante` → `ComprobantePagoController` mínimo: `auth` + policy `descargarComprobante`, ruta resuelta **siempre desde BD**, verificación de contenido dentro del disco privado (path traversal) y 404 si no existe. **No** es el PDF institucional de Fase 9.
+- **Pruebas nuevas (40):** `GeneracionFolioTest` (U9 formato con fecha de validación y timezone; U10 folios distintos, rechazo sin folio, inmutabilidad, `UNIQUE` de BD), `PagoTest` (F11 transacción completa con doble transición + `pagos_validados_at` + auditorías; F25 mensualidad conserva el estado EXACTO; monto exacto; roles — ADMISIONES/CONTROL_ESCOLAR no validan (servicio y componente 403) y ADMIN sí; pago ya `VALIDADO`/`RECHAZADO` no re-valida; ROLLBACK TOTAL por transición imposible y por FK real de responsable/auditoría), `RechazoPagoTest` (F12 completo con motivo en la transición de retroceso; motivo obligatorio/no vacío/≤2000; componente exige motivo; four-eyes del rechazo; nuevo intento tras rechazo con historial intacto; dos rechazos históricos; mensualidad rechazada no cambia el estado), `RegistroPagoTest` (CONTROL_ESCOLAR no registra, ADMISIONES/ADMINISTRACION sí; monto distinto/cero; fecha futura; referencia obligatoria en TRANSFERENCIA y TARJETA; método inválido; comprobante >10 MB, MIME inválido y extensión inválida rechazados; guardado en `private` con ruta interna y nombre original separado; **fallo de BD posterior elimina el archivo**; un solo intento `PENDIENTE`; `$0` no admite pago; `INSCRIPCION` exige `PENDING_PAYMENT`; `CANCELLED` no acepta pagos; comprobante requiere auth; policy + sin traversal + 404 sin archivo; modales sin datos médicos).
+
+## Validación al cierre de la Fase 8
+
+- `composer test` → **153 pruebas / 1134 assertions, todas verdes** (113 previas intactas + 40 nuevas de Fase 8).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → **28 rutas** (27 previas + 1 nueva: `pagos.comprobante`).
+- Migración 000014 ejecutada también en la BD de desarrollo; las pruebas corren **exclusivamente** contra `sistema_escolar_testing`.
+- Sin mocks para servicios, estados, auditoría ni restricciones de BD: los rollbacks se probaron con fallos reales (FK de usuario fantasma y transición imposible).
+
 ## Pendientes / registrados
 
-- **Fase 8 no iniciar** hasta aprobación del usuario.
+- **Fase 9 no iniciar** hasta aprobación del usuario.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies de modelos de fases futuras: las 8 clases ya existen; Laravel las asocia por convención cuando los modelos se creen (sin código artificial).
 - Logo variante para fondos oscuros: **PENDIENTE** (el sitio no la publica; `branding.logo_dark` reutiliza el horizontal).
 - `duracion_periodos`, `periodos` iniciales y más tipos de documento: **PENDIENTES de fuente institucional** (se capturan/seedan cuando UVZ confirme datos; nada inventado).
 - Lectura **contextual** de información médica para CONTROL_ESCOLAR: **PENDIENTE** del flujo de revisión final (Fase futura; en Fase 4 no existe pantalla general).
-- Guardas de negocio pendientes en la máquina de estados (pagos `INSCRIPCION`, documentos, observaciones, número de control): **PENDIENTES** de sus fases; en Fase 5 **no se simularon** con datos ficticios (§7.3.5).
+- Guardas de negocio pendientes en la máquina de estados (documentos, observaciones, número de control): **PENDIENTES** de sus fases; en Fase 5 **no se simularon** con datos ficticios (§7.3.5). La guarda de **pagos `INSCRIPCION`** quedó implementada en Fase 8.
 - Comprobante PDF con branding UVZ → **Fase 9**.
-- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d` y de Fase 6 en `2d19d0d`→`fe6c977`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-7-convenios-cargos`, **sin merge a master**); sin remotos ni push.
+- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977` y de Fase 7 en `fe6c977`→`d8337f0`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-8-pagos`, **sin merge a master**; se conservan `feat/fase-7-convenios-cargos` y `feat/fase-6-wizard-inscripcion`); sin remotos ni push.

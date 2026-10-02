@@ -116,8 +116,10 @@
 |---|---|
 | Tareas | `PagoService`: registrar (comprobante a disco privado), validar (folio único), rechazar con motivo; `ModalRegistrarPago`, `ModalValidarPago` |
 | Regla crítica | **Un pago por concepto.** El ciclo `PENDING_PAYMENT → PAYMENT_REVIEW → PAYMENT_VALIDATED → PENDING_DOCUMENTS` **solo aplica al concepto `INSCRIPCION`**; validar una `MENSUALIDAD` **nunca** modifica `inscripciones.estatus` |
-| Migración | `conceptos_pago`, `pagos` (folio unique, sin soft delete) |
-| Pruebas | **F11** validación transaccional del pago INSCRIPCION, **F12** rechazo sin folio, **F25** validar mensualidad no cambia estado |
+| Migración | `pagos` (folio `PAG-YYYYMMDD-########` unique, sin soft delete). **Aclaración de alcance:** `conceptos_pago` **ya existe desde la Fase 7** y **NO se recrea ni se reemplaza** |
+| Pruebas | **F11** validación transaccional del pago INSCRIPCION, **F12** rechazo sin folio, **F25** validar mensualidad no cambia estado, **U9/U10** formato/unicidad/inmutabilidad del folio |
+
+**✅ COMPLETA (02/10/2026):** `FolioPagoService` (folio `PAG-YYYYMMDD-########`: fecha de **validación** con timezone de la app + `pago.id` con padding a 8; sin `consecutivos`, sin `MAX()`, sin `NumeroControlService`); `PagoService` con `registrar()/validar()/rechazar()` en una transacción por operación, `lockForUpdate()` (un único intento `PENDIENTE` activo por concepto; históricos `RECHAZADO` preservados y permiten nuevo intento), monto exacto = `monto_total` (sin parciales), comprobante opcional PDF/JPG/JPEG/PNG ≤ 10 MB con MIME real (`finfo`) a **disco privado**, ruta interna por sistema y **compensación de archivos huérfanos** si la transacción falla; efecto de proceso **solo para `INSCRIPCION`** vía `InscripcionService::transicionar()` (registro → `PAYMENT_REVIEW`; validación → `PAYMENT_VALIDATED → PENDING_DOCUMENTS` con `pagos_validados_at`; rechazo → `PENDING_PAYMENT` con motivo); `ModalRegistrarPago` + `ModalValidarPago` integrados en el listado de cargos del wizard (sin información médica, RB-18); descarga del comprobante por **1 ruta nueva** mínima con policy, resolución desde BD y defensa contra path traversal. **153 pruebas verdes** (F11/F12/F25 + U9/U10 + 19 reglas de alta confianza adicionales).
 
 ## Fase 9 — Comprobante de pago PDF
 
