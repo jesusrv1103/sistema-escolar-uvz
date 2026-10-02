@@ -1,7 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 y 13 **COMPLETAS**; **Fase 14 NO iniciada** — requiere aprobación explícita.
+> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 y 14 **COMPLETAS**; **Fase 15 NO iniciada** — requiere aprobación explícita.
 
 ---
 
@@ -174,12 +174,17 @@
 
 **✅ COMPLETA (02/10/2026):** excepción de dominio `CancelacionInvalidaException` (motivo inválido o estatus no cancelable). `InscripcionService::cancelar(Inscripcion, string $motivo, ?User)` es el **único punto de negocio**: authorize `inscripcion.cancelar` (capacidad ya existente **sin roles asignados** ⇒ solo ADMIN vía `Gate::before`; ADMISIONES/ADMINISTRACION/CONTROL_ESCOLAR e inactivos 403; el `@can` de la UI es solo UX) → motivo con **trim server-side**, obligatorio (no vacío ni solo espacios) y ≤ 2000 (mismo patrón que los rechazos de pagos/documentos/convenios) → **EN UNA transacción**: `lockForUpdate()` de la inscripción con estado fresco → **rechazo explícito de los estados terminales** `ENROLLED` y `CANCELLED` (sin idempotencia silenciosa) → conceptos: **únicamente `PENDIENTE → CANCELADO`** (`PAGADO`/`CANCELADO` intactos; `monto`, `descuento`, `monto_total`, `pagado_at` sin tocar) → transición a `CANCELLED` **mediante la máquina existente** (`transicionar()` reutilizado: escribe `cancelada_por`/`cancelada_at`/`cancelacion_motivo` y la auditoría `estado_cambiado` con el motivo) → auditoría **`inscripcion_cancelada`** con contexto mínimo (`conceptos_cancelados`, sin duplicar el motivo); **pagos (VALIDADO/RECHAZADO), documentos, observaciones y número de control: INTACTOS** — sin deletes, sin soft delete, sin updates financieros, sin folios/montos/comprobantes modificados, **sin reembolsos, sin reapertura ni devolución de NC**; **ROLLBACK TOTAL** ante cualquier error incluida la auditoría (probado con fallo REAL de `Auditoria::creating`, sin mocks de la lógica principal). UI mínima `ModalCancelarInscripcion` (Livewire, **incluida en el wizard; sin ruta nueva** ⇒ se mantienen las 33 rutas): el panel solo lo ve ADMIN (`Gate::allows`) y solo en estados cancelables (`estatus->puedeIrA(CANCELLED)`), con los tres avisos (definitiva en el MVP, no implica reembolso, pagos validados permanecen registrados) y modal con motivo obligatorio (trim previo + `required|string|max:2000`); tras cancelar muestra `CANCELLED`, la confirmación de flujo y **sin botón de reapertura**; la acción también autoriza server-side (forzar la llamada Livewire ⇒ 403). **271 pruebas verdes** (15 nuevas: F19/F20, 403 de 3 roles + usuario inactivo, motivos inválidos, estados terminales, 5 etapas cancelables por la máquina, efectos mixtos de conceptos/pagos, rollback real y UI).
 
-## Fase 14 — Panel operativo y listados
+## Fase 14 — Panel operativo y listados ✅ COMPLETA
 
 | Elemento | Detalle |
 |---|---|
-| Tareas | `DashboardService` + `PanelOperativo` con **4 contadores**: inscripciones pendientes, pagos por validar, documentos pendientes, inscripciones completadas. Sin gráficas ni BI |
-| Detalle | Vista de inscripción con historial de `auditoria` y estados de convenio/pago/documentos |
+| Tareas | `DashboardService` (único punto de cálculo: exactamente los 4 contadores FC-9/RB-20 con `count()` directo y scopes normales; sin cache/Redis/jobs) + `PanelOperativo` **embebido en el `/dashboard` existente** (tarjetas simples y responsive; sin gráficas ni BI) |
+| Contadores | `inscripciones_pendientes` = estatus ∉ {`ENROLLED`, `CANCELLED`} · `pagos_por_validar` = `PENDIENTE` · `documentos_pendientes` = documentos cargados en `PENDIENTE` · `inscripciones_completadas` = `ENROLLED`; sin soft-deleted |
+| Detalle | `DetalleInscripcion` embebido en `inscripciones.ver` (**sin rutas nuevas**): estado general + hitos y cancelación; convenio legible (no aplica / `PENDIENTE_APROBACION` / `APROBADO` / `RECHAZADO` + `monto_descuento` y quién aplicó/aprobó); pagos por concepto (folio, método, comprobante/PDF vía policy); documentos (tipo/obligatorio/estatus/validación) e historial de `auditoria` |
+| Autorización | Panel: `viewAny` de `Inscripcion` (4 roles activos ✔, inactivo 403 server-side). Historial: capacidad existente `auditoria.view` (solo ADMIN, §8.2) |
+| Privacidad | Sin información médica (RB-18), rutas privadas, payload de auditoría ni hashes; listado operativo muestra número de control |
+| Pruebas | **17 nuevas** (`PanelOperativoTest` + `DetalleInscripcionTest`): mezcla sintética de contadores, aislamiento/soft deletes, 4 roles, inactivo 403, privacidad, historial (orden, append-only, sin payload), convenio, pagos, documentos e integración |
+| Guardas | `composer test` 288/2119 ✔ · `npm run build` ✔ · `route:list` sin rutas nuevas (33) ✔ · sin migraciones nuevas ✔ |
 
 ## Fase 15 — Cobertura completa de pruebas
 
@@ -213,6 +218,7 @@
 | 11 | ciclo de vida de observaciones (cobertura propia, 27) |
 | 12 | F16–F18, U7–U8 (más concurrencia, rollback, autorización, UI y corrección de convenios: 37) |
 | 13 | F19–F20 |
+| 14 | contadores, detalle, autorización, privacidad e historial (cobertura propia, 17) |
 | 15 | F6–F9 + U9–U10 |
 
 **Total: 10 unitarias (U1–U10) + 28 feature (F1–F28).**
@@ -234,4 +240,4 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de la Fase 13:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ · Fase 11 ✅ · Fase 12 ✅ · Fase 13 ✅ **COMPLETA** · **Fase 14 ⬜ NO iniciada, pendiente de aprobación del usuario.**
+> **Estado al cierre de la Fase 14:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ · Fase 11 ✅ · Fase 12 ✅ · Fase 13 ✅ · Fase 14 ✅ **COMPLETA** · **Fase 15 ⬜ NO iniciada, pendiente de aprobación del usuario.**

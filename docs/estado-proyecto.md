@@ -1,6 +1,6 @@
 # Estado del proyecto — Sistema Escolar UVZ
 
-> Actualizado al cierre de la **Fase 13** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
+> Actualizado al cierre de la **Fase 14** (02/10/2026). Fuente de verdad técnica: `docs/arquitectura-mvp.md` (v3). Orden de ejecución: `docs/plan-implementacion.md`.
 
 > **`docs/reglas-desarrollo.md` es OBLIGATORIO para todas las fases futuras:** leerlo antes de trabajar en cualquier fase; ante contradicciones manda sobre el resto de los documentos (orden de prioridad en su §1).
 
@@ -22,7 +22,8 @@
 | Fase 11 — Observaciones | ✅ **COMPLETA** (219 pruebas, build correcto, 1 ruta nueva: `inscripciones.observaciones`) |
 | Fase 12 — Revisión final y número de control | ✅ **COMPLETA** (256 pruebas, build correcto, 1 ruta nueva: `inscripciones.revision-final`) |
 | Fase 13 — Cancelación | ✅ **COMPLETA** (271 pruebas, build correcto, sin rutas nuevas) |
-| Fases 14–16 | ⬜ pendientes (esperan aprobación) |
+| Fase 14 — Panel operativo y listados | ✅ **COMPLETA** (288 pruebas, build correcto, sin rutas nuevas) |
+| Fases 15–16 | ⬜ pendientes (esperan aprobación) |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -274,9 +275,30 @@
 - Sin mocks: autorización, efectos, máquina de estados y rollback probados con servicios reales y el evento `creating` real de `auditoria`.
 - NO se hizo: dashboard, gráficas, reportes, reembolsos, notas de crédito, reversión de pagos, reapertura de `CANCELLED`, cancelación de `ENROLLED`, devolución de número de control, eliminación de documentos u observaciones; `PagoService` **sin cambios**.
 
+## Fase 14 — panel operativo y listados (implementado)
+
+- **`DashboardService`** (`app/Services/`): único punto de cálculo de las métricas operativas; exactamente los 4 contadores FC-9/RB-20 con `count()` directo y scopes normales: `inscripciones_pendientes` = estatus ∉ {`ENROLLED`, `CANCELLED`} (el estado de la inscripción manda; nunca se infiere de pagos/documentos), `pagos_por_validar` = `PENDIENTE` (excluye `VALIDADO`/`RECHAZADO`), `documentos_pendientes` = documentos YA cargados en `PENDIENTE` (no "tipos obligatorios ausentes") e `inscripciones_completadas` = `ENROLLED`; sin soft-deleted, sin cache/Redis/jobs, sin estadísticas adicionales.
+- **`PanelOperativo`** (Livewire, **embebido en el `/dashboard` existente** de la Fase 1.1 — sin segunda pantalla principal): tarjetas simples responsive con los 4 contadores y sus definiciones; sin gráficas, porcentajes, tendencias, BI ni exportación; cada contador proviene de `DashboardService` (sin queries duplicadas en Blade); enlaces SOLO a pantallas ya existentes (listado de inscripciones; listado con filtro `ENROLLED`); branding desde `config/branding.php`.
+- **Autorización reutilizada:** `Gate::authorize('viewAny', Inscripcion::class)` en `mount()` (capacidad de lectura/listados existente, matriz §8.2) ⇒ ADMIN/ADMISIONES/ADMINISTRACION/CONTROL_ESCOLAR ✔ y cualquier cuenta inactiva **403 server-side** también al forzar el acceso Livewire; sin sistema de permisos nuevo.
+- **Detalle operativo `DetalleInscripcion`** (Livewire **sin ruta nueva**: embebido en `inscripciones.ver`, la vista de inscripción existente): **estado general** (alumno, número de control, programa, periodo, estatus de `InscripcionEstatus`, hitos almacenados y bloque de cancelación con fecha/responsable/motivo); **convenio** solo lectura (no aplica / `PENDIENTE_APROBACION` / `APROBADO` / `RECHAZADO`, con snapshot de `monto_descuento` y quién aplicó/aprobó — las acciones siguen en `ModalAplicarConvenio`); **pagos** por concepto (monto, estatus, folio, fecha, método/referencia; comprobante y PDF únicamente por las rutas existentes con policy, jamás rutas privadas; `PagoService` intacto); **documentos** (tipo, obligatorio/opcional, estatus, fecha, validación/rechazo; las acciones siguen en `PanelDocumentos`); **e historial de auditoría**.
+- **Historial de auditoría:** exclusivo de la capacidad **ya existente** `auditoria.view` (§8.2 ⇒ solo ADMIN; los otros 3 roles no ven la sección ni la consultan); orden más reciente primero, con fecha/hora, acción, usuario y estado anterior → nuevo; **sin payload `datos`** ni `ip`/`user_agent` crudos; append-only, solo lectura (sin editar/eliminar).
+- **Listado (`ListaInscripciones`):** ahora muestra además el **número de control**; reutiliza filtros, búsqueda y accesos existentes (sin búsquedas avanzadas) y sigue sin información médica.
+- **Privacidad (RB-18):** ni el panel ni el detalle cargan `informacion_medicas`; sin paths privados, sin UUIDs/nombres internos de archivo, sin hashes y sin payload de auditoría; ADMINISTRACION no obtiene información médica indirecta por esta fase.
+- **Sin migraciones nuevas** (el dashboard es de lectura); máquina de estados y reglas financieras sin cambios; `CANCELLED` no cuenta como pendiente ni completada y sí aparece en listados/detalle sin reapertura.
+- **Pruebas nuevas (17):** `tests/Feature/PanelOperativoTest.php` (mezcla sintética exacta 3/1/1/1, aislamiento de registros irrelevantes + soft deletes, 4 roles, inactivo 403 en página y componente, UI con exactamente las 4 tarjetas y sus enlaces, privacidad) y `tests/Feature/DetalleInscripcionTest.php` (estado general/hitos, cancelación, convenio completo legible, pagos, documentos, historial con orden inverso + append-only + sin payload, historial oculto a los 3 roles, privacidad, 403 de inactivo, número de control en el listado e integración en la vista existente).
+
+## Validación al cierre de la Fase 14
+
+- `composer test` → **288 pruebas / 2119 assertions, todas verdes** (271 previas intactas + 17 nuevas de Fase 14).
+- `npm run build` → **correcto** (`public/build`, sin errores).
+- `php artisan route:list` → **33 rutas** (sin rutas nuevas: el panel y el detalle son componentes embebidos).
+- Pruebas ejecutadas **exclusivamente** contra `sistema_escolar_testing`.
+- Sin mocks: contadores, autorización, historial y privacidad probados con `DashboardService`, gates/policies, `AuditoriaService` y modelos reales.
+- NO se hizo: Fase 15; gráficas, BI, Excel/CSV, reportes, filtros avanzados, estadísticas financieras, promedios, tendencias, notificaciones, email, portales, módulos académicos, APIs, cache/Redis, migraciones nuevas; `PagoService` y la máquina de estados **sin cambios**.
+
 ## Pendientes / registrados
 
-- **Fase 14 no iniciar** hasta aprobación del usuario.
+- **Fase 15 no iniciar** hasta aprobación del usuario.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies: las 8 clases existen desde la Fase 2; `PagoPolicy`, `DocumentoPolicy` y `ObservacionPolicy` están **registradas explícitamente** en `AuthServiceProvider` (modelo real) y el resto se resuelve por convención cuando los modelos las usen (sin código artificial).
@@ -289,4 +311,5 @@
 - Observaciones: crear/listar/resolver con `ObservacionService`, `ListaObservaciones` y política conectada → **Fase 11 ✅ COMPLETA** (APPEND-ONLY, 27 pruebas, sola guarda `FALTANTE`+`ABIERTA` reutilizable).
 - Revisión final y número de control: `NumeroControlService`, `finalizar()` con guardas RB-8 y `PanelEstados` → **Fase 12 ✅ COMPLETA** (256 pruebas totales, 37 nuevas, 1 ruta nueva; año `YYYY` = `periodos.fecha_inicio`; convenio `RECHAZADO` resuelto sin descuento, no bloquea).
 - Cancelación: `InscripcionService::cancelar()`, `ModalCancelarInscripcion` y pruebas F19/F20 → **Fase 13 ✅ COMPLETA** (271 pruebas totales, 15 nuevas, sin rutas nuevas; solo ADMIN con motivo; solo `PENDIENTE → CANCELADO`; pagos/documentos/observaciones/NC intactos; sin reembolsos ni reapertura).
-- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977`, de Fase 7 en `fe6c977`→`d8337f0`, de Fase 8 en `d8337f0`→`87bb211`, de Fase 9 en `87bb211`→`2f13e84`, de Fase 10 en `2f13e84`→`3632f4f`, de Fase 11 en `3632f4f`→`d00b3e2` y de Fase 12 en `d00b3e2`→`d625084`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-13-cancelacion`, **sin merge a master**; se conservan `feat/fase-12-revision-final-numero-control`, `feat/fase-11-observaciones`, `feat/fase-10-documentos`, `feat/fase-9-comprobante-pdf`, `feat/fase-8-pagos`, `feat/fase-7-convenios-cargos`, `feat/fase-6-wizard-inscripcion`, `feat/fase-5-nucleo-inscripcion` y `feat/fase-4-expediente-alumno`); sin remotos ni push.
+- Panel operativo y detalle: `DashboardService`, `PanelOperativo` y `DetalleInscripcion` → **Fase 14 ✅ COMPLETA** (288 pruebas totales, 17 nuevas, sin rutas nuevas; exactamente los 4 contadores FC-9/RB-20; historial de auditoría solo ADMIN por la capacidad existente `auditoria.view`; sin información médica ni rutas privadas).
+- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977`, de Fase 7 en `fe6c977`→`d8337f0`, de Fase 8 en `d8337f0`→`87bb211`, de Fase 9 en `87bb211`→`2f13e84`, de Fase 10 en `2f13e84`→`3632f4f`, de Fase 11 en `3632f4f`→`d00b3e2`, de Fase 12 en `d00b3e2`→`d625084` y de Fase 13 en `d625084`→`694ecb4`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/fase-14-panel-operativo`, **sin merge a master**; se conservan `feat/fase-13-cancelacion`, `feat/fase-12-revision-final-numero-control`, `feat/fase-11-observaciones`, `feat/fase-10-documentos`, `feat/fase-9-comprobante-pdf`, `feat/fase-8-pagos`, `feat/fase-7-convenios-cargos`, `feat/fase-6-wizard-inscripcion`, `feat/fase-5-nucleo-inscripcion` y `feat/fase-4-expediente-alumno`); sin remotos ni push.
