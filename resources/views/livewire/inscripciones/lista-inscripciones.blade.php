@@ -91,6 +91,10 @@
                                 Documentos
                             </a>
                             <span class="mx-1 text-brand-muted">·</span>
+                            <a href="{{ route('inscripciones.observaciones', $inscripcion) }}" class="font-medium text-brand-primary hover:underline">
+                                Observaciones
+                            </a>
+                            <span class="mx-1 text-brand-muted">·</span>
                             <a href="{{ route('inscripciones.ver', $inscripcion) }}" class="font-medium text-brand-primary hover:underline">
                                 {{ $inscripcion->estatus === \App\Enums\InscripcionEstatus::DRAFT ? 'Continuar' : 'Ver' }}
                             </a>

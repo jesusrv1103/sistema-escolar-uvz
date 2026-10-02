@@ -318,6 +318,18 @@
             </a>
         </div>
 
+        {{-- Observaciones (Fase 11): registrar faltantes y resolverlos (append-only) --}}
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
+            <div>
+                <h2 class="text-sm font-semibold text-brand-text">Observaciones</h2>
+                <p class="mt-1 text-xs text-brand-muted">Notas y faltantes del expediente: se registran y se resuelven con responsable y fecha.</p>
+            </div>
+            <a href="{{ route('inscripciones.observaciones', $inscripcion) }}"
+                class="rounded-md border border-brand-line px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-surface">
+                Abrir observaciones
+            </a>
+        </div>
+
         <div class="mt-4 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
             <h2 class="text-sm font-semibold text-brand-text">Cargos</h2>
 

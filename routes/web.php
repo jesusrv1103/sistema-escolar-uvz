@@ -16,6 +16,7 @@ use App\Livewire\Catalogos\TiposDocumento;
 use App\Livewire\Documentos\PanelDocumentos;
 use App\Livewire\Inscripciones\ListaInscripciones;
 use App\Livewire\Inscripciones\WizardInscripcion;
+use App\Livewire\Observaciones\ListaObservaciones;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
@@ -48,6 +49,9 @@ Route::middleware('auth')->prefix('inscripciones')->name('inscripciones.')->grou
     Route::get('/{inscripcion}', WizardInscripcion::class)->name('ver');
     // Documentos del expediente (Fase 10): recepción, reemplazo y validación.
     Route::get('/{inscripcion}/documentos', PanelDocumentos::class)->name('documentos');
+    // Observaciones / faltantes (Fase 11): APPEND-ONLY — crear, listar y
+    // resolver (§4.13); sin edición ni borrado.
+    Route::get('/{inscripcion}/observaciones', ListaObservaciones::class)->name('observaciones');
 });
 
 // Descarga del archivo de un documento (Fase 10): disco PRIVADO, policy y
