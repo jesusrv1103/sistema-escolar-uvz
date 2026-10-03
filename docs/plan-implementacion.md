@@ -261,4 +261,4 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de la Fase 14:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ · Fase 11 ✅ · Fase 12 ✅ · Fase 13 ✅ · Fase 14 ✅ **COMPLETA** · **Fase 15 ⬜ y Fase 16 ⬜: NO iniciadas — alcance trasladado a 2.0-00 (Blindaje del núcleo, ETAPA 2; Opción A aprobada 02/10/2026). 2.0-00 pendiente de aprobación para ejecutar.**
+> **Estado al cierre de 2.0-00:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ · Fase 11 ✅ · Fase 12 ✅ · Fase 13 ✅ · Fase 14 ✅ · **Fase 15 (→ 2.0-00) ✅ COMPLETA** · **Fase 16 (→ 2.0-00) ✅ COMPLETA** — **2.0-00 COMPLETA en rama `feat/2.0-00-blindaje-nucleo`** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK). Pendiente merge a master y despliegue a staging. **2.0-01 DISEÑADA, NO IMPLEMENTADA**.

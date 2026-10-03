@@ -1,7 +1,7 @@
 # Roadmap — Sistema Escolar UVZ
 
 > **Universidad Villa de Zacatecas (UVZ)** · "Aumentamos la excelencia".
-> Documento de evolución futura. **La ETAPA 2 (Control Escolar) fue APROBADA en planeación (02/10/2026); ninguna de sus fases está implementada**: solo fija la dirección y las decisiones aprobadas.
+> Documento de evolución futura. **La ETAPA 2 (Control Escolar) fue APROBADA en planeación (02/10/2026); 2.0-00 COMPLETADA en rama `feat/2.0-00-blindaje-nucleo` (pendiente merge); 2.0-01 en adelante SIN implementar**.
 > Principio rector: **"Preparado para crecer, pero implementar únicamente lo que el MVP necesita."**
 
 ## ETAPA 1 — ADMISIÓN E INSCRIPCIÓN (MVP, Fases 1–14 ✅ COMPLETAS)
@@ -17,9 +17,9 @@ La primera etapa cubre únicamente la **Admisión e Inscripción**:
 
 Detalle: `docs/plan-implementacion.md` · Reglas: `docs/arquitectura-mvp.md`.
 
-> **F15 y F16 (Opción A aprobada, C6):** su alcance original (cobertura/regresiones + hardening/RB-21) se conserva y se ejecuta reubicado como **2.0-00 — Blindaje del núcleo existente**, antes de 2.0-01. **NO iniciadas.**
+> **F15 y F16 (Opción A aprobada, C6):** su alcance original (cobertura/regresiones + hardening/RB-21) se conserva y se ejecuta reubicado como **2.0-00 — Blindaje del núcleo existente**, antes de 2.0-01. **✅ COMPLETADA (2026-10-02)** — 386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK.
 
-## ETAPA 2 — CONTROL ESCOLAR (Roadmap 2.0 — APROBADO en planeación, SIN implementar)
+## ETAPA 2 — CONTROL ESCOLAR (Roadmap 2.0 — APROBADO en planeación)
 
 > Alcance aprobado: evolucionar el sistema reutilizando F1–F14 hacia control escolar completo universitario.
 > **Documento de análisis completo:** `docs/analisis-evolucion-control-escolar.md` (reutilización, modelo de datos, ER, estados, roles, flujo aspirante→egreso, riesgos, decisiones).
@@ -33,7 +33,7 @@ Detalle: `docs/plan-implementacion.md` · Reglas: `docs/arquitectura-mvp.md`.
 - Datos institucionales: **no inventar** planes, materias, créditos, RVOE, fechas, modalidades ni información no proporcionada. **Esto no bloquea 2.0-01**: la fase crea arquitectura, tablas y CRUD con catálogos vacíos; los datos reales se capturan cuando UVZ los proporcione (C7).
 - Decisiones diferidas a su fase: D-N3 (becas/descuentos), D-N4 (extraordinarios), D-N6 (exportaciones CSV/Excel), D-N7 (tipos de folios de actas/constancias).
 
-**Fases de la Etapa 2 (18 en total) — ninguna iniciada:**
+**Fases de la Etapa 2 (18 en total) — 2.0-00 ✅ COMPLETADA, 2.0-01 en adelante ⬜ NO INICIADAS:**
 
 | Fase | Alcance | Depende de |
 |---|---|---|
