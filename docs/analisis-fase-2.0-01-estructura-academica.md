@@ -362,3 +362,5 @@ docs(2.0-01): diseño detallado estructura académica — 4 tablas, enums, estad
 ---
 
 **2.0-01 diseñada y lista para aprobación. NO iniciada. NO migraciones ejecutadas. NO modelos creados. NO componentes escritos. NO BD modificada.**
+
+> **Nota histórica:** Este documento refleja el estado previo a la implementación. La fase 2.0-01 ya fue implementada y validada (447 tests / 2471 assertions, 5 migraciones, build OK) e integrada en master.

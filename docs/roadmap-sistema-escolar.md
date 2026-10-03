@@ -1,7 +1,7 @@
 # Roadmap — Sistema Escolar UVZ
 
 > **Universidad Villa de Zacatecas (UVZ)** · "Aumentamos la excelencia".
-> Documento de evolución futura. **La ETAPA 2 (Control Escolar) fue APROBADA en planeación (02/10/2026); 2.0-00 COMPLETADA e integrada en master; 2.0-01 COMPLETA en `feat/2.0-01-estructura-academica` (pendiente merge); 2.0-02 en adelante SIN implementar**.
+> Documento de evolución futura. **La ETAPA 2 (Control Escolar) fue APROBADA en planeación (02/10/2026); 2.0-00 COMPLETADA e integrada en master; 2.0-01 COMPLETA e integrada en master; 2.0-02 en adelante SIN implementar**.
 > Principio rector: **"Preparado para crecer, pero implementar únicamente lo que el MVP necesita."**
 
 ## ETAPA 1 — ADMISIÓN E INSCRIPCIÓN (MVP, Fases 1–14 ✅ COMPLETAS)
@@ -33,7 +33,7 @@ Detalle: `docs/plan-implementacion.md` · Reglas: `docs/arquitectura-mvp.md`.
 - Datos institucionales: **no inventar** planes, materias, créditos, RVOE, fechas, modalidades ni información no proporcionada. **Esto no bloquea 2.0-01**: la fase crea arquitectura, tablas y CRUD con catálogos vacíos; los datos reales se capturan cuando UVZ los proporcione (C7).
 - Decisiones diferidas a su fase: D-N3 (becas/descuentos), D-N4 (extraordinarios), D-N6 (exportaciones CSV/Excel), D-N7 (tipos de folios de actas/constancias).
 
-**Fases de la Etapa 2 (18 en total) — 2.0-00 ✅ COMPLETADA e integrada en master, 2.0-01 ✅ COMPLETA en `feat/2.0-01-estructura-academica` (pendiente merge), 2.0-02 en adelante ⬜ NO INICIADAS:**
+**Fases de la Etapa 2 (18 en total) — 2.0-00 ✅ COMPLETADA e integrada en master, 2.0-01 ✅ COMPLETA e integrada en master, 2.0-02 en adelante ⬜ NO INICIADAS:**
 
 | Fase | Alcance | Depende de |
 |---|---|---|
