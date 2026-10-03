@@ -5,6 +5,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Documentos\DescargaArchivosController;
 use App\Http\Controllers\Pagos\ComprobantePagoController;
 use App\Http\Controllers\Pagos\ComprobantePdfController;
+use App\Livewire\Academico\MateriaAdmin;
+use App\Livewire\Academico\PlanEstudioAdmin;
+use App\Livewire\Academico\PlanVersionAdmin;
 use App\Livewire\Alumnos\FormAlumno;
 use App\Livewire\Alumnos\FormContactos;
 use App\Livewire\Alumnos\FormInfoMedica;
@@ -81,4 +84,9 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     Route::get('/periodos', Periodos::class)->name('periodos');
     Route::get('/tipos-documento', TiposDocumento::class)->name('tipos-documento');
     Route::get('/convenios', Convenios::class)->name('convenios');
+
+    // Estructura académica (2.0-01) — solo ADMIN.
+    Route::get('/planes-estudio', PlanEstudioAdmin::class)->name('planes-estudio');
+    Route::get('/planes-estudio/{plan}/versiones', PlanVersionAdmin::class)->name('versiones');
+    Route::get('/planes-estudio/{plan}/versiones/{version}/materias', MateriaAdmin::class)->name('materias');
 });

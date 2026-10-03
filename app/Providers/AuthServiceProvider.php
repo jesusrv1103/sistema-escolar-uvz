@@ -4,12 +4,18 @@ namespace App\Providers;
 
 use App\Enums\RolUsuario;
 use App\Models\Documento;
+use App\Models\Materia;
 use App\Models\Observacion;
 use App\Models\Pago;
+use App\Models\PlanEstudio;
+use App\Models\PlanVersion;
 use App\Models\User;
 use App\Policies\DocumentoPolicy;
+use App\Policies\MateriaPolicy;
 use App\Policies\ObservacionPolicy;
 use App\Policies\PagoPolicy;
+use App\Policies\PlanEstudioPolicy;
+use App\Policies\PlanVersionPolicy;
 use App\Policies\UsuarioPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -50,6 +56,16 @@ class AuthServiceProvider extends ServiceProvider
         'observacion.crear' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
         'observacion.resolver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
         'auditoria.view' => [],
+        // 2.0-01 — Estructura académica (admin-only, patrón usuario.manage)
+        'plan_estudio.create' => [],
+        'plan_estudio.update' => [],
+        'plan_estudio.delete' => [],
+        'plan_version.create' => [],
+        'plan_version.aprobar' => [],
+        'materia.create' => [],
+        'materia.update' => [],
+        'materia.delete' => [],
+        'prerrequisito.gestionar' => [],
     ];
 
     public function boot(): void
@@ -69,18 +85,14 @@ class AuthServiceProvider extends ServiceProvider
         }
 
         Gate::policy(User::class, UsuarioPolicy::class);
-        // Fase 8: PagoPolicy conectada al modelo real (registro server-side,
-        // validación/rechazo four-eyes y descarga del comprobante privado).
         Gate::policy(Pago::class, PagoPolicy::class);
-        // Fase 10: DocumentoPolicy conectada al modelo real (carga, validación
-        // four-eyes y descarga del archivo en disco privado).
         Gate::policy(Documento::class, DocumentoPolicy::class);
-        // Fase 11: ObservacionPolicy conectada al modelo real (crear/resolver
-        // por los 4 roles, §8.2; la UI y el servicio autorizan server-side).
         Gate::policy(Observacion::class, ObservacionPolicy::class);
+        Gate::policy(PlanEstudio::class, PlanEstudioPolicy::class);
+        Gate::policy(PlanVersion::class, PlanVersionPolicy::class);
+        Gate::policy(Materia::class, MateriaPolicy::class);
 
-        // Las policies de modelos de fases futuras (Alumno, InformacionMedica,
-        // Inscripcion, Convenio) ya existen en App\Policies y Laravel las
-        // resuelve por convención; aquí solo se registran las que tienen modelo.
+        // Las policies de modelos de fases futuras ya existen en App\Policies
+        // y Laravel las resuelve por convención; aquí solo se registran las que tienen modelo.
     }
 }
