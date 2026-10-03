@@ -1,6 +1,6 @@
 # Análisis y diseño — Fase 2.0-01: Estructura académica (Planes, Versiones, Materias, Créditos, Seriación)
 
-> **Documento de diseño — NO implementar.** Solo preparación técnica detallada para aprobación.
+> **Documento de diseño — Diseño aprobado e implementado.** Este documento fue el diseño previo aprobado para la fase 2.0-01; la fase ya fue implementada y validada (447 tests / 2471 assertions, 5 migraciones, build OK). El documento se conserva como referencia histórica de las decisiones aprobadas.
 > Basado en: `docs/analisis-evolucion-control-escolar.md` §4–§10, `docs/roadmap-sistema-escolar.md`, `docs/arquitectura-mvp.md` §24.
 > **Decisiones aprobadas:** C7 (catálogos vacíos permitidos), D-N2 (rol DOCENTE en 2.0-06), D-N5 (rol ALUMNO en 2.0-16), C8 (formatos internos UVZ).
 > **Nuevas decisiones aprobadas (02/10/2026):** organización curricular por `periodo_orden`, `TipoPrerrequisito` solo `OBLIGATORIO/RECOMENDADO`, transición `VIGENTE` solo vía servicio con `lockForUpdate`, sin índices filtrados, 4 modelos (incluye `MateriaPrerrequisito`).
