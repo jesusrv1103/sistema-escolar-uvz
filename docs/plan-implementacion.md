@@ -1,8 +1,7 @@
 # Plan de implementación — Sistema Escolar MVP
 
 > Orden definitivo por fases. Complementa `docs/arquitectura-mvp.md` (versión 3, arquitectura aprobada).
-> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 y 14 **COMPLETAS** (ETAPA 1 — Admisión e Inscripción). **Fases 15 y 16 NO iniciadas:** su alcance original se conserva y se ejecuta reubicado como **2.0-00 — Blindaje del núcleo existente** de la ETAPA 2 (Opción A aprobada, C6), antes de 2.0-01 → ver `docs/roadmap-sistema-escolar.md` y `docs/analisis-evolucion-control-escolar.md` §13.
-> **Ninguna fase de la ETAPA 2 está iniciada (2.0-00 NO iniciada).**
+> **Estado:** Fases 1, 1.1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 y 14 **COMPLETAS** (ETAPA 1 — Admisión e Inscripción). **Fases 15 y 16 → reubicadas como 2.0-00 — Blindaje del núcleo existente** (Opción A aprobada, C6), **✅ COMPLETADA (386 tests / 2326 assertions, 0 migraciones, 33 rutas, build OK)**. 2.0-00 pendiente merge a master. **2.0-01 diseñada, NO implementada.**
 
 ---
 

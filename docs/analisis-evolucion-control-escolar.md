@@ -6,7 +6,7 @@
 > **Alcance del nuevo escenario:** conservar y reutilizar todo lo construido en F1–F14 y evolucionarlo hacia un Sistema de Control Escolar universitario (**ETAPA 2 — CONTROL ESCOLAR**). Los documentos académicos usarán **formatos estándar internos de UVZ**; **fuera de alcance**: formatos oficiales SEP, certificados oficiales, titulación electrónica, MEC, MET, SIGED e integraciones gubernamentales.
 >
 > **Fuentes revisadas por completo:** `docs/reglas-desarrollo.md`, `docs/arquitectura-mvp.md` (v3, §1–§23), `docs/plan-implementacion.md`, `docs/estado-proyecto.md`, `docs/roadmap-sistema-escolar.md`; código de apoyo: `app/Providers/AuthServiceProvider.php`, `app/Enums/*`, `app/Services/*`, `app/Livewire/*`, `database/migrations/*`.
-> **F1–F14 = ETAPA 1 — ADMISIÓN E INSCRIPCIÓN (COMPLETA)** · **F15/F16 → 2.0-00 (NO iniciadas)** · **Fases de la Etapa 2: NO iniciadas.**
+> **F1–F14 = ETAPA 1 — ADMISIÓN E INSCRIPCIÓN (COMPLETA)** · **F15/F16 → 2.0-00 (NO iniciadas — estado histórico previo a ejecución)** · **2.0-00 ✅ COMPLETADA (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK)** · **2.0-01 en adelante NO implementadas.**
 
 ---
 
@@ -309,7 +309,7 @@ Sin plazos (no hay datos de capacidad): **18 fases pequeñas**, cada una con gua
 | **C2 / C3 / D-N1** | Reinscripción/carga vs. máquina única (§7.3.6), `ENROLLED`/`CANCELLED` terminales (§10) y `UNIQUE(alumno_id, periodo_id)` (D2) | **RESUELTAS:** `inscripciones` **no** se reutiliza ni reinterpreta — queda **reservada al proceso de ADMISIÓN/INGRESO**. Nueva entidad **`matriculas_periodo`** (matrícula académica por periodo, UNIQUE `alumno+periodo`, **máquina de estados propia**); `inscripciones_materias` depende de **`matricula_periodo_id`**; primera matrícula desde una inscripción `ENROLLED`; siguientes = reinscripciones. Máquina de `inscripciones`, RB-8, pagos, documentos e ingreso **intactos** |
 | **C4** | §19 "fuera del MVP" vs. el nuevo alcance | **RESUELTA:** aprobada la **ETAPA 2 — CONTROL ESCOLAR**; F1–F14 permanecen como **ETAPA 1 — ADMISIÓN E INSCRIPCIÓN**. `arquitectura-mvp.md` §19 y `roadmap-sistema-escolar.md` actualizados para dejarlo explícito, sin reescribir la historia del MVP |
 | **C5** | `reglas` §14 (explicación larga → `docs/`) vs. "no editar docs persistentes aún" | **RESUELTA:** el análisis se persiste en `docs/analisis-evolucion-control-escolar.md` y se commitea con esta actualización |
-| **C6** | F15/F16 "pendientes de aprobación" vs. "NO iniciar F15/F16" | **RESUELTA — Opción A:** se reubican como **2.0-00 (Blindaje del núcleo)** con alcance original, antes de 2.0-01; solo planeación ahora, **NO iniciada** |
+| **C6** | F15/F16 "pendientes de aprobación" vs. "NO iniciar F15/F16" | **RESUELTA — Opción A:** se reubican como **2.0-00 (Blindaje del núcleo)** con alcance original, antes de 2.0-01; **✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK) |
 | **C7** | Datos institucionales pendientes vs. planes/materias reales | **RESUELTA:** **no bloquea 2.0-01** — arquitectura, tablas y CRUD con catálogos vacíos; datos reales se capturan cuando UVZ los proporcione; **no inventar** planes, materias, créditos, RVOE, fechas, modalidades ni información no proporcionada |
 | **C8** | Formatós internos vs. RB-19/§19 (solo comprobante de pago) | **RESUELTA — APROBADOS** los formatos estándar internos UVZ con pipeline estricto **DATOS/REGLAS → SERVICIO → PLANTILLA BLADE → PDF**; fuera: SEP, certificados oficiales, titulación electrónica, MEC, MET, SIGED e integraciones gubernamentales |
 

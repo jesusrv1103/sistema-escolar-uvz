@@ -23,7 +23,7 @@
 | Fase 12 — Revisión final y número de control | ✅ **COMPLETA** (256 pruebas, build correcto, 1 ruta nueva: `inscripciones.revision-final`) |
 | Fase 13 — Cancelación | ✅ **COMPLETA** (271 pruebas, build correcto, sin rutas nuevas) |
 | Fase 14 — Panel operativo y listados | ✅ **COMPLETA** (288 pruebas, build correcto, sin rutas nuevas) |
-| Fases 15–16 | ↪️ **reubicadas como 2.0-00 — Blindaje del núcleo existente** (Opción A aprobada, C6) — **⬜ NO iniciadas** |
+| Fases 15–16 | ↪️ **reubicadas como 2.0-00 — Blindaje del núcleo existente** (Opción A aprobada, C6) — **✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK) — pendiente merge a master |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -326,7 +326,7 @@
 - **Sitios hermanos intactos (§23):** solo se escribió en `darkcyan-mongoose-808972.hostingersite.com`; `universidadvilladezacatecas.edu.mx` y los 17 dominios restantes sin cambios por este checkpoint (los mtimes ajenos de hoy corresponden a sesiones/cache y auto-updates de sus propios sitios vivos); única BD de la cuenta = la nuestra, sin tablas ajenas modificadas; sin cambios PHP/Apache globales, sin `rm -rf`, sin `rsync --delete`, sin chmod recursivo global.
 - **Git:** `master` = Fase 14 (`ccd2c6f`) + fix de layout (`d864f3a`) + documentación del checkpoint (`fabc114`, `1b10436`); rama `feat/fase-14-panel-operativo` conservada; sin remotos, sin push, sin borrado de ramas.
 - **Estado del checkpoint: COMPLETO y APROBADO por el usuario (02/10/2026)** — smoke 121 verificaciones en verde, 4 usuarios QA por rol, matriz de capacidades verificada, credenciales solo en archivos locales `600` (`~/.ssh/hostinger_*`), otros sitios intactos e incidencia de layout corregida (`d864f3a`).
-- **Fases 15 y 16: NO iniciadas** → ejecutarse como **2.0-00** (ver sección siguiente).
+- **Fases 15 y 16 → reubicadas como 2.0-00 — Blindaje del núcleo existente** → **✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK) — pendiente merge a master.
 
 ## Checkpoint 2.0-00 — Blindaje del núcleo existente (2026-10-02)
 

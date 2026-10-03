@@ -9,7 +9,7 @@
 >
 > **Fase 8 registrada**: pagos implementados → folio **`PAG-YYYYMMDD-########`** generado **solo al validar** (fecha de validación con el timezone de la aplicación + `pago.id` con padding a 8 dígitos; `UNIQUE(folio)` en BD como defensa final, sin tabla `consecutivos`, sin `MAX()`, sin reutilizar `NumeroControlService`), **un único intento activo por concepto** (a lo sumo UN `PENDIENTE` a la vez, bloqueado con `lockForUpdate()`, o UN `VALIDADO` que liquida el concepto) e **historial de intentos `RECHAZADO` preservado** (nunca se sobrescribe ni elimina; tras un rechazo se admite un nuevo intento) — §4.10, RB-4, RB-10.
 >
-> **Etapa 2 registrada (02/10/2026)**: **ETAPA 2 — CONTROL ESCOLAR aprobada en planeación** → **§24** (F1–F14 = ETAPA 1 — Admisión e Inscripción; `inscripciones` reservada al ingreso; nueva entidad `matriculas_periodo`; roles DOCENTE/ALUMNO; formatos internos UVZ; F15/F16 → 2.0-00). **Ninguna fase de la Etapa 2 está implementada (2.0-00 NO iniciada).**
+> **Etapa 2 registrada (02/10/2026)**: **ETAPA 2 — CONTROL ESCOLAR aprobada en planeación** → **§24** (F1–F14 = ETAPA 1 — Admisión e Inscripción; `inscripciones` reservada al ingreso; nueva entidad `matriculas_periodo`; roles DOCENTE/ALUMNO; formatos internos UVZ; F15/F16 → 2.0-00). **2.0-00 ✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK); **2.0-01 en adelante NO implementadas**.
 
 ---
 
@@ -1607,7 +1607,7 @@ El comprobante deberá usar logo UVZ, "Universidad Villa de Zacatecas", colores 
 
 ## 24. ETAPA 2 — Control Escolar (decisión aprobada 02/10/2026)
 
-> Registro mínimo de las decisiones de la **Etapa 2 — Control Escolar** (análisis completo en `docs/analisis-evolucion-control-escolar.md`; fases en `docs/roadmap-sistema-escolar.md`). **Fase 2.0-00 NO iniciada; nada de esta etapa está implementado.**
+> Registro mínimo de las decisiones de la **Etapa 2 — Control Escolar** (análisis completo en `docs/analisis-evolucion-control-escolar.md`; fases en `docs/roadmap-sistema-escolar.md`). **2.0-00 ✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK); **2.0-01 en adelante NO implementadas.**
 
 1. **Alcance (C4):** aprobada la **ETAPA 2 — CONTROL ESCOLAR**. F1–F14 permanecen documentadas como **ETAPA 1 — ADMISIÓN E INSCRIPCIÓN**; la historia del MVP no se reescribe.
 2. **`inscripciones` reservada al ingreso (C2/C3/D-N1):** la tabla, modelo, `InscripcionService`, máquina `InscripcionEstatus` y RB-8 quedan reservados al proceso de **ADMISIÓN/INGRESO**. No se reutilizan ni se reinterpretan como flujo académico de todos los periodos.
@@ -1615,7 +1615,7 @@ El comprobante deberá usar logo UVZ, "Universidad Villa de Zacatecas", colores 
 4. **Roles:** los 4 roles actuales (ADMIN, ADMISIONES, ADMINISTRACION, CONTROL_ESCOLAR) se conservan. **DOCENTE** aprobado para 2.0-06 (D-N2) y **ALUMNO** aprobado para 2.0-16 (D-N5) con **aislamiento estricto** (solo su propia información — C1; la D11 "alumnos sin login" sigue válida para la Etapa 1). **COORDINADOR:** no se crea por ahora.
 5. **Formatos (C8):** aprobados los **formatos estándar internos UVZ** con pipeline estricto **DATOS/REGLAS → SERVICIO → PLANTILLA BLADE → PDF**. Fuera: SEP, MEC, MET, SIGED, certificados oficiales, titulación electrónica e integraciones gubernamentales.
 6. **Datos institucionales (C7):** **no inventar** planes, materias, créditos, RVOE, fechas, modalidades ni información no proporcionada. Esto **no bloquea 2.0-01**: esa fase crea arquitectura, tablas y CRUD con **catálogos vacíos**; los datos reales se capturan cuando UVZ los proporcione.
-7. **F15/F16 → 2.0-00 (C6, Opción A):** el alcance original de F15 (cobertura/matriz/regresiones) y F16 (hardening/RB-21) se ejecuta reubicado como **2.0-00 — Blindaje del núcleo existente**, **antes de 2.0-01**. **NO iniciadas.**
+7. **F15/F16 → 2.0-00 (C6, Opción A):** el alcance original de F15 (cobertura/matriz/regresiones) y F16 (hardening/RB-21) se ejecuta reubicado como **2.0-00 — Blindaje del núcleo existente**, **antes de 2.0-01**. **✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK).
 8. **Decisiones diferidas (se definen al llegar su fase):** D-N3 (becas/descuentos, 2.0-12), D-N4 (extraordinarios, 2.0-07), D-N6 (exportaciones CSV/Excel, 2.0-17), D-N7 (tipos de folios de actas/constancias, 2.0-05/2.0-08).
 9. **Se conservan intactas** todas las reglas críticas §10 y las decisiones §22 de la Etapa 1.
 
@@ -1623,7 +1623,7 @@ El comprobante deberá usar logo UVZ, "Universidad Villa de Zacatecas", colores 
 
 ## Evolución futura del Sistema Escolar
 
-El **Sistema Escolar UVZ** está concebido como un sistema escolar completo; el MVP (ETAPA 1) cubre solo la primera etapa (**Admisión e Inscripción**, F1–F14 completas). La **ETAPA 2 — Control Escolar fue aprobada en planeación (02/10/2026)** — ver **§24** y [`docs/roadmap-sistema-escolar.md`](roadmap-sistema-escolar.md) (fases 2.0-00 … 2.0-17); el análisis detallado está en [`docs/analisis-evolucion-control-escolar.md`](analisis-evolucion-control-escolar.md). Ninguna fase de la Etapa 2 está implementada.
+El **Sistema Escolar UVZ** está concebido como un sistema escolar completo; el MVP (ETAPA 1) cubre solo la primera etapa (**Admisión e Inscripción**, F1–F14 completas). La **ETAPA 2 — Control Escolar fue aprobada en planeación (02/10/2026)** — ver **§24** y [`docs/roadmap-sistema-escolar.md`](roadmap-sistema-escolar.md) (fases 2.0-00 … 2.0-17); el análisis detallado está en [`docs/analisis-evolucion-control-escolar.md`](analisis-evolucion-control-escolar.md). **2.0-00 ✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK); **2.0-01 en adelante NO implementadas**.
 
 **Preparado para crecer, pero implementar únicamente lo que el MVP necesita.**
 
