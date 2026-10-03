@@ -20,6 +20,8 @@ class PlanEstudio extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'planes_estudio';
+
     /** @var list<string> */
     protected $fillable = [
         'programa_id',

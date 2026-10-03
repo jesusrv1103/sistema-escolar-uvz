@@ -245,14 +245,20 @@ class MateriaAdmin extends Component
             return;
         }
 
+        $tipoEnum = \App\Enums\TipoPrerrequisito::tryFrom($this->tipoPrerreq);
+        if ($tipoEnum === null) {
+            $this->addError('prerreq', "Tipo de prerrequisito inválido: {$this->tipoPrerreq}. Valores permitidos: OBLIGATORIO, RECOMENDADO.");
+            return;
+        }
+
         try {
             app(\App\Services\MateriaPrerrequisitoService::class)->agregar(
                 $this->materiaPrerreq,
                 $prerrequisito,
-                $this->tipoPrerreq
+                $tipoEnum
             );
 
-            session()->flash('success', "Prerrequisito '{$prerrequisito->nombre}' agregado como {$this->tipoPrerreq->label()}.");
+            session()->flash('success', "Prerrequisito '{$prerrequisito->nombre}' agregado como {$tipoEnum->label()}.");
         } catch (\App\Exceptions\PrerrequisitoInvalidoException $e) {
             $this->addError('prerreq', $e->getMessage());
         } catch (\App\Exceptions\CicloPrerrequisitoException $e) {

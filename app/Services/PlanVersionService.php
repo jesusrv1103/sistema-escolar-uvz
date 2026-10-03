@@ -18,6 +18,10 @@ use Illuminate\Support\Facades\Auth;
  */
 class PlanVersionService
 {
+    public function __construct(
+        private readonly \App\Services\AuditoriaService $auditoria
+    ) {}
+
     /**
      * Aprueba una versión de plan: PROPUESTA → VIGENTE.
      *
@@ -64,12 +68,24 @@ class PlanVersionService
                 $vigenteActual->save();
             }
 
+            // Guardar estado anterior para auditoría
+            $estadoAnterior = $version->estatus->value;
+
             // 7. Transicionar la versión a VIGENTE
             $version->forceFill([
                 'estatus' => 'VIGENTE',
                 'aprobado_por' => $usuario?->getKey(),
                 'aprobado_at' => now(),
             ])->save();
+
+            // 8. Registrar auditoría
+            $this->auditoria->registrar(
+                $version,
+                'plan_version_aprobada',
+                ['estatus' => $estadoAnterior],
+                ['estatus' => 'VIGENTE'],
+                ['fecha_vigencia' => $version->fecha_vigencia?->format('Y-m-d')]
+            );
 
             return $version->refresh();
         });

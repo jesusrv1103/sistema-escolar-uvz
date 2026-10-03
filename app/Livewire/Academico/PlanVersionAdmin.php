@@ -72,10 +72,17 @@ class PlanVersionAdmin extends Component
 
     public function guardar(): void
     {
-        $this->validate([
-            'version' => ['required', 'string', 'max:20'],
-            'fechaVigencia' => ['nullable', 'date'],
-        ]);
+        if ($this->versionEnEdicion === null) {
+            $this->validate([
+                'version' => ['required', 'string', 'max:20', 'unique:plan_versiones,version,NULL,id,plan_id,' . $this->plan->id],
+                'fechaVigencia' => ['nullable', 'date'],
+            ]);
+        } else {
+            $this->validate([
+                'version' => ['required', 'string', 'max:20'],
+                'fechaVigencia' => ['nullable', 'date'],
+            ]);
+        }
 
         if ($this->versionEnEdicion === null) {
             Gate::authorize('plan_version.create');
@@ -168,7 +175,12 @@ class PlanVersionAdmin extends Component
             return;
         }
 
-        $version->update(['activo' => ! $version->activo]);
+        dump('alternarActivo called', ['version_id' => $version->id, 'activo_before' => $version->activo, 'activo_type' => gettype($version->activo)]);
+        $newActivo = ! $version->activo;
+        dump('newActivo value', ['newActivo' => $newActivo, 'type' => gettype($newActivo)]);
+        $version->update(['activo' => $newActivo]);
+        $version->refresh(); // Refresh to get updated value
+        dump('alternarActivo after update', ['version_id' => $version->id, 'activo_after' => $version->activo, 'type' => gettype($version->activo)]);
 
         session()->flash('success', "Versión " . ($version->activo ? 'activada' : 'desactivada') . " correctamente.");
     }

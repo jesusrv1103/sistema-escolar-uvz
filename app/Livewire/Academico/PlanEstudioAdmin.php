@@ -76,14 +76,25 @@ class PlanEstudioAdmin extends Component
 
     public function guardar(): void
     {
-        $this->validate([
-            'clave' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9_-]+$/'],
-            'nombre' => ['required', 'string', 'max:150'],
-            'resolucionRvoe' => ['nullable', 'string', 'max:100'],
-            'fechaResolucion' => ['nullable', 'date'],
-            'activo' => ['boolean'],
-            'programaId' => ['required', 'integer', 'exists:programas,id'],
-        ]);
+        if ($this->planEnEdicion === null) {
+            $this->validate([
+                'clave' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9_-]+$/', 'unique:planes_estudio,clave,NULL,id,programa_id,' . $this->programaId],
+                'nombre' => ['required', 'string', 'max:150'],
+                'resolucionRvoe' => ['nullable', 'string', 'max:100'],
+                'fechaResolucion' => ['nullable', 'date'],
+                'activo' => ['boolean'],
+                'programaId' => ['required', 'integer', 'exists:programas,id'],
+            ]);
+        } else {
+            $this->validate([
+                'clave' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9_-]+$/'],
+                'nombre' => ['required', 'string', 'max:150'],
+                'resolucionRvoe' => ['nullable', 'string', 'max:100'],
+                'fechaResolucion' => ['nullable', 'date'],
+                'activo' => ['boolean'],
+                'programaId' => ['required', 'integer', 'exists:programas,id'],
+            ]);
+        }
 
         if ($this->planEnEdicion === null) {
             Gate::authorize('plan_estudio.create');
@@ -112,8 +123,13 @@ class PlanEstudioAdmin extends Component
 
     private function actualizar(): void
     {
+        // No permitir cambiar la clave
+        if ($this->clave !== $this->planEnEdicion->clave) {
+            $this->addError('clave', 'No se puede cambiar la clave del plan de estudio.');
+            return;
+        }
+
         $this->planEnEdicion->update([
-            'clave' => $this->clave,
             'nombre' => $this->nombre,
             'resolucion_rvoe' => $this->resolucionRvoe ?: null,
             'fecha_resolucion' => $this->fechaResolucion ?: null,

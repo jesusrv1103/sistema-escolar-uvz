@@ -21,7 +21,7 @@ class PlanVersionFactory extends Factory
         return [
             'plan_id' => PlanEstudio::factory(),
             'version' => '1.' . ($i++ % 10),
-            'fecha_vigencia' => fake()->optional(0.7)->dateTimeBetween('now', '+2 years')->format('Y-m-d'),
+            'fecha_vigencia' => fake()->optional(0.7)->dateTimeBetween('now', '+2 years')?->format('Y-m-d'),
             'estatus' => fake()->randomElement(EstatusPlanVersion::cases()),
             'aprobado_por' => null,
             'aprobado_at' => null,
@@ -50,6 +50,13 @@ class PlanVersionFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'estatus' => EstatusPlanVersion::SUPERADA,
+        ]);
+    }
+
+    public function forPlanEstudio(PlanEstudio $plan): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'plan_id' => $plan->id,
         ]);
     }
 }

@@ -22,11 +22,14 @@ class PlanVersion extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'plan_versiones';
+
     /** @var list<string> */
     protected $fillable = [
         'plan_id',
         'version',
         'fecha_vigencia',
+        'activo',
     ];
 
     /** @return array<string, string> */
@@ -36,6 +39,7 @@ class PlanVersion extends Model
             'fecha_vigencia' => 'date',
             'estatus' => EstatusPlanVersion::class,
             'aprobado_at' => 'datetime',
+            'activo' => 'boolean',
         ];
     }
 
@@ -45,6 +49,14 @@ class PlanVersion extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(PlanEstudio::class, 'plan_id');
+    }
+
+    /**
+     * Alias para compatibilidad con código existente.
+     */
+    public function planEstudio(): BelongsTo
+    {
+        return $this->plan();
     }
 
     /**

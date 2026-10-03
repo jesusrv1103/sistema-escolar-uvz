@@ -55,4 +55,16 @@ enum EstatusPlanVersion: string
     {
         return $this === self::SUPERADA;
     }
+
+    /**
+     * Clase CSS para badge según el estatus.
+     */
+    public function labelClass(): string
+    {
+        return match ($this) {
+            self::VIGENTE  => 'bg-success',
+            self::PROPUESTA => 'bg-warning text-dark',
+            self::SUPERADA => 'bg-secondary',
+        };
+    }
 }

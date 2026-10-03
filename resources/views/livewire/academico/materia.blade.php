@@ -5,12 +5,7 @@
             @if($version)
                 <span class="text-muted fw-normal fs-6">
                     — {{ $version->plan->nombre ?? '' }} v{{ $version->version }}
-                    <span class="badge {{ match($version->estatus) {
-                        'VIGENTE' => 'bg-success',
-                        'PROPUESTA' => 'bg-warning text-dark',
-                        'SUPERADA' => 'bg-secondary',
-                        default => 'bg-secondary'
-                    }} ms-2">
+                    <span class="badge {{ $version->estatus->labelClass() ?? 'bg-secondary' }} ms-2">
                         {{ $version->estatus->label() ?? $version->estatus }}
                     </span>
                 </span>
@@ -225,7 +220,9 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         Prerrequisitos de <strong>{{ $materiaPrerreq->nombre ?? '' }}</strong>
-                        <span class="badge bg-info text-dark ms-2">{{ $materiaPrerreq->clave }}</span>
+                        @if($materiaPrerreq)
+                            <span class="badge bg-info text-dark ms-2">{{ $materiaPrerreq->clave }}</span>
+                        @endif
                     </h5>
                     <button type="button" class="btn-close" wire:click="cerrarModalPrerreq"></button>
                 </div>
@@ -258,13 +255,15 @@
                             <h6>Disponibles para agregar</h6>
                             <div class="list-group" style="max-height: 300px; overflow-y: auto;">
                                 @php
-                                    $yaTienen = $materiaPrerreq->prerrequisitos->pluck('id')->toArray();
-                                    $disponibles = \App\Models\Materia::where('plan_version_id', $materiaPrerreq->plan_version_id)
-                                        ->where('id', '!=', $materiaPrerreq->id)
-                                        ->whereNotIn('id', $yaTienen)
-                                        ->when($busquedaPrerreq, fn($q) => $q->where('nombre', 'like', "%{$busquedaPrerreq}%")->orWhere('clave', 'like', "%{$busquedaPrerreq}%"))
-                                        ->orderBy('periodo_orden')->orderBy('clave')
-                                        ->get();
+                                    $yaTienen = $materiaPrerreq?->prerrequisitos->pluck('id')->toArray() ?? [];
+                                    $disponibles = $materiaPrerreq
+                                        ? \App\Models\Materia::where('plan_version_id', $materiaPrerreq->plan_version_id)
+                                            ->where('id', '!=', $materiaPrerreq->id)
+                                            ->whereNotIn('id', $yaTienen)
+                                            ->when($busquedaPrerreq, fn($q) => $q->where('nombre', 'like', "%{$busquedaPrerreq}%")->orWhere('clave', 'like', "%{$busquedaPrerreq}%"))
+                                            ->orderBy('periodo_orden')->orderBy('clave')
+                                            ->get()
+                                        : collect();
                                 @endphp
                                 @if($disponibles->isEmpty())
                                     <div class="text-muted text-center py-3">Todas las materias disponibles ya son prerrequisitos.</div>
@@ -288,7 +287,7 @@
                         <div class="col-md-6">
                             <h6>Prerrequisitos actuales</h6>
                             <div class="list-group" style="max-height: 300px; overflow-y: auto;">
-                                @if($materiaPrerreq->prerrequisitos->isEmpty())
+                                @if(!$materiaPrerreq || $materiaPrerreq->prerrequisitos->isEmpty())
                                     <div class="text-muted text-center py-3">Sin prerrequisitos.</div>
                                 @else
                                     @foreach($materiaPrerreq->prerrequisitos as $p)
@@ -296,8 +295,11 @@
                                             <div>
                                                 <strong>{{ $p->clave }}</strong> {{ $p->nombre }}
                                                 <br><small class="text-muted">Cuatrimestre {{ $p->periodo_orden }}</small>
+                                                @php
+                                                    $tipoEnum = \App\Enums\TipoPrerrequisito::tryFrom($p->pivot->tipo);
+                                                @endphp
                                                 <span class="badge {{ $p->pivot->tipo === 'OBLIGATORIO' ? 'bg-danger' : 'bg-info' }} ms-2">
-                                                    {{ $p->pivot->tipo->label() ?? $p->pivot->tipo }}
+                                                    {{ $tipoEnum?->label() ?? $p->pivot->tipo }}
                                                 </span>
                                             </div>
                                             <button type="button" class="btn btn-sm btn-outline-danger" wire:click="quitarPrerrequisito({{ $p->id }})" title="Quitar">

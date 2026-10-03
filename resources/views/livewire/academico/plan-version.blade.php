@@ -45,12 +45,7 @@
                                     <td>{{ $v->version }}</td>
                                     <td>{{ $v->fecha_vigencia?->format('d/m/Y') ?? '—' }}</td>
                                     <td>
-                                        <span class="badge {{ match($v->estatus) {
-                                            'VIGENTE' => 'bg-success',
-                                            'PROPUESTA' => 'bg-warning text-dark',
-                                            'SUPERADA' => 'bg-secondary',
-                                            default => 'bg-secondary'
-                                        }} }}">
+                                        <span class="badge {{ $v->estatus->labelClass() }}">
                                             {{ $v->estatus->label() ?? $v->estatus }}
                                         </span>
                                     </td>

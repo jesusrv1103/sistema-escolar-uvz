@@ -1,11 +1,11 @@
 <?php
 
-use App\Enums\EstatusPlanVersion;
+use App\Enums\RolUsuario;
+use App\Livewire\Academico\PlanEstudioAdmin;
 use App\Models\PlanEstudio;
 use App\Models\Programa;
 use App\Models\User;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Schema;
+use Livewire\Livewire;
 
 uses()->group('academico', 'planes_estudio');
 
@@ -13,158 +13,151 @@ uses()->group('academico', 'planes_estudio');
  * Planes de estudio — CRUD, validaciones, autorización.
  */
 test('ADMIN puede crear un plan de estudio', function () {
-    $admin = User::factory()->deRol(\App\Enums\RolUsuario::ADMIN)->create();
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $programa = Programa::factory()->create(['activo' => true]);
 
-    $this->actingAs($admin)
-        ->post(route('admin.planes-estudio'), [
-            'programa_id' => $programa->id,
-            'clave' => 'DER-2024',
-            'nombre' => 'Derecho 2024',
-            'resolucion_rvoe' => 'RVOE-12345',
-            'fecha_resolucion' => '2024-01-15',
-            'activo' => true,
-        ])
-        ->assertStatus(200)
-        ->assertSessionHas('success');
+    Livewire::actingAs($admin)->test(PlanEstudioAdmin::class)
+        ->call('abrirModalCrear')
+        ->set('clave', 'DER-2024')
+        ->set('nombre', 'Derecho 2024')
+        ->set('resolucionRvoe', 'RVOE-12345')
+        ->set('fechaResolucion', '2024-01-15')
+        ->set('activo', true)
+        ->set('programaId', $programa->id)
+        ->call('guardar')
+        ->assertHasNoErrors();
 
     expect(PlanEstudio::where('clave', 'DER-2024')->where('programa_id', $programa->id)->exists())->toBeTrue();
 });
 
 test('ADMIN no puede crear plan con clave duplicada en el mismo programa', function () {
-    $admin = User::factory()->deRol(\App\Enums\RolUsuario::ADMIN)->create();
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $programa = Programa::factory()->create(['activo' => true]);
     PlanEstudio::factory()->create(['programa_id' => $programa->id, 'clave' => 'DER-2024']);
 
-    $this->actingAs($admin)
-        ->post(route('admin.planes-estudio'), [
-            'programa_id' => $programa->id,
-            'clave' => 'DER-2024',
-            'nombre' => 'Derecho 2024 bis',
-            'activo' => true,
-        ])
-        ->assertStatus(200)
-        ->assertSessionHasErrors('clave');
+    Livewire::actingAs($admin)->test(PlanEstudioAdmin::class)
+        ->call('abrirModalCrear')
+        ->set('clave', 'DER-2024')
+        ->set('nombre', 'Derecho 2024 bis')
+        ->set('activo', true)
+        ->set('programaId', $programa->id)
+        ->call('guardar')
+        ->assertHasErrors(['clave']);
+
+    expect(PlanEstudio::where('clave', 'DER-2024')->where('programa_id', $programa->id)->count())->toBe(1);
 });
 
 test('ADMIN puede crear planes con misma clave en programas distintos', function () {
-    $admin = User::factory()->deRol(\App\Enums\RolUsuario::ADMIN)->create();
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $programa1 = Programa::factory()->create(['activo' => true, 'clave' => 'DER']);
     $programa2 = Programa::factory()->create(['activo' => true, 'clave' => 'SAI']);
 
-    $this->actingAs($admin)
-        ->post(route('admin.planes-estudio'), [
-            'programa_id' => $programa1->id,
-            'clave' => 'PLAN-001',
-            'nombre' => 'Plan Derecho',
-            'activo' => true,
-        ])
-        ->assertStatus(200);
+    Livewire::actingAs($admin)->test(PlanEstudioAdmin::class)
+        ->call('abrirModalCrear')
+        ->set('clave', 'PLAN-001')
+        ->set('nombre', 'Plan Derecho')
+        ->set('activo', true)
+        ->set('programaId', $programa1->id)
+        ->call('guardar')
+        ->assertHasNoErrors();
 
-    $this->actingAs($admin)
-        ->post(route('admin.planes-estudio'), [
-            'programa_id' => $programa2->id,
-            'clave' => 'PLAN-001',
-            'nombre' => 'Plan Seguridad',
-            'activo' => true,
-        ])
-        ->assertStatus(200);
+    Livewire::actingAs($admin)->test(PlanEstudioAdmin::class)
+        ->call('abrirModalCrear')
+        ->set('clave', 'PLAN-001')
+        ->set('nombre', 'Plan Seguridad')
+        ->set('activo', true)
+        ->set('programaId', $programa2->id)
+        ->call('guardar')
+        ->assertHasNoErrors();
 
     expect(PlanEstudio::where('clave', 'PLAN-001')->count())->toBe(2);
 });
 
 test('ADMIN puede editar un plan de estudio', function () {
-    $admin = User::factory()->deRol(\App\Enums\RolUsuario::ADMIN)->create();
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $plan = PlanEstudio::factory()->create();
 
-    $this->actingAs($admin)
-        ->put(route('admin.planes-estudio'), [
-            'id' => $plan->id,
-            'clave' => $plan->clave,
-            'nombre' => 'Nombre Actualizado',
-            'activo' => false,
-        ])
-        ->assertStatus(200)
-        ->assertSessionHas('success');
+    Livewire::actingAs($admin)->test(PlanEstudioAdmin::class)
+        ->call('abrirModalEditar', $plan)
+        ->set('clave', $plan->clave)
+        ->set('nombre', 'Nombre Actualizado')
+        ->set('activo', false)
+        ->set('programaId', $plan->programa_id)
+        ->call('guardar')
+        ->assertHasNoErrors();
 
     expect($plan->fresh()->nombre)->toBe('Nombre Actualizado')
         ->and($plan->fresh()->activo)->toBeFalse();
 });
 
 test('ADMIN no puede editar clave de un plan', function () {
-    $admin = User::factory()->deRol(\App\Enums\RolUsuario::ADMIN)->create();
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $plan = PlanEstudio::factory()->create(['clave' => 'ORIGINAL']);
 
-    $this->actingAs($admin)
-        ->put(route('admin.planes-estudio'), [
-            'id' => $plan->id,
-            'clave' => 'CAMBIADA',
-            'nombre' => $plan->nombre,
-            'activo' => $plan->activo,
-        ])
-        ->assertStatus(200)
-        ->assertSessionHasErrors('clave');
+    Livewire::actingAs($admin)->test(PlanEstudioAdmin::class)
+        ->call('abrirModalEditar', $plan)
+        ->set('clave', 'CAMBIADA')
+        ->set('nombre', $plan->nombre)
+        ->set('activo', $plan->activo)
+        ->set('programaId', $plan->programa_id)
+        ->call('guardar')
+        ->assertHasErrors(['clave']);
 });
 
 test('ADMIN puede activar/desactivar plan (soft delete)', function () {
-    $admin = User::factory()->deRol(\App\Enums\RolUsuario::ADMIN)->create();
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $plan = PlanEstudio::factory()->create(['activo' => true]);
 
-    $this->actingAs($admin)
-        ->post(route('admin.planes-estudio.alternar', $plan->id))
-        ->assertStatus(200);
+    Livewire::actingAs($admin)->test(PlanEstudioAdmin::class)
+        ->call('alternarActivo', $plan)
+        ->assertHasNoErrors();
 
     expect($plan->fresh()->activo)->toBeFalse();
 
-    $this->actingAs($admin)
-        ->post(route('admin.planes-estudio.alternar', $plan->id))
-        ->assertStatus(200);
+    Livewire::actingAs($admin)->test(PlanEstudioAdmin::class)
+        ->call('alternarActivo', $plan)
+        ->assertHasNoErrors();
 
     expect($plan->fresh()->activo)->toBeTrue();
 });
 
 test('ADMIN puede eliminar plan (soft delete)', function () {
-    $admin = User::factory()->deRol(\App\Enums\RolUsuario::ADMIN)->create();
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $plan = PlanEstudio::factory()->create();
 
-    $this->actingAs($admin)
-        ->delete(route('admin.planes-estudio.eliminar', $plan->id))
-        ->assertStatus(200)
-        ->assertSessionHas('success');
+    Livewire::actingAs($admin)->test(PlanEstudioAdmin::class)
+        ->call('eliminar', $plan)
+        ->assertHasNoErrors();
 
     expect(PlanEstudio::withTrashed()->find($plan->id))->not->toBeNull()
         ->and(PlanEstudio::find($plan->id))->toBeNull();
 });
 
 test('ADMISIONES no puede acceder a planes de estudio (403)', function () {
-    $admisiones = User::factory()->deRol(\App\Enums\RolUsuario::ADMISIONES)->create();
+    $admisiones = User::factory()->deRol(RolUsuario::ADMISIONES)->create();
 
-    $this->actingAs($admisiones)
-        ->get(route('admin.planes-estudio'))
+    Livewire::actingAs($admisiones)->test(PlanEstudioAdmin::class)
         ->assertForbidden();
 });
 
 test('ADMINISTRACION no puede acceder a planes de estudio (403)', function () {
-    $admin = User::factory()->deRol(\App\Enums\RolUsuario::ADMINISTRACION)->create();
+    $adminUser = User::factory()->deRol(RolUsuario::ADMINISTRACION)->create();
 
-    $this->actingAs($admin)
-        ->get(route('admin.planes-estudio'))
+    Livewire::actingAs($adminUser)->test(PlanEstudioAdmin::class)
         ->assertForbidden();
 });
 
 test('CONTROL_ESCOLAR no puede acceder a planes de estudio (403)', function () {
-    $control = User::factory()->deRol(\App\Enums\RolUsuario::CONTROL_ESCOLAR)->create();
+    $control = User::factory()->deRol(RolUsuario::CONTROL_ESCOLAR)->create();
 
-    $this->actingAs($control)
-        ->get(route('admin.planes-estudio'))
+    Livewire::actingAs($control)->test(PlanEstudioAdmin::class)
         ->assertForbidden();
 });
 
 test('usuario inactivo no puede acceder a planes (403)', function () {
-    $inactivo = User::factory()->deRol(\App\Enums\RolUsuario::ADMIN)->inactivo()->create();
+    $inactivo = User::factory()->deRol(RolUsuario::ADMIN)->inactivo()->create();
 
-    $this->actingAs($inactivo)
-        ->get(route('admin.planes-estudio'))
+    Livewire::actingAs($inactivo)->test(PlanEstudioAdmin::class)
         ->assertForbidden();
 });
 
@@ -174,16 +167,15 @@ test('invitado es redirigido a login', function () {
 });
 
 test('validación de clave: solo A-Z, 0-9, guión y guion bajo', function () {
-    $admin = User::factory()->deRol(\App\Enums\RolUsuario::ADMIN)->create();
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $programa = Programa::factory()->create(['activo' => true]);
 
-    $this->actingAs($admin)
-        ->post(route('admin.planes-estudio'), [
-            'programa_id' => $programa->id,
-            'clave' => 'clave-invalida!',
-            'nombre' => 'Plan Inválido',
-            'activo' => true,
-        ])
-        ->assertStatus(200)
-        ->assertSessionHasErrors('clave');
+    Livewire::actingAs($admin)->test(PlanEstudioAdmin::class)
+        ->call('abrirModalCrear')
+        ->set('clave', 'clave-invalida!')
+        ->set('nombre', 'Plan Inválido')
+        ->set('activo', true)
+        ->set('programaId', $programa->id)
+        ->call('guardar')
+        ->assertHasErrors(['clave']);
 });

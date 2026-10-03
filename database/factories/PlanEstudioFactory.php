@@ -26,7 +26,7 @@ class PlanEstudioFactory extends Factory
             'clave' => $clave,
             'nombre' => fake()->words(4, true),
             'resolucion_rvoe' => fake()->optional(0.5)->regexify('RVOE-########'),
-            'fecha_resolucion' => fake()->optional(0.5)->dateTimeBetween('-5 years', 'now')->format('Y-m-d'),
+            'fecha_resolucion' => fake()->optional(0.5)->dateTimeBetween('-5 years', 'now')?->format('Y-m-d'),
             'activo' => true,
         ];
     }

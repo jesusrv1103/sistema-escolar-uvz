@@ -25,10 +25,10 @@ class MateriaPrerrequisitoService
      * @throws PrerrequisitoInvalidoException si falla alguna validación
      * @throws CicloPrerrequisitoException si se detecta un ciclo
      */
-    public function agregar(Materia $materia, Materia $prerrequisito, string $tipo, ?int $usuarioId = null): MateriaPrerrequisito
+    public function agregar(Materia $materia, Materia $prerrequisito, \App\Enums\TipoPrerrequisito $tipo, ?int $usuarioId = null): MateriaPrerrequisito
     {
         // 1. Validaciones básicas
-        $this->validarBasico($materia, $prerrequisito, $tipo);
+        $this->validarBasico($materia, $prerrequisito, $tipo->value);
 
         // 2. Verificar que no exista ya
         $existe = MateriaPrerrequisito::where('materia_id', $materia->id)
@@ -47,7 +47,7 @@ class MateriaPrerrequisitoService
             return MateriaPrerrequisito::create([
                 'materia_id' => $materia->id,
                 'prerrequisito_id' => $prerrequisito->id,
-                'tipo' => $tipo,
+                'tipo' => $tipo->value,
             ]);
         });
     }

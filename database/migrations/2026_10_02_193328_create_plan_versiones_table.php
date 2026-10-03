@@ -18,7 +18,8 @@ return new class extends Migration
                 ->restrictOnDelete();
             $table->string('version', 20);
             $table->date('fecha_vigencia')->nullable();
-            $table->string('estatus', 20); // PROPUESTA, VIGENTE, SUPERADA
+            $table->string('estatus', 20)->default('PROPUESTA'); // PROPUESTA, VIGENTE, SUPERADA
+            $table->boolean('activo')->default(true);
             $table->foreignId('aprobado_por')
                 ->nullable()
                 ->constrained('users')
