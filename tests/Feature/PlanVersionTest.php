@@ -141,37 +141,30 @@ test('invitado es redirigido a login', function () {
         ->assertRedirect(route('login'));
 });
 
-test('ADMIN puede alternar activo solo en PROPUESTA', function () {
-    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
-    $plan = PlanEstudio::factory()->create();
-    $version = PlanVersion::factory()->propuesta()->forPlanEstudio($plan)->create(['activo' => true]);
-    $versionId = $version->id;
-
-    $component = Livewire::actingAs($admin)->test(PlanVersionAdmin::class, ['plan' => $plan])
-        ->call('alternarActivo', $version)
-        ->assertHasNoErrors();
-
-    // Debug: check what the component's version state is
-    dump('Component version activo:', $component->get('version')?->activo ?? 'N/A');
-
-    // Query database directly to verify the change
-    $updatedVersion = PlanVersion::find($versionId);
-    dump('DB version activo:', $updatedVersion->activo);
-    expect($updatedVersion->activo)->toBeFalse();
-});
-
-test('no se puede alternar activo en VIGENTE', function () {
+test('solo PROPUESTA es editable — VIGENTE rechaza edición', function () {
     $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $version = PlanVersion::factory()->vigente()->create();
 
     Livewire::actingAs($admin)->test(PlanVersionAdmin::class)
-        ->call('alternarActivo', $version)
+        ->call('abrirModalEditar', $version)
+        ->set('version', '2.0')
+        ->set('fechaVigencia', '2025-01-01')
+        ->call('guardar')
         ->assertHasErrors(['version']);
 });
 
-test('solo se puede eliminar versión en PROPUESTA', function () {
+test('solo PROPUESTA es eliminable — VIGENTE rechaza eliminación', function () {
     $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
     $version = PlanVersion::factory()->vigente()->create();
+
+    Livewire::actingAs($admin)->test(PlanVersionAdmin::class)
+        ->call('eliminar', $version)
+        ->assertHasErrors(['version']);
+});
+
+test('solo PROPUESTA es eliminable — SUPERADA rechaza eliminación', function () {
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+    $version = PlanVersion::factory()->superada()->create();
 
     Livewire::actingAs($admin)->test(PlanVersionAdmin::class)
         ->call('eliminar', $version)

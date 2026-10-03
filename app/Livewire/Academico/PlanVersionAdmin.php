@@ -165,26 +165,6 @@ class PlanVersionAdmin extends Component
         $this->cerrarModalAprobar();
     }
 
-    public function alternarActivo(PlanVersion $version): void
-    {
-        Gate::authorize('plan_version.update', $version);
-
-        // Solo permitir alternar activo si está en PROPUESTA
-        if (!$version->esPropuesta()) {
-            $this->addError('version', 'Solo se pueden activar/desactivar versiones en estado Propuesta.');
-            return;
-        }
-
-        dump('alternarActivo called', ['version_id' => $version->id, 'activo_before' => $version->activo, 'activo_type' => gettype($version->activo)]);
-        $newActivo = ! $version->activo;
-        dump('newActivo value', ['newActivo' => $newActivo, 'type' => gettype($newActivo)]);
-        $version->update(['activo' => $newActivo]);
-        $version->refresh(); // Refresh to get updated value
-        dump('alternarActivo after update', ['version_id' => $version->id, 'activo_after' => $version->activo, 'type' => gettype($version->activo)]);
-
-        session()->flash('success', "Versión " . ($version->activo ? 'activada' : 'desactivada') . " correctamente.");
-    }
-
     public function eliminar(PlanVersion $version): void
     {
         Gate::authorize('plan_version.delete', $version);

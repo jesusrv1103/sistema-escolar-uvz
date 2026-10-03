@@ -29,7 +29,6 @@ class PlanVersion extends Model
         'plan_id',
         'version',
         'fecha_vigencia',
-        'activo',
     ];
 
     /** @return array<string, string> */
@@ -39,7 +38,6 @@ class PlanVersion extends Model
             'fecha_vigencia' => 'date',
             'estatus' => EstatusPlanVersion::class,
             'aprobado_at' => 'datetime',
-            'activo' => 'boolean',
         ];
     }
 

@@ -66,9 +66,6 @@
                                                 <button type="button" class="btn btn-outline-success" wire:click="abrirModalAprobar({{ $v->id }})" title="Aprobar (Propuesta → Vigente)">
                                                     <i class="bi bi-check-circle"></i>
                                                 </button>
-                                                <button type="button" class="btn {{ $v->activo ? 'btn-outline-secondary' : 'btn-outline-success' }}" wire:click="alternarActivo({{ $v->id }})" title="{{ $v->activo ? 'Desactivar' : 'Activar' }}">
-                                                    <i class="bi {{ $v->activo ? 'bi-pause' : 'bi-play' }}"></i>
-                                                </button>
                                                 <button type="button" class="btn btn-outline-danger" wire:click="confirmarEliminacion({{ $v->id }})" title="Eliminar">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
