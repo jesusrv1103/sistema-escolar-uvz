@@ -12,7 +12,9 @@ use App\Livewire\Alumnos\FormAlumno;
 use App\Livewire\Alumnos\FormContactos;
 use App\Livewire\Alumnos\FormInfoMedica;
 use App\Livewire\Alumnos\ListaAlumnos;
+use App\Livewire\Catalogos\Aulas;
 use App\Livewire\Catalogos\Convenios;
+use App\Livewire\Catalogos\Docentes;
 use App\Livewire\Catalogos\Periodos;
 use App\Livewire\Catalogos\Programas;
 use App\Livewire\Catalogos\TiposDocumento;
@@ -84,6 +86,10 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     Route::get('/periodos', Periodos::class)->name('periodos');
     Route::get('/tipos-documento', TiposDocumento::class)->name('tipos-documento');
     Route::get('/convenios', Convenios::class)->name('convenios');
+
+    // Recursos académicos (2.0-02) — solo ADMIN.
+    Route::get('/docentes', Docentes::class)->name('docentes');
+    Route::get('/aulas', Aulas::class)->name('aulas');
 
     // Estructura académica (2.0-01) — solo ADMIN.
     Route::get('/planes-estudio', PlanEstudioAdmin::class)->name('planes-estudio');
