@@ -23,7 +23,7 @@
 | Fase 12 — Revisión final y número de control | ✅ **COMPLETA** (256 pruebas, build correcto, 1 ruta nueva: `inscripciones.revision-final`) |
 | Fase 13 — Cancelación | ✅ **COMPLETA** (271 pruebas, build correcto, sin rutas nuevas) |
 | Fase 14 — Panel operativo y listados | ✅ **COMPLETA** (288 pruebas, build correcto, sin rutas nuevas) |
-| Fases 15–16 | ↪️ **reubicadas como 2.0-00 — Blindaje del núcleo existente** (Opción A aprobada, C6) — **✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK) — pendiente merge a master |
+| Fases 15–16 | ↪️ **reubicadas como 2.0-00 — Blindaje del núcleo existente** (Opción A aprobada, C6) — **✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK) — **COMPLETA e integrada en master** |
 
 ## Fase 2 — seguridad y autorización (implementado)
 
@@ -311,7 +311,7 @@
 - **0 `production.ERROR` nuevos** (log estable en 119 entradas).
 - **Sin migraciones ni cambios de BD** (solo presentación: `app/`, `resources/views/`, `lang/`).
 - **Otros dominios intactos**: `~/public_html` del home apunta a `agroalimentario.com.mx` (sin tocar); mtimes de los 18 dominios en `$HOME/domains/` idénticos antes/después salvo el objetivo.
-- **2.0-00 continúa NO INICIADA**.
+- **2.0-00: COMPLETA e integrada en master**.
 
 ## Checkpoint de despliegue Hostinger (2026-10-02)
 
@@ -326,7 +326,7 @@
 - **Sitios hermanos intactos (§23):** solo se escribió en `darkcyan-mongoose-808972.hostingersite.com`; `universidadvilladezacatecas.edu.mx` y los 17 dominios restantes sin cambios por este checkpoint (los mtimes ajenos de hoy corresponden a sesiones/cache y auto-updates de sus propios sitios vivos); única BD de la cuenta = la nuestra, sin tablas ajenas modificadas; sin cambios PHP/Apache globales, sin `rm -rf`, sin `rsync --delete`, sin chmod recursivo global.
 - **Git:** `master` = Fase 14 (`ccd2c6f`) + fix de layout (`d864f3a`) + documentación del checkpoint (`fabc114`, `1b10436`); rama `feat/fase-14-panel-operativo` conservada; sin remotos, sin push, sin borrado de ramas.
 - **Estado del checkpoint: COMPLETO y APROBADO por el usuario (02/10/2026)** — smoke 121 verificaciones en verde, 4 usuarios QA por rol, matriz de capacidades verificada, credenciales solo en archivos locales `600` (`~/.ssh/hostinger_*`), otros sitios intactos e incidencia de layout corregida (`d864f3a`).
-- **Fases 15 y 16 → reubicadas como 2.0-00 — Blindaje del núcleo existente** → **✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK) — pendiente merge a master.
+- **Fases 15 y 16 → reubicadas como 2.0-00 — Blindaje del núcleo existente** → **✅ COMPLETADA** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK) — **COMPLETA e integrada en master**.
 
 ## Checkpoint 2.0-00 — Blindaje del núcleo existente (2026-10-02)
 
@@ -373,11 +373,11 @@
 - **Decisiones persistidas:** C1 portal de alumno aprobado con aislamiento estricto (2.0-16); C2/C3/D-N1 nueva entidad **`matriculas_periodo`** (`UNIQUE(alumno_id, periodo_id)`, máquina propia; `inscripciones` reservada a admisión/ingreso; `inscripciones_materias` sobre `matricula_periodo_id`); C4 **ETAPA 2 — Control Escolar** (F1–F14 = ETAPA 1, sin reescribir historia); C5 análisis persistible y commiteado; C6 **Opción A** → F15/F16 = **2.0-00 Blindaje del núcleo** (antes de 2.0-01); C7 datos institucionales no inventados y **2.0-01 no bloqueada** (catálogos vacíos); C8 formatos **internos UVZ** con pipeline DATOS/REGLAS → SERVICIO → PLANTILLA BLADE → PDF (fuera SEP/MEC/MET/SIGED/certificados/titulación electrónica).
 - **Roles:** conservados los 4 actuales; **DOCENTE** aprobado (2.0-06, D-N2); **ALUMNO** aprobado (2.0-16, D-N5); **COORDINADOR** no por ahora. **Diferidas a su fase:** D-N3, D-N4, D-N6, D-N7.
 - **Documentación actualizada:** `analisis-evolucion-control-escolar.md`, `roadmap-sistema-escolar.md`, `arquitectura-mvp.md` (§7.3, §19, §24), `plan-implementacion.md` (F15/F16 → 2.0-00) y este documento; sin borrar información histórica, **sin código, sin migraciones y sin ejecución de tests** (tarea documental); commit local solo de documentación.
-- **Estado de fases de la Etapa 2: 2.0-00 ✅ COMPLETA (en rama `feat/2.0-00-blindaje-nucleo`, pendiente merge a master)** · 2.0-01 … 2.0-17 ⬜ NO INICIADAS.
+- **Estado de fases de la Etapa 2: 2.0-00 ✅ COMPLETA e integrada en master** · **2.0-01 ✅ COMPLETA en `feat/2.0-01-estructura-academica`, pendiente merge a master** · 2.0-02 … 2.0-17 ⬜ NO INICIADAS.
 
 ## Pendientes / registrados
 
-- **2.0-00 (ex-F15/F16, Blindaje del núcleo) COMPLETADA en rama `feat/2.0-00-blindaje-nucleo`** — pendiente merge a master y despliegue a staging; **2.0-01 DISEÑADA, NO IMPLEMENTADA**.
+- **2.0-00 (ex-F15/F16, Blindaje del núcleo) COMPLETA e integrada en master** · **2.0-01 (Estructura académica) COMPLETA en `feat/2.0-01-estructura-academica`, pendiente merge a master** · 2.0-02 en adelante: NO INICIADAS.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies: las 8 clases existen desde la Fase 2; `PagoPolicy`, `DocumentoPolicy` y `ObservacionPolicy` están **registradas explícitamente** en `AuthServiceProvider` (modelo real) y el resto se resuelve por convención cuando los modelos las usen (sin código artificial).
