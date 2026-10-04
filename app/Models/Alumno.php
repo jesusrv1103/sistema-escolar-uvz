@@ -64,6 +64,14 @@ class Alumno extends Model
         $this->attributes['correo'] = $valor === null || $valor === '' ? null : strtolower(trim($valor));
     }
 
+    /**
+     * Nombre completo del alumno.
+     */
+    public function getNombreCompletoAttribute(): string
+    {
+        return trim("{$this->nombre} {$this->apellidos}");
+    }
+
     public function contactos(): HasMany
     {
         return $this->hasMany(Contacto::class);

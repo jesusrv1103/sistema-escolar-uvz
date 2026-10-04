@@ -87,10 +87,10 @@ class CrearEvaluacion extends Component
 
     public function render()
     {
-        $tipos = \App\Enums\TipoEvaluacion::cases();
+        $tipos = \App\Enums\TipoEvaluacion::ejemplos();
 
         return view('livewire.academico.crear-evaluacion', [
-            'tipos' => \App\Enums\TipoEvaluacion::cases(),
+            'tipos' => \App\Enums\TipoEvaluacion::ejemplos(),
         ]);
     }
 }

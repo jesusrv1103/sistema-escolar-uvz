@@ -260,8 +260,8 @@ DATOS Y REGLAS ACADÉMICAS  →  SERVICIO  →  PLANTILLA BLADE  →  PDF
 | **2.0-04** | **`matriculas_periodo`** (máquina propia; primera desde inscripción `ENROLLED`; reinscripciones) + inscripción de materias/carga (`inscripciones_materias` ← `matricula_periodo_id`) | Pruebas de seriación/cupo/horario/UNIQUE + regresión del flujo de ingreso F1–F14 | 2.0-03 (C2/C3/D-N1 **resueltas**) | **Alta** |
 | **2.0-05** | **Motor de formatos (pipeline)** + formatos: constancia de inscripción, comprobante de inscripción, ficha, horario, lista de grupo | Pruebas datos/plantilla/autorización/folio | 2.0-03, 2.0-04 | Media |
 | **2.0-06** | Evaluaciones + calificaciones + estados de carga (captura DOCENTE) y **rol DOCENTE** | Pruebas four-eyes, ponderación 100 %, 403 por rol | 2.0-04 (**+ decisión D-N2**) | **Alta** |
-| **2.0-07** | Extraordinarios (cuando aplique) + asistencia | Pruebas de autorización y efectos | 2.0-06 (**+ decisión D-N4 diferida**) | Media |
-| **2.0-08** | Actas de calificaciones (folio, cierre four-eyes docente→CE) | Pruebas de cierre, folio e integridad | 2.0-06 (**+ decisión D-N7 diferida**) | Media |
+| **2.0-07** | Extraordinarios (cuando aplique) + asistencia | Pruebas de autorización y efectos | 2.0-06 (**+ decisión D-N4 RESUELTA**) | Media |
+| **2.0-08** | Actas de calificaciones (folio, cierre four-eyes docente→CE) | Pruebas de cierre, folio e integridad | 2.0-06 (**+ decisión D-N7 RESUELTA**) | Media |
 | **2.0-09** | **Históricos y avance:** kardex, historial, promedio, créditos, avance | Pruebas de cálculo + rendimiento | 2.0-08 | **Alta** |
 | **2.0-10** | **Formatos académicos (II):** kardex, boleta, historial, acta, tira de materias, reporte de avance | Pruebas de contenido y autorización | 2.0-09 | Media |
 | **2.0-11** | Bajas (temporal/definitiva/de materia) + equivalencias/revalidaciones internas | Pruebas de efectos en avance/carga | 2.0-09 | Media |
@@ -285,7 +285,7 @@ DATOS Y REGLAS ACADÉMICAS  →  SERVICIO  →  PLANTILLA BLADE  →  PDF
 
 - **2.0-01 y 2.0-02** → son raíz (sin dependencias).
 - **2.0-03** ← 01 + 02 · **2.0-04** ← 03 (decisión de semántica de reinscripción **resuelta**: `matriculas_periodo`) · **2.0-05** ← 03 + 04.
-- **2.0-06** ← 04 + **decisión D-N2 (rol DOCENTE, aprobada)**; **2.0-07** ← 06 (+ D-N4 diferida); **2.0-08** ← 06 (+ D-N7 diferida); **2.0-15** ← 06.
+- **2.0-06** ← 04 + **decisión D-N2 (rol DOCENTE, aprobada)**; **2.0-07** ← 06 (+ D-N4 RESUELTA); **2.0-08** ← 06 (+ D-N7 RESUELTA); **2.0-15** ← 06.
 - **2.0-09** ← 08 (calificaciones firmes); **2.0-10, 2.0-11, 2.0-13** ← 09; **2.0-14** ← 09 + 13.
 - **2.0-12** ← 04 (+ D-N3 diferida; independiente de calificaciones); **2.0-16** ← 09 + 12 (D-N5 aprobada); **2.0-17** ← 09 (+12).
 - **2.0-00** (blindaje, F15+F16 con alcance original) precede a todo.
@@ -320,15 +320,15 @@ Sin plazos (no hay datos de capacidad): **18 fases pequeñas**, cada una con gua
 | **D-N1** | Semántica de reinscripción (fila en `inscripciones` vs. entidad nueva) | **RESUELTA** → entidad `matriculas_periodo` (C2/C3); detalles de implementación en 2.0-04 |
 | **D-N2** | Rol `DOCENTE` | **APROBADO** para su fase (**2.0-06**) |
 | **D-N3** | Reglas detalladas de becas/descuentos | **DIFERIDA** — se define cuando llegue su fase (**2.0-12**) |
-| **D-N4** | Modalidades/reglas de extraordinarios | **DIFERIDA** — se define en **2.0-07** |
+| **D-N4** | Modalidades/reglas de extraordinarios | **RESUELTA** — 1 oportunidad, solo desde REPROBADA, sin requisito adicional, fechas flexibles, misma escala/aprobatoria, sustituye calificación_final, conserva trazabilidad, sin cobros; implementada en **2.0-07** |
 | **D-N5** | Rol `ALUMNO` / portal de alumno | **APROBADO** para **2.0-16**, con aislamiento estricto (C1) |
 | **D-N6** | Exportaciones CSV/Excel en reportes | **DIFERIDA** — se define en **2.0-17** |
-| **D-N7** | Tipos exactos de folios de actas/constancias | **DIFERIDA** — se define en su fase (**2.0-05 / 2.0-08**) |
+| **D-N7** | Tipos exactos de folios de actas/constancias | **RESUELTA** — `CI-YYYY-########` (2.0-05) y `ACT-YYYY-########` (2.0-08) con `ConsecutivoService` + `lockForUpdate` |
 | — | Rol `COORDINADOR` | **NO crear por ahora** (registrado; se evalúa con la operación real) |
 
 ## 18. Estado de este análisis
 
-- ✅ Análisis actualizado con las decisiones aprobadas (C1–C8 resueltas, D-N1/D-N2/D-N5 aprobadas, D-N3/D-N4/D-N6/D-N7 diferidas, `matriculas_periodo` incorporada al modelo, ER/flujo/riesgos/roadmap/dependencias corregidos, referencias C*/D-N* verificadas).
+- ✅ Análisis actualizado con las decisiones aprobadas (C1–C8 resueltas, D-N1/D-N2/D-N4/D-N5/D-N7 aprobadas, D-N3/D-N6 diferidas, `matriculas_periodo` incorporada al modelo, ER/flujo/riesgos/roadmap/dependencias corregidos, referencias C*/D-N* verificadas).
 - ✅ Documentación relacionada actualizada: `roadmap-sistema-escolar.md` (Etapa 2), `arquitectura-mvp.md` (§7.3, §19, §24), `plan-implementacion.md` (F15/F16 → 2.0-00), `estado-proyecto.md` (Etapa 2 y estado del checkpoint).
 - ❌ Sin código, sin migraciones, sin tests ejecutados (tarea documental); ❌ sin borrado de información histórica; ✅ commit local solo de documentación.
 - **Estado de fases:** Etapa 1: F1–F14 **COMPLETAS** · **2.0-00 NO INICIADA** · 2.0-01…2.0-17 **NO INICIADAS**.

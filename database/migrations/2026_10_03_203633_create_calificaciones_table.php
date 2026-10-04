@@ -26,6 +26,7 @@ return new class extends Migration
             $table->timestamp('capturada_at')->useCurrent();
             $table->text('observacion')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique(['inscripcion_materia_id', 'evaluacion_id']);
             $table->index(['inscripcion_materia_id', 'evaluacion_id']);

@@ -17,10 +17,9 @@ return new class extends Migration
                 ->constrained('grupos')
                 ->restrictOnDelete();
             $table->string('nombre', 100);
-            $table->enum('tipo', array_column(\App\Enums\TipoEvaluacion::cases(), 'value'));
+            $table->string('tipo', 50); // string libre, no catálogo cerrado
             $table->unsignedTinyInteger('ponderacion'); // 1-100
             $table->date('fecha');
-            $table->string('estatus', 20)->default('BORRADOR'); // BORRADOR, PUBLICADA, CERRADA (sin máquina de estados formal)
             $table->text('descripcion')->nullable();
             $table->foreignId('creada_por')
                 ->constrained('users')
@@ -29,7 +28,6 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->unique(['grupo_id', 'nombre']);
-            $table->index(['grupo_id', 'estatus']);
         });
     }
 

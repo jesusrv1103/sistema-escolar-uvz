@@ -35,13 +35,22 @@ class FormatoService
      */
     public function generar(
         TipoFormato $tipo,
-        Alumno $alumno,
+        ?Alumno $alumno = null,
         ?MatriculaPeriodo $matricula = null,
         ?Grupo $grupo = null,
         array $datos = [],
         ?User $usuario = null,
     ): string {
         $usuario ??= auth()->user();
+
+        if (!$usuario) {
+            abort(403, 'Usuario no autenticado.');
+        }
+
+        // Validar que se proporcione alumno para formatos que lo requieren
+        if ($tipo->requiereAlumno() && !$alumno) {
+            abort(400, 'Se requiere un alumno para este tipo de formato.');
+        }
 
         // Validar autorización
         $this->autorizar($tipo, $alumno, $matricula, $grupo, $usuario);
@@ -71,17 +80,22 @@ class FormatoService
      */
     private function prepararDatos(
         TipoFormato $tipo,
-        Alumno $alumno,
+        ?Alumno $alumno,
         ?MatriculaPeriodo $matricula,
         ?Grupo $grupo,
         array $datosExtra = [],
     ): array {
-        $alumno->loadMissing(['matriculas.periodo', 'matriculas.programa', 'matriculas.planVersion']);
-
         $datos = [
             'tipo' => $tipo->value,
             'tipo_label' => $tipo->label(),
-            'alumno' => [
+            'branding' => $this->obtenerBranding(),
+            'fecha_emision' => now()->format('d/m/Y'),
+            'fecha_emision_larga' => now()->locale('es_MX')->isoFormat('D [de] MMMM [de] YYYY'),
+        ];
+
+        if ($alumno) {
+            $alumno->loadMissing(['matriculas.periodo', 'matriculas.programa', 'matriculas.planVersion']);
+            $datos['alumno'] = [
                 'id' => $alumno->id,
                 'nombre_completo' => $alumno->nombre . ' ' . $alumno->apellidos,
                 'curp' => $alumno->curp,
@@ -89,14 +103,14 @@ class FormatoService
                 'correo' => $alumno->correo,
                 'telefono' => $alumno->telefono,
                 'domicilio' => $this->formatearDomicilio($alumno),
-            ],
-            'branding' => $this->obtenerBranding(),
-            'fecha_emision' => now()->format('d/m/Y'),
-            'fecha_emision_larga' => now()->locale('es_MX')->isoFormat('D [de] MMMM [de] YYYY'),
-        ];
+                'fecha_nacimiento' => $alumno->fecha_nacimiento,
+                'sexo' => $alumno->sexo,
+                'nacionalidad' => $alumno->nacionalidad,
+            ];
+        }
 
         if ($matricula) {
-            $matricula->loadMissing(['periodo', 'programa', 'planVersion']);
+            $matricula->loadMissing(['periodo', 'programa', 'planVersion', 'inscripcionesCursando', 'inscripcionesAprobadas']);
             $datos['matricula'] = [
                 'id' => $matricula->id,
                 'origen' => $matricula->origen?->label(),
@@ -116,11 +130,59 @@ class FormatoService
                     'version' => $matricula->planVersion->version,
                     'fecha_vigencia' => $matricula->planVersion->fecha_vigencia?->format('d/m/Y'),
                 ] : null,
-            ] : null;
+                'inscripcionesCursando' => collect($matricula->inscripcionesCursando->map(function ($inscripcion) {
+                    $inscripcion->loadMissing(['grupo.materia', 'grupo.docente', 'grupo.horarios']);
+                    return [
+                        'id' => $inscripcion->id,
+                        'materia' => [
+                            'clave' => $inscripcion->materia->clave,
+                            'nombre' => $inscripcion->materia->nombre,
+                            'creditos' => $inscripcion->materia->creditos,
+                        ],
+                        'grupo' => $inscripcion->grupo ? [
+                            'id' => $inscripcion->grupo->id,
+                            'clave' => $inscripcion->grupo->clave,
+                            'materia' => [
+                                'clave' => $inscripcion->grupo->materia->clave,
+                                'nombre' => $inscripcion->grupo->materia->nombre,
+                                'creditos' => $inscripcion->grupo->materia->creditos,
+                            ],
+                            'docente' => $inscripcion->grupo->docente ? [
+                                'nombre_completo' => $inscripcion->grupo->docente->nombreCompleto(),
+                            ] : null,
+                            'horarios' => $inscripcion->grupo->horarios->map(function ($h) {
+                                return [
+                                    'dia' => $h->dia,
+                                    'hora_inicio' => $h->hora_inicio,
+                                    'hora_fin' => $h->hora_fin,
+                                ];
+                            }),
+                        ] : null,
+                    ];
+                })),
+                'inscripcionesAprobadas' => $matricula->inscripcionesAprobadas->map(function ($inscripcion) {
+                    $inscripcion->loadMissing(['grupo.materia', 'grupo.periodo']);
+                    return [
+                        'id' => $inscripcion->id,
+                        'materia' => [
+                            'clave' => $inscripcion->materia->clave,
+                            'nombre' => $inscripcion->materia->nombre,
+                            'creditos' => $inscripcion->materia->creditos,
+                        ],
+                        'calificacion_final' => $inscripcion->calificacion_final,
+                        'grupo' => $inscripcion->grupo ? [
+                            'clave' => $inscripcion->grupo->clave,
+                            'periodo' => $inscripcion->grupo->periodo ? [
+                                'clave' => $inscripcion->grupo->periodo->clave,
+                            ] : null,
+                        ] : null,
+                    ];
+                }),
+            ];
         }
 
         if ($grupo) {
-            $grupo->loadMissing(['materia', 'periodo', 'docente', 'aula', 'horarios']);
+            $grupo->loadMissing(['materia', 'periodo', 'docente', 'aula', 'horarios', 'inscripcionesMaterias.matriculaPeriodo.alumno']);
             $datos['grupo'] = [
                 'id' => $grupo->id,
                 'clave' => $grupo->clave,
@@ -150,7 +212,24 @@ class FormatoService
                     'hora_inicio' => $h->hora_inicio->format('H:i'),
                     'hora_fin' => $h->hora_fin->format('H:i'),
                 ])->toArray(),
-            ] : null;
+                'inscripcionesMaterias' => $grupo->inscripcionesMaterias->map(function ($inscripcion) {
+                    return [
+                        'id' => $inscripcion->id,
+                        'estatus' => $inscripcion->estatus?->value,
+                        'matriculaPeriodo' => $inscripcion->matriculaPeriodo ? [
+                            'id' => $inscripcion->matriculaPeriodo->id,
+                            'alumno' => $inscripcion->matriculaPeriodo->alumno ? [
+                                'id' => $inscripcion->matriculaPeriodo->alumno->id,
+                                'nombre_completo' => $inscripcion->matriculaPeriodo->alumno->nombre . ' ' . $inscripcion->matriculaPeriodo->alumno->apellidos,
+                                'curp' => $inscripcion->matriculaPeriodo->alumno->curp,
+                                'numero_control' => $inscripcion->matriculaPeriodo->alumno->numero_control,
+                                'correo' => $inscripcion->matriculaPeriodo->alumno->correo,
+                                'telefono' => $inscripcion->matriculaPeriodo->alumno->telefono,
+                            ] : null,
+                        ] : null,
+                    ];
+                }),
+            ];
         }
 
         return array_merge($datos, $datosExtra);
@@ -174,7 +253,7 @@ class FormatoService
      */
     private function renderizarPdf(TipoFormato $tipo, array $datos, ?string $folio): string
     {
-        $vista = "pdf.formatos.{$tipo->value}";
+        $vista = "pdf.formatos." . strtolower($tipo->value);
         $nombreArchivo = $this->generarNombreArchivo($tipo);
 
         $pdf = \PDF::loadView($vista, array_merge($datos, ['folio' => $folio]));
@@ -208,7 +287,7 @@ class FormatoService
      */
     private function registrarTrazabilidad(
         TipoFormato $tipo,
-        Alumno $alumno,
+        ?Alumno $alumno,
         ?MatriculaPeriodo $matricula,
         ?Grupo $grupo,
         ?string $folio,
@@ -216,7 +295,7 @@ class FormatoService
         ?User $usuario,
     ): void {
         DocumentoGenerado::create([
-            'alumno_id' => $alumno->id,
+            'alumno_id' => $alumno?->id,
             'matricula_periodo_id' => $matricula?->id,
             'grupo_id' => $grupo?->id,
             'tipo' => $tipo->value,
@@ -281,34 +360,23 @@ class FormatoService
      */
     private function autorizar(
         TipoFormato $tipo,
-        Alumno $alumno,
+        ?Alumno $alumno,
         ?MatriculaPeriodo $matricula,
         ?Grupo $grupo,
         ?User $usuario,
     ): void {
         $usuario ??= auth()->user();
 
-        // Verificar que el usuario tiene acceso al alumno/matrícula/grupo
-        // La lógica específica se valida en los Policies correspondientes
+        if (!$usuario) {
+            abort(403, 'Usuario no autenticado.');
+        }
 
-        switch ($tipo) {
-            case TipoFormato::CONSTANCIA_INSCRIPCION:
-            case TipoFormato::COMPROBANTE_INSCRIPCION:
-            case TipoFormato::FICHA:
-                Gate::authorize('documento_generado.crear', [TipoFormato::CONSTANCIA_INSCRIPCION, $alumno]);
-                break;
-            case TipoFormato::HORARIO:
-                Gate::authorize('documento_generado.crear', [TipoFormato::HORARIO, $alumno]);
-                if ($grupo) {
-                    Gate::authorize('ver', $grupo);
-                }
-                break;
-            case TipoFormato::LISTA_GRUPO:
-                Gate::authorize('documento_generado.crear', [TipoFormato::LISTA_GRUPO, $alumno]);
-                if ($grupo) {
-                    Gate::authorize('ver', $grupo);
-                }
-                break;
+        // Usar autorización estándar con el modelo DocumentoGenerado
+        Gate::authorize('create', DocumentoGenerado::class);
+
+        // Validaciones adicionales por tipo
+        if (in_array($tipo, [TipoFormato::HORARIO, TipoFormato::LISTA_GRUPO], true) && $grupo) {
+            Gate::authorize('ver', $grupo);
         }
     }
 }

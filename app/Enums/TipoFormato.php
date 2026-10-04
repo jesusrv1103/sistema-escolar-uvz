@@ -39,6 +39,17 @@ enum TipoFormato: string
     }
 
     /**
+     * Indica si el formato requiere un alumno.
+     */
+    public function requiereAlumno(): bool
+    {
+        return match ($this) {
+            self::LISTA_GRUPO => false,
+            default => true,
+        };
+    }
+
+    /**
      * Tipo de consecutivo asociado (para los que requieren folio).
      */
     public function tipoConsecutivo(): ?string

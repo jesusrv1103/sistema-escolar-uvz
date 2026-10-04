@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Models\Evaluacion;
-use App\Models\Grupo;
 use App\Models\User;
 
 /**
@@ -11,10 +10,12 @@ use App\Models\User;
  *
  * Reglas:
  * - ADMIN: acceso total (Gate::before)
- * - CONTROL_ESCOLAR: lectura completa, puede cerrar evaluaciones
- * - DOCENTE: solo sus grupos (crear, editar BORRADOR, publicar, ver)
+ * - CONTROL_ESCOLAR: lectura completa
+ * - DOCENTE: solo sus grupos (crear, editar, ver)
  * - ADMINISTRACION: sin acceso
  * - ADMISIONES: sin acceso
+ *
+ * Sin máquina de estados formal; la inmutabilidad la controla el ACTA (2.0-08).
  */
 class EvaluacionPolicy
 {
@@ -73,8 +74,8 @@ class EvaluacionPolicy
             return true;
         }
 
-        // DOCENTE solo sus grupos y solo si está en BORRADOR
-        if ($user->rol->value === 'DOCENTE' && $evaluacion->esBorrador()) {
+        // DOCENTE solo sus grupos
+        if ($user->rol->value === 'DOCENTE') {
             return $user->docente && $evaluacion->grupo?->docente_id === $user->docente->id;
         }
 
@@ -87,31 +88,13 @@ class EvaluacionPolicy
             return false;
         }
 
-        // Solo ADMIN y CONTROL_ESCOLAR pueden eliminar (solo BORRADOR)
-        if ($user->esAdmin() || $user->rol->value === 'CONTROL_ESCOLAR') {
-            return $evaluacion->esBorrador();
-        }
-
-        // DOCENTE solo sus grupos y solo BORRADOR
-        if ($user->rol->value === 'DOCENTE' && $evaluacion->esBorrador()) {
-            return $user->docente && $evaluacion->grupo?->docente_id === $user->docente->id;
-        }
-
-        return false;
-    }
-
-    public function publish(User $user, Evaluacion $evaluacion): bool
-    {
-        if (!$user->activo) {
-            return false;
-        }
-
+        // ADMIN y CONTROL_ESCOLAR pueden eliminar
         if ($user->esAdmin() || $user->rol->value === 'CONTROL_ESCOLAR') {
             return true;
         }
 
-        // DOCENTE solo sus grupos y solo BORRADOR
-        if ($user->rol->value === 'DOCENTE' && $evaluacion->esBorrador()) {
+        // DOCENTE solo sus grupos
+        if ($user->rol->value === 'DOCENTE') {
             return $user->docente && $evaluacion->grupo?->docente_id === $user->docente->id;
         }
 

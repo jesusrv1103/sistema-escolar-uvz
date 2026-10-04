@@ -3,41 +3,38 @@
 namespace App\Enums;
 
 /**
- * Tipo de evaluación académica.
+ * Sugerencias de tipos de evaluación académica.
  *
- * VALORES NO INSTITUCIONALES — Solo ejemplos comunes, NO catálogo cerrado.
- * El campo es string libre validado; los valores son solo ejemplos comunes UVZ.
- * No institucionalizar valores que UVZ no ha proporcionado.
+ * NO ES UN CATÁLOGO CERRADO — El campo `evaluaciones.tipo` es string libre.
+ * Estos valores son solo ejemplos comunes UVZ para la UI.
+ * No institucionalizar valores que UVZ no ha proporcionado oficialmente.
  */
-enum TipoEvaluacion: string
+class TipoEvaluacion
 {
-    case PARCIAL = 'PARCIAL';
-    case EXAMEN = 'EXAMEN';
-    case PROYECTO = 'PROYECTO';
-    case PRACTICA = 'PRACTICA';
-    case TAREA = 'TAREA';
-    case EXPOSICION = 'EXPOSICION';
-    case OTRO = 'OTRO';
-
-    public function label(): string
-    {
-        return match ($this) {
-            self::PARCIAL => 'Parcial',
-            self::EXAMEN => 'Examen',
-            self::PROYECTO => 'Proyecto',
-            self::PRACTICA => 'Práctica',
-            self::TAREA => 'Tarea',
-            self::EXPOSICION => 'Exposición',
-            self::OTRO => 'Otro',
-        };
-    }
+    /** Ejemplos comunes (no exhaustivos, no vinculantes). */
+    public const EJEMPLOS = [
+        'PARCIAL' => 'Parcial',
+        'EXAMEN' => 'Examen',
+        'PROYECTO' => 'Proyecto',
+        'PRACTICA' => 'Práctica',
+        'TAREA' => 'Tarea',
+        'EXPOSICION' => 'Exposición',
+        'OTRO' => 'Otro',
+    ];
 
     /**
-     * Valores permitidos (no exhaustivos, solo ejemplos).
-     * El sistema acepta cualquier string; estos son solo ejemplos comunes.
+     * Devuelve los ejemplos para selects/UI (clave => etiqueta).
      */
     public static function ejemplos(): array
     {
-        return array_column(self::cases(), 'value');
+        return self::EJEMPLOS;
+    }
+
+    /**
+     * Verifica si un valor es válido (cualquier string no vacío).
+     */
+    public static function esValido(string $valor): bool
+    {
+        return $valor !== '';
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Concerns\HasAudit;
+use App\Models\Concerns\HasAudit;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,10 +15,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Pertenece a un grupo y tiene ponderación. La suma de ponderaciones
  * de un grupo debe ser 100% para poder cerrar el acta.
  *
- * Estados permitidos (sin máquina de estados formal, §10.2 del análisis):
- * - BORRADOR: en edición, no visible para docentes/alumnos
- * - PUBLICADA: visible para captura de calificaciones
- * - CERRADA: no se permiten modificaciones (acta cerrada en 2.0-08)
+ * Sin máquina de estados formal (§10.2 del análisis).
+ * La inmutabilidad académica la controla el cierre del ACTA (2.0-08).
  */
 class Evaluacion extends Model
 {
@@ -33,7 +31,6 @@ class Evaluacion extends Model
         'tipo',
         'ponderacion',
         'fecha',
-        'estatus',
         'descripcion',
         'creada_por',
     ];
@@ -45,7 +42,6 @@ class Evaluacion extends Model
             'tipo' => 'string',
             'ponderacion' => 'integer',
             'fecha' => 'date',
-            'estatus' => 'string',
         ];
     }
 
@@ -74,30 +70,6 @@ class Evaluacion extends Model
     }
 
     /**
-     * Verifica si la evaluación está en borrador.
-     */
-    public function esBorrador(): bool
-    {
-        return $this->estatus === 'BORRADOR';
-    }
-
-    /**
-     * Verifica si la evaluación está publicada.
-     */
-    public function esPublicada(): bool
-    {
-        return $this->estatus === 'PUBLICADA';
-    }
-
-    /**
-     * Verifica si la evaluación está cerrada.
-     */
-    public function esCerrada(): bool
-    {
-        return $this->estatus === 'CERRADA';
-    }
-
-    /**
      * Scope: evaluaciones de un grupo.
      */
     public function scopeDelGrupo($query, int $grupoId)
@@ -106,28 +78,11 @@ class Evaluacion extends Model
     }
 
     /**
-     * Scope: evaluaciones publicadas.
-     */
-    public function scopePublicadas($query)
-    {
-        return $query->where('estatus', 'PUBLICADA');
-    }
-
-    /**
-     * Scope: evaluaciones cerradas.
-     */
-    public function scopeCerradas($query)
-    {
-        return $query->where('estatus', 'CERRADA');
-    }
-
-    /**
      * Obtiene la ponderación total del grupo (excluyendo borradores).
      */
     public static function ponderacionTotalGrupo(int $grupoId): int
     {
         return self::where('grupo_id', $grupoId)
-            ->where('estatus', '!=', 'BORRADOR')
             ->sum('ponderacion');
     }
 }

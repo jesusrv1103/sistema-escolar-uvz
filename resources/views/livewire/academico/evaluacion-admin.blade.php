@@ -30,15 +30,6 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Estatus</label>
-                    <select class="form-select" wire:model="filtroEstatus">
-                        <option value="">Todos</option>
-                        @foreach($estatuses as $e)
-                            <option value="{{ $e }}">{{ $e }}</option>
-                        @endforeach
-                    </select>
-                </div>
                 <div class="col-md-2">
                     <label class="form-label">Tipo</label>
                     <select class="form-select" wire:model="filtroTipo">
@@ -71,7 +62,6 @@
                                 <th>Fecha</th>
                                 <th>Grupo</th>
                                 <th>Materia</th>
-                                <th>Estatus</th>
                                 <th>Creada por</th>
                                 <th class="text-end">Acciones</th>
                             </tr>
@@ -87,35 +77,15 @@
                                     <td>{{ $e->fecha?->format('d/m/Y') }}</td>
                                     <td>{{ $e->grupo->clave ?? '—' }}</td>
                                     <td>{{ $e->grupo->materia->clave ?? '—' }}</td>
-                                    <td>
-                                        <span class="badge badge-{{ match($e->estatus) { 'BORRADOR' => 'secondary', 'PUBLICADA' => 'primary', 'CERRADA' => 'success' }}">{{ $e->estatus }}</span>
-                                    </td>
                                     <td>{{ $e->creadaPor?->name ?? '—' }}</td>
                                     <td class="text-end">
                                         <div class="btn-group btn-group-sm">
-                                            @if($e->esBorrador())
-                                                <button type="button" class="btn btn-outline-primary" wire:click="abrirModalEditar({{ $e->id }})" title="Editar">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                            @endif
-
-                                            @if($e->esBorrador())
-                                                <button type="button" class="btn btn-outline-primary" wire:click="publicar({{ $e->id }})" title="Publicar">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                            @endif
-
-                                            @if($e->esPublicada())
-                                                <button type="button" class="btn btn-outline-success" wire:click="cerrar({{ $e->id }})" title="Cerrar">
-                                                    <i class="bi bi-lock"></i>
-                                                </button>
-                                            @endif
-
-                                            @if($e->esBorrador())
-                                                <button type="button" class="btn btn-outline-danger" wire:click="eliminar({{ $e->id }})" title="Eliminar">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            @endif
+                                            <button type="button" class="btn btn-outline-primary" wire:click="abrirModalEditar({{ $e->id }})" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" wire:click="eliminar({{ $e->id }})" title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

@@ -16,6 +16,8 @@ use App\Livewire\Academico\GrupoHorarioAdmin;
 use App\Livewire\Academico\MateriaAdmin;
 use App\Livewire\Academico\PlanEstudioAdmin;
 use App\Livewire\Academico\PlanVersionAdmin;
+use App\Livewire\Academico\AsistenciaAdmin;
+use App\Livewire\Academico\ActaAdmin;
 use App\Livewire\Alumnos\FormAlumno;
 use App\Livewire\Alumnos\FormContactos;
 use App\Livewire\Alumnos\FormInfoMedica;
@@ -79,7 +81,7 @@ Route::middleware('auth')->prefix('documentos')->name('documentos.')->group(func
 // Descarga de documentos generados (formatos académicos 2.0-05): disco PRIVADO, policy,
 // ruta resuelta desde BD. Semántica distinta a los documentos del expediente.
 Route::middleware('auth')->prefix('documentos-generados')->name('documentos.generados.')->group(function () {
-    Route::get('/{documentoGenerado}', DescargaDocumentoGeneradoController::class)->name('descargar');
+    Route::get('/{documento}', DescargaDocumentoGeneradoController::class)->name('descargar');
 });
 
 // Comprobante de pago cargado (Fase 8): archivo PRIVADO servido por un
@@ -113,6 +115,8 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     Route::get('/formatos', GenerarFormato::class)->name('formatos');
     Route::get('/evaluaciones', EvaluacionAdmin::class)->name('evaluaciones');
     Route::get('/calificaciones', CalificacionAdmin::class)->name('calificaciones');
+    Route::get('/asistencia', AsistenciaAdmin::class)->name('asistencia');
+    Route::get('/actas', ActaAdmin::class)->name('actas');
 
     // Estructura académica (2.0-01) — solo ADMIN.
     Route::get('/planes-estudio', PlanEstudioAdmin::class)->name('planes-estudio');

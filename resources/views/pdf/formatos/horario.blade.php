@@ -25,22 +25,22 @@
     <div class="data-grid">
         <div class="data-item">
             <span class="data-label">Nombre completo</span>
-            <span class="data-value">{{ $alumno.nombre_completo }}</span>
+            <span class="data-value">{{ $alumno['nombre_completo'] }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Número de control</span>
-            <span class="data-value">{{ $alumno.numero_control ?? 'Por asignar' }}</span>
+            <span class="data-value">{{ $alumno['numero_control'] ?? 'Por asignar' }}</span>
         </div>
-        @if($matricula && $matricula.periodo)
+        @if($matricula && $matricula['periodo'])
             <div class="data-item">
                 <span class="data-label">Periodo</span>
-                <span class="data-value">{{ $matricula.periodo.clave }} - {{ $matricula.periodo.nombre }}</span>
+                <span class="data-value">{{ $matricula['periodo']['clave'] }} - {{ $matricula['periodo']['nombre'] }}</span>
             </div>
         @endif
     </div>
 </div>
 
-@if($matricula && $matricula.inscripcionesCursando && $matricula->inscripcionesCursando->count())
+@if($matricula && $matricula['inscripcionesCursando'] && $matricula['inscripcionesCursando']->count())
 <div class="section">
     <div class="section-title">Horario Semanal</div>
     <div class="table-wrapper">
@@ -59,18 +59,18 @@
             <tbody>
                 @php
                     $horarios = collect();
-                    foreach($matricula->inscripcionesCursando as $inscripcion) {
-                        if($inscripcion->grupo) {
-                            foreach($inscripcion->grupo->horarios as $h) {
+                    foreach($matricula['inscripcionesCursando'] as $inscripcion) {
+                        if($inscripcion['grupo']) {
+                            foreach($inscripcion['grupo']['horarios'] as $h) {
                                 $horarios->push([
-                                    'dia' => $h->dia->orden(),
-                                    'dia_label' => $h->dia->label(),
-                                    'hora_inicio' => $h->hora_inicio,
-                                    'hora_fin' => $h->hora_fin,
-                                    'materia' => $inscripcion->materia->clave . ' - ' . $inscripcion->materia->nombre,
-                                    'grupo' => $inscripcion->grupo->clave,
-                                    'docente' => $inscripcion->grupo->docente?->nombreCompleto() ?? 'Sin asignar',
-                                    'aula' => $inscripcion->grupo->aula?->nombre ?? 'Sin asignar',
+                                    'dia' => $h['dia']->orden(),
+                                    'dia_label' => $h['dia']->label(),
+                                    'hora_inicio' => $h['hora_inicio'],
+                                    'hora_fin' => $h['hora_fin'],
+                                    'materia' => $inscripcion['materia']['clave'] . ' - ' . $inscripcion['materia']['nombre'],
+                                    'grupo' => $inscripcion['grupo']['clave'],
+                                    'docente' => $inscripcion['grupo']['docente']['nombreCompleto'] ?? 'Sin asignar',
+                                    'aula' => $inscripcion['grupo']['aula']['nombre'] ?? 'Sin asignar',
                                 ]);
                             }
                         }
@@ -95,17 +95,17 @@
     <p class="text-center">No hay materias inscritas con horario en este periodo.</p>
 @endif
 
-@if($matricula && $matricula.inscripcionesCursando && $matricula->inscripcionesCursando->count())
+@if($matricula && $matricula['inscripcionesCursando'] && $matricula['inscripcionesCursando']->count())
 <div class="section mt-20">
     <div class="section-title">Resumen de Carga</div>
     <div class="data-grid">
         <div class="data-item">
             <span class="data-label">Total materias</span>
-            <span class="data-value">{{ $matricula->inscripcionesCursando->count() }}</span>
+            <span class="data-value">{{ $matricula['inscripcionesCursando']->count() }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Total créditos</span>
-            <span class="data-value">{{ $matricula->inscripcionesCursando->sum('materia.creditos') }}</span>
+            <span class="data-value">{{ $matricula['inscripcionesCursando']->sum('materia.creditos') }}</span>
         </div>
     </div>
 </div>

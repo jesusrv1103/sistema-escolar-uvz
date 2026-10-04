@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\RolUsuario;
+use App\Models\Docente;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -47,6 +48,17 @@ class UserFactory extends Factory
     public function deRol(RolUsuario $rol): static
     {
         return $this->state(fn (array $attributes) => ['rol' => $rol]);
+    }
+
+    public function docente(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rol' => RolUsuario::DOCENTE,
+        ])->afterCreating(function (User $user) {
+            \App\Models\Docente::factory()->create([
+                'user_id' => $user->id,
+            ]);
+        });
     }
 
     public function inactivo(): static

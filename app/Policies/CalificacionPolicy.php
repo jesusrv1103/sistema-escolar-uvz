@@ -72,12 +72,10 @@ class CalificacionPolicy
             return true;
         }
 
-        // DOCENTE solo sus grupos, y solo si evaluación está PUBLICADA
+        // DOCENTE solo sus grupos
         if ($user->rol->value === 'DOCENTE') {
-            $evaluacion = $calificacion->evaluacion;
             return $user->docente
-                && $calificacion->evaluacion?->grupo?->docente_id === $user->docente->id
-                && $evaluacion?->esPublicada();
+                && $calificacion->evaluacion?->grupo?->docente_id === $user->docente->id;
         }
 
         return false;

@@ -69,7 +69,7 @@ class CalificacionService
                 ],
                 [
                     'valor' => $this->redondear($valor),
-                    'capturada_por' => auth()->id(),
+                    'capturada_por' => $usuario->id,
                     'capturada_at' => now(),
                     'observacion' => $observacion,
                 ]
@@ -87,7 +87,7 @@ class CalificacionService
                     'observacion' => $calificacion->observacion,
                 ],
                 [],
-                auth()->user(),
+                $usuario,
             );
 
             return $calificacion;
@@ -106,7 +106,7 @@ class CalificacionService
         Gate::authorize('calificacion.consolidar', $inscripcion);
 
         return DB::transaction(function () use ($inscripcion, $usuario): \App\Models\InscripcionMateria {
-            $inscripcion = $inscripcion->loadMissing(['calificaciones.evaluacion']);
+            $inscripcion = $inscripcion->loadMissing(['calificaciones.evaluacion', 'grupo']);
 
             // 1. Validar ponderación total = 100%
             $ponderacionTotal = $inscripcion->grupo
@@ -121,11 +121,10 @@ class CalificacionService
 
             // 2. Verificar que todas las evaluaciones tengan calificación
             $evaluaciones = \App\Models\Evaluacion::where('grupo_id', $inscripcion->grupo_id)
-                ->where('estatus', '!=', 'BORRADOR')
                 ->get();
 
             if ($evaluaciones->isEmpty()) {
-                throw new \App\Exceptions\CalificacionException('El grupo no tiene evaluaciones publicadas.');
+                throw new \App\Exceptions\CalificacionException('El grupo no tiene evaluaciones.');
             }
 
             foreach ($evaluaciones as $eval) {
@@ -157,7 +156,7 @@ class CalificacionService
             $calificacionFinal = $this->redondear($calificacionFinal);
 
             // Determinar estatus
-            $nuevoEstatus = $this->determinarEstatus($inscripcion->valor);
+            $nuevoEstatus = $this->determinarEstatus($calificacionFinal);
 
             // Actualizar inscripción
             $inscripcion->forceFill([
@@ -214,5 +213,44 @@ class CalificacionService
         if ($valor < 0 || $valor > 100) {
             throw new \App\Exceptions\CalificacionException("La calificación debe estar entre 0.00 y 100.00.");
         }
+    }
+
+    /**
+     * Valida que la captura de calificación sea permitida.
+     */
+    private function validarCaptura(InscripcionMateria $inscripcion, Evaluacion $evaluacion, float $valor): void
+    {
+        $this->validarRango($valor);
+
+        // La inscripción debe estar cursando
+        if ($inscripcion->estatus !== \App\Enums\EstatusInscripcionMateria::CURSANDO) {
+            throw new \App\Exceptions\CalificacionException('Solo se pueden capturar calificaciones en inscripciones con estatus CURSANDO.');
+        }
+
+        // La evaluación debe pertenecer al mismo grupo de la inscripción
+        if ($evaluacion->grupo_id !== $inscripcion->grupo_id) {
+            throw new \App\Exceptions\CalificacionException('La evaluación no pertenece al grupo de la inscripción.');
+        }
+    }
+
+    /**
+     * Autoriza la captura de calificaciones para un grupo.
+     */
+    private function autorizarCaptura(Grupo $grupo, ?User $usuario = null): void
+    {
+        $usuario ??= auth()->user();
+
+        if ($usuario->esAdmin() || $usuario->rol->value === 'CONTROL_ESCOLAR') {
+            return;
+        }
+
+        if ($usuario->rol->value === 'DOCENTE') {
+            if (!$usuario->docente || $grupo->docente_id !== $usuario->docente->id) {
+                abort(403, 'Solo el docente asignado al grupo puede capturar calificaciones.');
+            }
+            return;
+        }
+
+        abort(403, 'No tiene permisos para capturar calificaciones.');
     }
 }

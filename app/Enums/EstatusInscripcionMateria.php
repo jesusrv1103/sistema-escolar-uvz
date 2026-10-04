@@ -7,6 +7,7 @@ enum EstatusInscripcionMateria: string
     case CURSANDO = 'CURSANDO';
     case APROBADA = 'APROBADA';
     case REPROBADA = 'REPROBADA';
+    case EXTRAORDINARIO = 'EXTRAORDINARIO';
     case BAJA = 'BAJA';
     case VALIDADA = 'VALIDADA';
 
@@ -16,6 +17,7 @@ enum EstatusInscripcionMateria: string
             self::CURSANDO => 'Cursando',
             self::APROBADA => 'Aprobada',
             self::REPROBADA => 'Reprobada',
+            self::EXTRAORDINARIO => 'Extraordinario',
             self::BAJA => 'Baja',
             self::VALIDADA => 'Validada',
         };
@@ -27,6 +29,7 @@ enum EstatusInscripcionMateria: string
             self::CURSANDO => 'badge bg-primary',
             self::APROBADA => 'badge bg-success',
             self::REPROBADA => 'badge bg-danger',
+            self::EXTRAORDINARIO => 'badge bg-warning text-dark',
             self::BAJA => 'badge bg-secondary',
             self::VALIDADA => 'badge bg-info text-dark',
         };
@@ -34,6 +37,6 @@ enum EstatusInscripcionMateria: string
 
     public function esTerminal(): bool
     {
-        return in_array($this, [self::APROBADA, self::REPROBADA, self::BAJA, self::VALIDADA], true);
+        return in_array($this, [self::APROBADA, self::REPROBADA, self::EXTRAORDINARIO, self::BAJA, self::VALIDADA], true);
     }
 }

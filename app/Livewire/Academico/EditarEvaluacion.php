@@ -100,7 +100,7 @@ class EditarEvaluacion extends Component
     public function render()
     {
         return view('livewire.academico.editar-evaluacion', [
-            'tipos' => \App\Enums\TipoEvaluacion::cases(),
+            'tipos' => \App\Enums\TipoEvaluacion::ejemplos(),
         ]);
     }
 }

@@ -26,44 +26,44 @@
     <div class="data-grid">
         <div class="data-item">
             <span class="data-label">Grupo</span>
-            <span class="data-value">{{ $grupo->clave }}</span>
+            <span class="data-value">{{ $grupo['clave'] }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Materia</span>
-            <span class="data-value">{{ $grupo->materia->clave }} - {{ $grupo->materia->nombre }}</span>
+            <span class="data-value">{{ $grupo['materia']['clave'] }} - {{ $grupo['materia']['nombre'] }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Créditos</span>
-            <span class="data-value">{{ $grupo->materia->creditos }}</span>
+            <span class="data-value">{{ $grupo['materia']['creditos'] }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Periodo</span>
-            <span class="data-value">{{ $grupo->periodo->clave }} - {{ $grupo->periodo->nombre }}</span>
+            <span class="data-value">{{ $grupo['periodo']['clave'] }} - {{ $grupo['periodo']['nombre'] }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Docente</span>
-            <span class="data-value">{{ $grupo->docente?->nombreCompleto() ?? 'Sin asignar' }}</span>
+            <span class="data-value">{{ $grupo['docente']['nombreCompleto'] ?? 'Sin asignar' }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Aula</span>
-            <span class="data-value">{{ $grupo->aula?->nombre . ' (' . $grupo->aula->edificio . ')' ?? 'Sin asignar' }}</span>
+            <span class="data-value">{{ $grupo['aula']['nombre'] . ' (' . $grupo['aula']['edificio'] . ')' ?? 'Sin asignar' }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Cupo</span>
-            <span class="data-value">{{ $grupo->cupo }}</span>
+            <span class="data-value">{{ $grupo['cupo'] }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Turno</span>
-            <span class="data-value">{{ $grupo->turno?->label() }}</span>
+            <span class="data-value">{{ \App\Enums\TurnoGrupo::tryFrom($grupo['turno'])?->label() ?? $grupo['turno'] }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Estatus</span>
-            <span class="data-value"><span class="badge badge-{{ strtolower(str_replace('_', '-', $grupo->estatus)) }}">{{ $grupo->estatus }}</span></span>
+            <span class="data-value"><span class="badge badge-{{ strtolower(str_replace('_', '-', $grupo['estatus'])) }}">{{ \App\Enums\EstatusGrupo::tryFrom($grupo['estatus'])?->label() ?? $grupo['estatus'] }}</span></span>
         </div>
     </div>
 </div>
 
-@if($grupo->horarios->count())
+@if(count($grupo['horarios']))
 <div class="section">
     <div class="section-title">Horarios</div>
     <div class="table-wrapper">
@@ -77,12 +77,12 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($grupo->horarios->sortBy('dia.orden')->sortBy('hora_inicio') as $h)
+                @foreach($grupo['horarios']->sortBy('dia.orden')->sortBy('hora_inicio') as $h)
                     <tr>
-                        <td>{{ $h->dia->label() }}</td>
-                        <td>{{ $h->hora_inicio->format('H:i') }}</td>
-                        <td>{{ $h->hora_fin->format('H:i') }}</td>
-                        <td>{{ $grupo->aula?->nombre . ' (' . $grupo->aula->edificio . ')' ?? 'Sin asignar' }}</td>
+                        <td>{{ $h['dia']->label() }}</td>
+                        <td>{{ $h['hora_inicio']->format('H:i') }}</td>
+                        <td>{{ $h['hora_fin']->format('H:i') }}</td>
+                        <td>{{ $grupo['aula']['nombre'] . ' (' . $grupo['aula']['edificio'] . ')' ?? 'Sin asignar' }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -92,9 +92,15 @@
 @endif
 @endif
 
-@if($grupo && $grupo->inscripcionesMaterias()->where('estatus', 'CURSANDO')->count())
+@php
+    $inscripcionesCursando = collect($grupo['inscripcionesMaterias'] ?? [])
+        ->where('estatus', 'CURSANDO');
+    $totalCursando = $inscripcionesCursando->count();
+@endphp
+
+@if($grupo && $grupo['inscripcionesMaterias'] && $totalCursando = (collect($grupo['inscripcionesMaterias'] ?? [])->where('estatus', 'CURSANDO')->count()))
 <div class="section">
-    <div class="section-title">Alumnos Inscritos ({{ $grupo->inscripcionesMaterias()->where('estatus', 'CURSANDO')->count() }}/{{ $grupo->cupo }})</div>
+    <div class="section-title">Alumnos Inscritos ({{ $totalCursando }}/{{ $grupo['cupo'] }})</div>
     <div class="table-wrapper">
         <table>
             <thead>
@@ -109,21 +115,19 @@
             </thead>
             <tbody>
                 @php
-                    $alumnos = $grupo->inscripcionesMaterias()
+                    $alumnos = collect($grupo['inscripcionesMaterias'] ?? [])
                         ->where('estatus', 'CURSANDO')
-                        ->with('matriculaPeriodo.alumno')
-                        ->get()
-                        ->sortBy(fn($i) => $i->matriculaPeriodo->alumno->apellidos . ' ' . $i->matriculaPeriodo->alumno->nombre);
+                        ->sortBy(fn($i) => ($i['matriculaPeriodo']['alumno']['apellidos'] ?? '') . ' ' . ($i['matriculaPeriodo']['alumno']['nombre'] ?? ''));
                 @endphp
                 @foreach($alumnos as $index => $inscripcion)
-                    @php $alumno = $inscripcion->matriculaPeriodo->alumno; @endphp
+                    @php $alumno = $inscripcion['matriculaPeriodo']['alumno']; @endphp
                     <tr>
                         <td>{{ $index + 1 }}</td>
-                        <td>{{ $alumno->numero_control ?? 'Por asignar' }}</td>
-                        <td>{{ $alumno->nombre_completo }}</td>
-                        <td>{{ $alumno->curp }}</td>
-                        <td>{{ $alumno->correo }}</td>
-                        <td>{{ $alumno->telefono }}</td>
+                        <td>{{ $alumno['numero_control'] ?? 'Por asignar' }}</td>
+                        <td>{{ $alumno['nombre_completo'] }}</td>
+                        <td>{{ $alumno['curp'] }}</td>
+                        <td>{{ $alumno['correo'] }}</td>
+                        <td>{{ $alumno['telefono'] }}</td>
                     </tr>
                 @endforeach
             </tbody>

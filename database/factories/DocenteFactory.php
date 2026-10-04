@@ -29,7 +29,7 @@ class DocenteFactory extends Factory
             'clave' => $claves[$i % count($claves)] . '_' . ($i++),
             'nombre' => $this->faker->firstName(),
             'apellidos' => $this->faker->lastName(),
-            'curp' => $this->faker->unique()->regexify('[A-Z]{4}[0-9]{6}[HM][A-Z]{2}[A-Z]{3}[0-9]{2}'),
+            'curp' => $this->faker->regexify('[A-Z]{4}[0-9]{6}[HM][A-Z]{2}[A-Z]{3}[0-9]{2}'),
             'rfc' => $this->faker->boolean(50) ? $this->faker->unique()->regexify('[A-Z]{3,4}[0-9]{6}[A-Z0-9]{3}') : null,
             'correo' => $this->faker->boolean(70) ? $this->faker->unique()->safeEmail() : null,
             'telefono' => $hasTelefono ? $this->faker->numerify('##########') : null,
@@ -48,7 +48,7 @@ class DocenteFactory extends Factory
     public function conUsuario(): static
     {
         return $this->state(fn (array $attributes) => [
-            'user_id' => \App\Models\User::factory()->deRol(\App\Enums\RolUsuario::ADMIN)->create(),
+            'user_id' => \App\Models\User::factory()->deRol(\App\Enums\RolUsuario::DOCENTE)->create(),
         ]);
     }
 }

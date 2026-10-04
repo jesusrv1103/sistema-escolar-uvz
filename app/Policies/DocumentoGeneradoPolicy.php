@@ -2,8 +2,10 @@
 
 namespace App\Policies;
 
+use App\Models\Alumno;
 use App\Models\DocumentoGenerado;
 use App\Models\User;
+use App\Enums\TipoFormato;
 
 /**
  * Políticas para Documentos Generados (formatos académicos).
@@ -50,10 +52,28 @@ class DocumentoGeneradoPolicy
         return $user->activo;
     }
 
-    public function create(User $user): bool
+    public function create(User $user, TipoFormato $tipo = null, Alumno $alumno = null): bool
     {
-        // Solo roles con capacidad documento_generado.crear
-        return $user->activo && $user->can('documento_generado.crear');
+        if (!$user->activo) {
+            return false;
+        }
+
+        // ADMIN y CONTROL_ESCOLAR pueden crear cualquier documento
+        if ($user->esAdmin() || $user->rol->value === 'CONTROL_ESCOLAR') {
+            return true;
+        }
+
+        // ADMISIONES puede crear documentos de inscripción
+        if ($user->rol->value === 'ADMISIONES') {
+            return true;
+        }
+
+        // DOCENTE puede crear horarios y listas de sus grupos
+        if ($user->rol->value === 'DOCENTE') {
+            return $user->docente !== null;
+        }
+
+        return false;
     }
 
     public function update(User $user, DocumentoGenerado $documento): bool

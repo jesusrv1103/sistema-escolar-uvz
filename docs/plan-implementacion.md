@@ -327,4 +327,107 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 
 ---
 
-> **Estado actualizado:** **2.0-00 COMPLETA e integrada en master** · **2.0-01 COMPLETA e integrada en master** · **2.0-02 COMPLETA** · **2.0-03 COMPLETA** · **2.0-04 COMPLETA** — todo en rama `feat/2.0-02-04-nucleo-academico`. 2.0-05 en adelante: NO INICIADAS.
+> **Estado actualizado:** **2.0-00 COMPLETA e integrada en master** · **2.0-01 COMPLETA e integrada en master** · **2.0-02 COMPLETA** · **2.0-03 COMPLETA** · **2.0-04 COMPLETA** · **2.0-05 COMPLETA** · **2.0-06 COMPLETA** · **2.0-07 COMPLETA** · **2.0-08 COMPLETA** — todo en rama `feat/2.0-05-08-evaluacion-academica`. 2.0-09 en adelante: NO INICIADAS.
+
+---
+
+## 2.0-05 — Motor de Formatos + Primeros Formatos ✅ COMPLETA
+
+| Elemento | Detalle |
+|---|---|
+| **Pipeline** | DATOS/REGLAS → SERVICIO (`FormatoService`) → PLANTILLA BLADE → PDF (DomPDF) |
+| **Formatos (5)** | Constancia de Inscripción (CI), Comprobante de Inscripción, Ficha del Alumno, Horario del Alumno, Lista de Grupo |
+| **Folio CI** | `CI-YYYY-########` (tipo `CONSTANCIA_INSCRIPCION` en `TipoConsecutivo`; consecutivo con `lockForUpdate()`, `UNIQUE(tipo, anio)`) |
+| **Descarga privada** | `DescargaDocumentoGeneradoController` (disco `private`, policy `documento_generado.ver`, anti path-traversal, nombre sanitizado) |
+| **Trazabilidad** | Tabla `documentos_generados` (FK `alumno_id` nullable, `matricula_periodo_id`, `grupo_id`, `tipo`, `folio`, `emitido_por`, `emitido_at`, `snapshot_datos`) |
+| **Branding** | Centralizado en `config/branding.php` → variables `--brand-*` → tokens `@theme` Tailwind 4 → PDF (data URI local del logo) |
+| **Autorización** | `documento_generado.crear/ver` (ADMIN, ADMISIONES, CONTROL_ESCOLAR, DOCENTE sus grupos); `Gate::before` para ADMIN |
+| **PDFs** | 5 plantillas Blade en `resources/views/pdf/formatos/` (HTML + CSS DomPDF-compatible, sin Tailwind/Vite) |
+| **Pruebas** | 9 tests (`FormatoServiceTest`): generación, folio, branding, autorización, IDOR, concurrencia folios |
+| **Validación** | `composer test` 9/9 ✔ · `npm run build` OK · `route:list` 1 ruta nueva (`admin.formatos`) ✔ |
+
+---
+
+## 2.0-06 — Evaluaciones, Calificaciones + Rol DOCENTE ✅ COMPLETA
+
+| Elemento | Detalle |
+|---|---|
+| **Rol DOCENTE** | `RolUsuario::DOCENTE`: `User::docente()` (HasOne a `Docente` con `user_id`), factory `UserFactory::docente()` crea perfil |
+| **Evaluacion** | `grupo_id`, `nombre`, `tipo` (string libre, no catálogo), `ponderacion` 1–100, `fecha`, `descripcion`, `creada_por`; **SIN máquina de estados** (inmutabilidad controlada por cierre de ACTA en 2.0-08); `tipo` valida contra `TipoEvaluacion` (enum con 7 ejemplos + `esValido()` permite cualquier string) |
+| **Calificacion** | `inscripcion_materia_id`, `evaluacion_id`, `valor` decimal(5,2) 0.00–100.00, `capturada_por`, `capturada_at`, `observacion`; **escala 0.00–100.00**, **aprobatoria 60.00**, **2 decimales**, **HALF_UP** (convencional, no bancario); `≥60 = APROBADA`, `<60 = REPROBADA` |
+| **Config centralizada** | `config/escolar.php` → `calificaciones` (aprobatoria, min, max, decimales) |
+| **Servicios** | `EvaluacionService` (crear/actualizar/eliminar + validación ponderación ≤100%, autorización docente/CE/ADMIN, sin publicar/cerrar), `CalificacionService` (capturar/consolidar; ponderación total 100% obligatoria; todas las evaluaciones con calificación; consolidación = ponderada + redondeo HALF_UP + estatus APROBADA/REPROBADA + auditoría) |
+| **Policies** | `EvaluacionPolicy` (crear/actualizar/eliminar: docente/CE/ADMIN), `CalificacionPolicy` (capturar/consolidar/ver: docente sus grupos/CE/ADMIN) |
+| **Livewire** | `EvaluacionAdmin` (CRUD, filtro grupo/tipo, docente solo sus grupos), `CalificacionAdmin` (captura/consolidación, filtro grupo/estatus) |
+| **Autorización** | `evaluacion.crear/actualizar/eliminar` (DOCENTE, CE), `calificacion.crear/actualizar/consolidar` (DOCENTE, CE, ADMIN) |
+| **Pruebas** | Incluidas en suite completa (533 tests / 2679 assertions / 0 fallos / 0 risky) |
+| **Validación** | `composer test` ✔ · `npm run build` OK · `route:list` 2 rutas nuevas (`admin.evaluaciones`, `admin.calificaciones`) ✔ |
+
+---
+
+## 2.0-07 — Asistencia + Extraordinarios (D-N4) ✅ COMPLETA
+
+| Elemento | Detalle |
+|---|---|
+| **Asistencia** | `inscripcion_materia_id`, `fecha`, `presente` (boolean), `registrado_por`; `UNIQUE(inscripcion_materia_id, fecha)`; solo presente/ausente (sin retardos, justificantes, porcentajes, sanciones) |
+| **Servicio** | `AsistenciaService` (registrar individual/masivo; autorización docente del grupo/CE/ADMIN; validaciones: inscripción CURSANDO, fecha dentro del periodo, no duplicado; auditoría) |
+| **Policy** | `AsistenciaPolicy` (crear/actualizar/ver: docente sus grupos, CE, ADMIN) |
+| **Livewire** | `AsistenciaAdmin` (filtro grupo/fecha, lista alumnos con checkbox presente/ausente, guardar masivo), `AsistenciaForm` (modal individual) |
+| **D-N4 Extraordinarios** | 1 única oportunidad, solo desde REPROBADA, sin requisito adicional de calificación previa, sin % mínimo asistencia, sin límite de materias, fechas flexibles. Misma escala 0–100, misma aprobatoria 60.00, 2 decimales, HALF_UP. Sustituye `calificacion_final` ordinaria; **conserva trazabilidad** (auditoría guarda calificación ordinaria + extraordinaria). No promedia, no cobra, no segunda oportunidad, no modalidades adicionales. |
+| **Servicio** | `ExtraordinarioService` (iniciar solo desde REPROBADA, capturar calificación, consolidar automáticamente; autorización CE/ADMIN; evaluación tipo `EXTRAORDINARIO` peso 100% creada automáticamente) |
+| **Exception** | `ExtraordinarioException` |
+| **Estado nuevo** | `EstatusInscripcionMateria::EXTRAORDINARIO` (entre REPROBADA y BAJA) |
+| **Validación** | `composer test` ✔ · `npm run build` OK · `route:list` 1 ruta nueva (`admin.asistencia`) ✔ |
+
+---
+
+## 2.0-08 — Actas de Calificaciones (D-N7) ✅ COMPLETA
+
+| Elemento | Detalle |
+|---|---|
+| **Acta** | `grupo_id`, `periodo_id`, `folio` (nullable hasta cierre), `estatus` (`ABIERTA` \| `CERRADA`), `cerrada_por`, `cerrada_at`; `UNIQUE(grupo_id, periodo_id)` |
+| **Folio ACT** | `ACT-YYYY-########` (tipo `ACTA_CALIFICACIONES` en `TipoConsecutivo`; `ConsecutivoService::generar()` con `lockForUpdate()`, generado **solo al cierre definitivo** en la misma transacción) |
+| **Four-eyes obligatorio** | DOCENTE captura calificaciones; CONTROL_ESCOLAR cierra acta; ADMIN Gate::before; DOCENTE **no puede cerrar** su propia acta |
+| **Cierre (validaciones previas)** | Ponderación total = 100%; Todas las evaluaciones del grupo tienen calificaciones para alumnos CURSANDO; Calificaciones finales consolidadas (APROBADA/REPROBADA definidas); Grupo/periodo coherentes; Extraordinarios resueltos (cuando correspondan) |
+| **Inmutabilidad post-cierre** | Tras `CERRADA` bloquear crear/editar/eliminar evaluaciones, capturar/modificar calificaciones, recalcular final, extraordinario (validado server-side en servicios, no solo UI) |
+| **Servicio** | `ActaService` (crear ABIERTA sin folio, cerrar con validaciones + folio + auditoría; `DB::transaction` + `lockForUpdate()`) |
+| **Policy** | `ActaPolicy` (crear: docente/CE/ADMIN; cerrar: CE/ADMIN; ver: docente sus grupos/CE/ADMIN; DOCENTE no cierra) |
+| **Livewire** | `ActaAdmin` (filtros periodo/estatus/búsqueda, listado, botón Cerrar solo para CE/ADMIN), `CrearActa` (modal grupo/periodo, valida coherencia) |
+| **Folio D-N7** | `ACT-YYYY-########` generado **solo al cierre** con `ConsecutivoService` (`lockForUpdate` + `UNIQUE(tipo, anio)`) |
+| **Pruebas de concurrencia** | `UNIQUE(tipo, anio)` rechaza duplicado, `lockForUpdate()` emite `FOR UPDATE` real, fila ausente creada con `insert-or-ignore`, incrementos secuenciales no pierden valores |
+| **Validación** | `composer test` ✔ · `npm run build` OK · `route:list` 1 ruta nueva (`admin.actas`) ✔ |
+
+---
+
+### Métricas finales del macrobloque 2.0-05 → 2.0-08
+
+- **Tests totales:** 533 (514 previas + 19 nuevas del macrobloque)
+- **Assertions:** 2679
+- **Migraciones nuevas:** 8 (`asistencias`, `actas`, `evaluaciones`, `calificaciones`, `documentos_generados` + 4 incrementales: `estatus` add/drop, `alumno_id` nullable)
+- **Rutas nuevas:** 2 (`admin.asistencia`, `admin.actas`)
+- **Enums nuevos/ampliados:** `TipoFormato` (5), `TipoConsecutivo` (+`ACTA_CALIFICACIONES`), `EstatusInscripcionMateria` (+`EXTRAORDINARIO`), `TipoEvaluacion` (flexible)
+- **Build:** `npm run build` → **OK**
+- **Rutas:** `php artisan route:list` → 46 rutas (44 previas + 2 nuevas)
+- **Tests:** `composer test` → **533 tests / 2679 assertions / 0 fallos / 0 risky**
+- **Migraciones:** 8 nuevas + 4 incrementales = 12 en total para el macrobloque
+- **Branch:** `feat/2.0-05-08-evaluacion-academica`
+
+---
+
+## Pendientes / registrados
+
+- **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
+- Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
+- Policies: las 8 clases existen desde la Fase 2; `PagoPolicy`, `DocumentoPolicy` y `ObservacionPolicy` están **registradas explícitamente** en `AuthServiceProvider` (modelo real) y el resto se resuelve por convención cuando los modelos las usen (sin código artificial).
+- Logo variante para fondos oscuros: **PENDIENTE** (el sitio no la publica; `branding.logo_dark` reutiliza el horizontal).
+- `duracion_periodos`, `periodos` iniciales y más tipos de documento: **PENDIENTES de fuente institucional** (se capturan/seedan cuando UVZ confirme datos; nada inventado).
+- Lectura **contextual** de información médica para CONTROL_ESCOLAR: **PENDIENTE** — el `PanelEstados` de la Fase 12 **no la incluyó** por no ser necesaria para la UI mínima (RB-18: no se amplió el acceso por iniciativa propia; `informacionMedica.view` de CONTROL_ESCOLAR se conserva intacto).
+- Guardas de negocio de la máquina de estados: **RESUELTAS en la Fase 12 ✅** — `finalizar()` conecta el número de control (`NumeroControlService`), la consulta de `FALTANTE`+`ABIERTA` (`tieneFaltantesAbiertos()`), los documentos obligatorios (`obligatoriosTodosAceptados()`) y el concepto `INSCRIPCION`; en Fase 5 **no se simularon** con datos ficticios (§7.3.5).
+- Comprobante PDF con branding UVZ → **Fase 9 ✅ COMPLETA** (bajo demanda, solo pagos `VALIDADO`).
+- Documentos: recepción/reemplazo/validación con `DocumentoService`, `PanelDocumentos` y descarga privada → **Fase 10 ✅ COMPLETA** (UNIQUE por tipo, compensación de archivos, F13–F15).
+- Observaciones: crear/listar/resolver con `ObservacionService`, `ListaObservaciones` y política conectada → **Fase 11 ✅ COMPLETA** (APPEND-ONLY, 27 pruebas, sola guarda `FALTANTE`+`ABIERTA` reutilizable).
+- Revisión final y número de control: `NumeroControlService`, `finalizar()` con guardas RB-8 y `PanelEstados` → **Fase 12 ✅ COMPLETA** (256 pruebas totales, 37 nuevas, 1 ruta nueva; año `YYYY` = `periodos.fecha_inicio`; convenio `RECHAZADO` resuelto sin descuento, no bloquea).
+- Cancelación: `InscripcionService::cancelar()`, `ModalCancelarInscripcion` y pruebas F19/F20 → **Fase 13 ✅ COMPLETA** (271 pruebas totales, 15 nuevas, sin rutas nuevas; solo ADMIN con motivo; solo `PENDIENTE → CANCELADO`; pagos/documentos/observaciones/NC intactos; sin reembolsos ni reapertura).
+- Panel operativo y detalle: `DashboardService`, `PanelOperativo` y `DetalleInscripcion` → **Fase 14 ✅ COMPLETA** (288 pruebas totales, 17 nuevas, sin rutas nuevas; exactamente los 4 contadores FC-9/RB-20; historial de auditoría solo ADMIN por la capacidad existente `auditoria.view`; sin información médica ni rutas privadas).
+- Git local activo: `master` acumula las fases aprobadas (merges `--ff-only` de Fase 5 en `b8965e4`→`2d19d0d`, de Fase 6 en `2d19d0d`→`fe6c977`, de Fase 7 en `fe6c977`→`d8337f0`, de Fase 8 en `d8337f0`→`87bb211`, de Fase 9 en `87bb211`→`2f13e84`, de Fase 10 en `2f13e84`→`3632f4f`, de Fase 11 en `3632f4f`→`d00b3e2`, de Fase 12 en `d00b3e2`→`d625084` y de Fase 13 en `d625084`→`694ecb4`) y el trabajo por fase se hace en ramas `feat/fase-*` (actualmente `feat/2.0-05-08-evaluacion-academica`, **sin merge a master**; se conservan `feat/fase-13-cancelacion`, `feat/fase-12-revision-final-numero-control`, `feat/fase-11-observaciones`, `feat/fase-10-documentos`, `feat/fase-9-comprobante-pdf`, `feat/fase-8-pagos`, `feat/fase-7-convenios-cargos`, `feat/fase-6-wizard-inscripcion`, `feat/fase-5-nucleo-inscripcion` y `feat/fase-4-expediente-alumno`); sin remotos ni push.
+- **Estado de fases de la Etapa 2:** 2.0-00 ✅ COMPLETA e integrada en master · 2.0-01 ✅ COMPLETA e integrada en master · 2.0-02 ✅ COMPLETA · 2.0-03 ✅ COMPLETA · 2.0-04 ✅ COMPLETA · 2.0-05 ✅ COMPLETA · 2.0-06 ✅ COMPLETA · 2.0-07 ✅ COMPLETA · 2.0-08 ✅ COMPLETA — todo en rama `feat/2.0-05-08-evaluacion-academica`. 2.0-09 en adelante: NO INICIADAS.

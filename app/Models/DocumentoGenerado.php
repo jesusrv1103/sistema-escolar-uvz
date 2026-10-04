@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Concerns\HasAudit;
+use App\Models\Concerns\HasAudit;
 use App\Enums\TipoFormato;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

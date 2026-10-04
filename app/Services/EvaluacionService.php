@@ -2,9 +2,6 @@
 
 namespace App\Services;
 
-use App\Concerns\HasAudit;
-use App\Enums\EstatusEvaluacion;
-use App\Enums\TipoEvaluacion;
 use App\Exceptions\EvaluacionException;
 use App\Models\Evaluacion;
 use App\Models\Grupo;
@@ -21,6 +18,7 @@ use Illuminate\Support\Facades\Gate;
  * - Suma de ponderaciones no puede superar 100%
  * - Para cerrar acta (2.0-08) la suma debe ser exactamente 100%
  * - Solo docente del grupo (y CE/ADMIN) pueden modificar
+ * - Sin máquina de estados formal; la inmutabilidad la controla el ACTA (2.0-08)
  */
 class EvaluacionService
 {
@@ -30,7 +28,7 @@ class EvaluacionService
     }
 
     /**
-     * Crea una nueva evaluación en estado BORRADOR.
+     * Crea una nueva evaluación.
      *
      * @throws EvaluacionException si fallan validaciones
      */
@@ -66,7 +64,6 @@ class EvaluacionService
                 'tipo' => $tipo,
                 'ponderacion' => $ponderacion,
                 'fecha' => $fecha,
-                'estatus' => 'BORRADOR',
                 'descripcion' => $descripcion,
                 'creada_por' => $usuario?->getKey(),
             ]);
@@ -81,7 +78,6 @@ class EvaluacionService
                     'tipo' => $tipo,
                     'ponderacion' => $ponderacion,
                     'fecha' => $fecha->format('Y-m-d'),
-                    'estatus' => 'BORRADOR',
                 ],
                 [],
                 $usuario,
@@ -92,7 +88,7 @@ class EvaluacionService
     }
 
     /**
-     * Actualiza una evaluación (solo en estado BORRADOR).
+     * Actualiza una evaluación.
      */
     public function actualizar(
         Evaluacion $evaluacion,
@@ -106,10 +102,6 @@ class EvaluacionService
         $usuario ??= auth()->user();
 
         $this->autorizarGestionEvaluacion($evaluacion->grupo, $usuario);
-
-        if (!$evaluacion->esBorrador()) {
-            throw new \App\Exceptions\EvaluacionException('Solo se pueden modificar evaluaciones en estado BORRADOR.');
-        }
 
         $datos = [];
         if ($nombre !== null) $datos['nombre'] = $nombre;
@@ -127,7 +119,7 @@ class EvaluacionService
             $this->validarPonderacion($evaluacion->grupo, $datos['ponderacion'], $evaluacion->id);
         }
 
-        return DB::transaction(function () use ($evaluacion, $datos, $usuario): \App\Models\Evaluacion {
+        return DB::transaction(function () use ($evaluacion, $datos, $usuario): Evaluacion {
             $antes = $evaluacion->only(['nombre', 'tipo', 'ponderacion', 'fecha', 'descripcion']);
 
             $evaluacion->fill($datos)->save();
@@ -146,79 +138,13 @@ class EvaluacionService
     }
 
     /**
-     * Publica una evaluación (BORRADOR → PUBLICADA).
-     */
-    public function publicar(Evaluacion $evaluacion, ?User $usuario = null): \App\Models\Evaluacion
-    {
-        $usuario ??= auth()->user();
-
-        $this->autorizarGestionEvaluacion($evaluacion->grupo, $usuario);
-
-        if (!$evaluacion->esBorrador()) {
-            throw new \App\Exceptions\EvaluacionException('Solo se pueden publicar evaluaciones en estado BORRADOR.');
-        }
-
-        return DB::transaction(function () use ($evaluacion, $usuario): \App\Models\Evaluacion {
-            $evaluacion->estatus = 'PUBLICADA';
-            $evaluacion->save();
-
-            $this->auditoria->registrar(
-                $evaluacion,
-                'evaluacion_publicada',
-                ['estatus' => 'BORRADOR'],
-                ['estatus' => 'PUBLICADA'],
-                [],
-                $usuario,
-            );
-
-            return $evaluacion->refresh();
-        });
-    }
-
-    /**
-     * Cierra una evaluación (PUBLICADA → CERRADA).
-     * Solo se usa en 2.0-08 al cerrar acta.
-     */
-    public function cerrar(Evaluacion $evaluacion, ?User $usuario = null): \App\Models\Evaluacion
-    {
-        $usuario ??= auth()->user();
-
-        if ($evaluacion->esCerrada()) {
-            return $evaluacion;
-        }
-
-        // Solo CONTROL_ESCOLAR y ADMIN pueden cerrar (four-eyes)
-        Gate::authorize('evaluacion.cerrar', $evaluacion->grupo);
-
-        return DB::transaction(function () use ($evaluacion, $usuario): \App\Models\Evaluacion {
-            $evaluacion->estatus = 'CERRADA';
-            $evaluacion->save();
-
-            $this->auditoria->registrar(
-                $evaluacion,
-                'evaluacion_cerrada',
-                ['estatus' => 'PUBLICADA'],
-                ['estatus' => 'CERRADA'],
-                [],
-                $usuario,
-            );
-
-            return $evaluacion->refresh();
-        });
-    }
-
-    /**
-     * Elimina una evaluación (solo BORRADOR).
+     * Elimina una evaluación.
      */
     public function eliminar(Evaluacion $evaluacion, ?User $usuario = null): bool
     {
         $usuario ??= auth()->user();
 
         $this->autorizarGestionEvaluacion($evaluacion->grupo, $usuario);
-
-        if (!$evaluacion->esBorrador()) {
-            throw new \App\Exceptions\EvaluacionException('Solo se pueden eliminar evaluaciones en estado BORRADOR.');
-        }
 
         return DB::transaction(function () use ($evaluacion, $usuario): bool {
             $evaluacion->delete();
@@ -254,6 +180,19 @@ class EvaluacionService
 
     // --- Validaciones privadas ---
 
+    private function validarPonderacion(Grupo $grupo, int $nuevaPonderacion, ?int $excluirEvaluacionId = null): void
+    {
+        $ponderacionActual = \App\Models\Evaluacion::where('grupo_id', $grupo->id)
+            ->when($excluirEvaluacionId, fn ($q) => $q->where('id', '!=', $excluirEvaluacionId))
+            ->sum('ponderacion');
+
+        if ($ponderacionActual + $nuevaPonderacion > 100) {
+            throw new EvaluacionException(
+                "La ponderación total del grupo superaría 100% (actual: {$ponderacionActual}%, nueva: {$nuevaPonderacion}%)."
+            );
+        }
+    }
+
     private function autorizarGestionEvaluacion(\App\Models\Grupo $grupo, ?User $usuario = null): void
     {
         $usuario ??= auth()->user();
@@ -279,9 +218,9 @@ class EvaluacionService
             throw new \App\Exceptions\EvaluacionException('El nombre no puede exceder 100 caracteres.');
         }
 
-        // Validar tipo (string libre, validado contra enum si existe)
-        if (!\App\Enums\TipoEvaluacion::tryFrom($tipo)) {
-            // Tipo no está en enum, pero permitimos string libre
+        // Validar tipo (string libre, solo se rechaza string vacío)
+        if (!\App\Enums\TipoEvaluacion::esValido($tipo)) {
+            throw new \App\Exceptions\EvaluacionException('El tipo de evaluación no puede estar vacío.');
         }
 
         if ($ponderacion <= 0 || $ponderacion > 100) {
@@ -290,25 +229,6 @@ class EvaluacionService
 
         if ($fecha < now()->subYear()->toDate()) {
             throw new \App\Exceptions\EvaluacionException('La fecha de la evaluación no puede ser muy antigua.');
-        }
-    }
-
-    private function validarPonderacion(\App\Models\Grupo $grupo, int $nuevaPonderacion, ?int $excluirEvaluacionId = null): void
-    {
-        $query = \App\Models\Evaluacion::where('grupo_id', $grupo->id)
-            ->where('estatus', '!=', 'BORRADOR');
-
-        if ($nuevaPonderacion) {
-            // No validamos aquí, solo en crear/actualizar
-        }
-
-        $ponderacionActual = \App\Models\Evaluacion::where('grupo_id', $grupo->id)
-            ->where('estatus', '!=', 'BORRADOR');
-
-        if ($grupo->id) {
-            // Validar que la suma no supere 100
-            $ponderacionActual = \App\Models\Evaluacion::ponderacionTotalGrupo($grupo->id);
-            // La validación real se hace en crear/actualizar
         }
     }
 }

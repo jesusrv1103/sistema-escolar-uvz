@@ -98,7 +98,7 @@ class AuthServiceProvider extends ServiceProvider
         'matricula.create' => [],
         'matricula.update' => [],
         'matricula.delete' => [],
-        'inscripcion_materia.create' => [],
+        'inscripcion_materia.create' => [RolUsuario::CONTROL_ESCOLAR],
         'inscripcion_materia.update' => [],
         'inscripcion_materia.delete' => [],
         'prerrequisito.validar' => [],
@@ -108,12 +108,20 @@ class AuthServiceProvider extends ServiceProvider
         // 2.0-06 — Evaluaciones y Calificaciones + Rol DOCENTE
         'evaluacion.crear' => [RolUsuario::DOCENTE],
         'evaluacion.actualizar' => [RolUsuario::DOCENTE],
-        'evaluacion.publicar' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
-        'evaluacion.cerrar' => [RolUsuario::CONTROL_ESCOLAR],
         'evaluacion.eliminar' => [RolUsuario::CONTROL_ESCOLAR],
         'calificacion.crear' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
         'calificacion.actualizar' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
         'calificacion.consolidar' => [RolUsuario::CONTROL_ESCOLAR],
+        // 2.0-07 — Asistencia + Extraordinarios
+        'asistencia.crear' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
+        'asistencia.actualizar' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
+        'asistencia.ver' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
+        'extraordinario.iniciar' => [RolUsuario::CONTROL_ESCOLAR],
+        'extraordinario.capturar' => [RolUsuario::CONTROL_ESCOLAR],
+        // 2.0-08 — Actas de calificaciones
+        'acta.crear' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
+        'acta.cerrar' => [RolUsuario::CONTROL_ESCOLAR],
+        'acta.ver' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
     ];
 
     public function boot(): void
@@ -146,6 +154,8 @@ class AuthServiceProvider extends ServiceProvider
         Gate::policy(InscripcionMateria::class, InscripcionMateriaPolicy::class);
         Gate::policy(Evaluacion::class, EvaluacionPolicy::class);
         Gate::policy(Calificacion::class, CalificacionPolicy::class);
+        Gate::policy(Asistencia::class, AsistenciaPolicy::class);
+        Gate::policy(Acta::class, ActaPolicy::class);
 
         // Las policies de modelos de fases futuras ya existen en App\Policies
         // y Laravel las resuelve por convención; aquí solo se registran las que tienen modelo.
