@@ -35,4 +35,9 @@ class PlanEstudioFactory extends Factory
     {
         return $this->state(fn (array $attributes) => ['activo' => false]);
     }
+
+    public function paraPrograma(Programa $programa): static
+    {
+        return $this->state(fn (array $attributes) => ['programa_id' => $programa->id]);
+    }
 }

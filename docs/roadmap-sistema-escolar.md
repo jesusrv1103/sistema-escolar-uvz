@@ -33,7 +33,7 @@ Detalle: `docs/plan-implementacion.md` · Reglas: `docs/arquitectura-mvp.md`.
 - Datos institucionales: **no inventar** planes, materias, créditos, RVOE, fechas, modalidades ni información no proporcionada. **Esto no bloquea 2.0-01**: la fase crea arquitectura, tablas y CRUD con catálogos vacíos; los datos reales se capturan cuando UVZ los proporcione (C7).
 - Decisiones diferidas a su fase: D-N3 (becas/descuentos), D-N4 (extraordinarios), D-N6 (exportaciones CSV/Excel), D-N7 (tipos de folios de actas/constancias).
 
-**Fases de la Etapa 2 (18 en total) — 2.0-00 ✅ COMPLETADA e integrada en master, 2.0-01 ✅ COMPLETA e integrada en master, 2.0-02 en adelante ⬜ NO INICIADAS:**
+**Fases de la Etapa 2 (18 en total) — 2.0-00 ✅ COMPLETADA e integrada en master, 2.0-01 ✅ COMPLETA e integrada en master, 2.0-02 ✅ COMPLETA, 2.0-03 ✅ COMPLETA, 2.0-04 ✅ COMPLETA, 2.0-05 en adelante ⬜ NO INICIADAS:**
 
 | Fase | Alcance | Depende de |
 |---|---|---|

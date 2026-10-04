@@ -59,4 +59,15 @@ class PlanVersionFactory extends Factory
             'plan_id' => $plan->id,
         ]);
     }
+
+    public function paraPrograma(Programa $programa): static
+    {
+        $planEstudio = $programa->planEstudio;
+        if (! $planEstudio) {
+            $planEstudio = \App\Models\PlanEstudio::factory()->paraPrograma($programa)->create();
+        }
+        return $this->state(fn (array $attributes) => [
+            'plan_id' => $planEstudio->id,
+        ]);
+    }
 }

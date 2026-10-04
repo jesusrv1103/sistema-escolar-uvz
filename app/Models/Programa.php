@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -32,5 +33,29 @@ class Programa extends Model
             'duracion_periodos' => 'integer',
             'activo' => 'boolean',
         ];
+    }
+
+    /**
+     * Matrículas de este programa.
+     */
+    public function matriculas(): HasMany
+    {
+        return $this->hasMany(MatriculaPeriodo::class, 'programa_id');
+    }
+
+    /**
+     * Planes de estudio de este programa.
+     */
+    public function planesEstudio(): HasMany
+    {
+        return $this->hasMany(PlanEstudio::class, 'programa_id');
+    }
+
+    /**
+     * Plan de estudio activo/principal del programa.
+     */
+    public function planEstudio()
+    {
+        return $this->hasOne(PlanEstudio::class, 'programa_id')->latest('fecha_resolucion');
     }
 }

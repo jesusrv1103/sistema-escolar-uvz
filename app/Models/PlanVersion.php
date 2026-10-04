@@ -112,4 +112,12 @@ class PlanVersion extends Model
     {
         return $this->estatus === EstatusPlanVersion::SUPERADA;
     }
+
+    /**
+     * Matrículas que usan esta versión de plan.
+     */
+    public function matriculas(): HasMany
+    {
+        return $this->hasMany(MatriculaPeriodo::class, 'plan_version_id');
+    }
 }

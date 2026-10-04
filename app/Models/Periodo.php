@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -35,5 +36,21 @@ class Periodo extends Model
             'activo' => 'boolean',
             'cerrado_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Matrículas de este periodo.
+     */
+    public function matriculas(): HasMany
+    {
+        return $this->hasMany(MatriculaPeriodo::class, 'periodo_id');
+    }
+
+    /**
+     * Verifica si el periodo está cerrado para inscripciones.
+     */
+    public function estaCerrado(): bool
+    {
+        return $this->cerrado_at !== null;
     }
 }

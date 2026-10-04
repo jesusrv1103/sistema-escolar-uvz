@@ -366,7 +366,61 @@
 - **Git:** rama `feat/2.0-00-blindaje-nucleo` lista para merge a master tras aprobación.
 - **Estado 2.0-00: COMPLETA** — listo para merge y despliegue a staging si se aprueba.
 
-## ETAPA 2 — Roadmap 2.0 (aprobado 02/10/2026, sin implementar)
+## Macrobloque 2.0-02 → 2.0-04 — Núcleo Académico (implementado)
+
+### 2.0-02 — Docentes y Aulas (completo)
+
+- **Migraciones:** `2026_10_03_101554_create_docentes_table` (FK `user_id` nullable restrict, `clave` unique, `tipo` `TipoDocente` enum, `activo`, soft deletes) y `2026_10_03_101601_create_aulas_table` (FK `edificio_id` nullable, `clave` unique, `tipo` `TipoAula`, `capacidad`, `activo`, soft deletes).
+- **Enums:** `TipoDocente` (`TIEMPO_COMPLETO`, `MEDIO_TIEMPO`, `HORAS`, `INVITADO`), `TipoAula` (`TEORICA`, `LABORATORIO`, `TALLER`, `AUDITORIO`, `VIRTUAL`, `OTRO`).
+- **Modelos:** `Docente` (FK `user_id`, `belongsTo User`, `hasMany Grupos`, `nombreCompleto()`, scope `activos`), `Aula` (`hasMany Grupos`, scope `activas`).
+- **Componentes Livewire 4:** `Docentes`, `Aulas` (heredan `CatalogoAdmin` abstracto, CRUD con `usuario.manage`, modal crear/editar/eliminar, alternar activo, búsqueda debounce, paginación 15, validación server-side + Gates en cada acción).
+- **Vistas:** `resources/views/livewire/catalogos/docente.blade.php`, `aula.blade.php` (branding desde `config/branding.php`, badges `label()`, accesibilidad).
+- **Rutas:** `/admin/docentes`, `/admin/aulas` (middleware `auth` + `role:ADMIN`, nombres `admin.docentes`, `admin.aulas`).
+- **Policies:** `DocentePolicy`, `AulaPolicy` (delegadoras de `docente.*` / `aula.*`, admin-only vía `Gate::before`).
+- **Factories:** `DocenteFactory`, `AulaFactory` (datos sintéticos, estados).
+- **Autorización:** `docente.create/update/delete`, `aula.create/update/delete` en `AuthServiceProvider::CAPACIDADES` (admin-only).
+- **Pruebas:** 23 Docente + 16 Aula = 39 pruebas (CRUD, validaciones, autorización 403/403 inactivo, UI, duplicados, soft delete).
+
+### 2.0-03 — Grupos y Horarios (completo)
+
+- **Migraciones:** `2026_10_03_110300_create_grupos_table` (FK `materia_id`, `periodo_id`, `docente_id`/`aula_id` nullable, `clave` 20, `cupo`, `turno` `TurnoGrupo`, `estatus` `EstatusGrupo`, `activo`, `nombre` nullable, `UNIQUE(materia_id, periodo_id, clave)`, soft deletes) y `2026_10_03_110329_create_grupo_horarios_table` (FK `grupo_id` cascade, `dia` `DiaSemana`, `hora_inicio/fin` time, soft deletes). Migraciones incrementales: `2026_10_03_135824_add_nombre_to_grupos_table`, `2026_10_03_140106_add_activo_to_grupos_table`, `2026_10_03_140355_add_soft_deletes_to_grupo_horarios_table`.
+- **Enums:** `EstatusGrupo` (`CREADO` → `ABIERTO` → `EN_CURSO` → `CERRADO`, `CANCELADO`; transiciones + terminales), `TurnoGrupo` (`MATUTINO`, `VESPERTINO`, `NOCTURNO`), `DiaSemana` (`LUNES`–`SABADO`, `orden()` 1–6).
+- **Modelos:** `Grupo` (FK `materia`, `periodo`, `docente`, `aula`; `hasMany Horarios`, `hasMany InscripcionesMaterias`, `scopeActivos`, `estaAbierto()`, `tieneCupo()`), `GrupoHorario` (FK `grupo`, `dia` enum, `hora_inicio/fin` time, `belongsTo Grupo`).
+- **Componentes Livewire 4:** `GrupoAdmin` (CRUD completo con `materia_id`, `periodo_id`, `docente_id`, `aula_id`, `cupo`, `turno`, `estatus`, `nombre` auto-generado si vacío; validación `clave` `[A-Z0-9_-]+`, `cupo` 1–500, estados `CREADO`/`ABIERTO`/`EN_CURSO`/`CERRADO`/`CANCELADO`, transiciones permitidas, `activo` toggle solo en `CREADO`), `GrupoHorarioAdmin` (CRUD horarios por grupo o global; validación `dia` enum, `hora_fin > hora_inicio`, **conflictos**: aula/docente/horario en mismo día con solapamiento).
+- **Vistas:** `grupo.blade.php`, `grupo-horario.blade.php` (branding, badges `label()`, modales, filtros).
+- **Rutas:** `admin.grupos`, `admin.grupos.horarios` (middleware `auth` + `role:ADMIN`).
+- **Policies:** `GrupoPolicy`, `GrupoHorarioPolicy` (admin-only vía `Gate::before`).
+- **Factories:** `GrupoFactory`, `GrupoHorarioFactory` (estados, relaciones).
+- **Autorización:** `grupo.*`, `grupo_horario.*` en `AuthServiceProvider` (admin-only).
+- **Pruebas:** 23 Grupo + 16 GrupoHorario = 39 pruebas (CRUD, validaciones, transiciones, autorización, conflictos aula/docente/horario, soft delete, UI).
+
+### 2.0-04 — Matrícula Académica + Carga de Materias (completo)
+
+- **Migraciones:** `2026_10_03_142305_create_matriculas_periodo_table` (`alumno_id`, `periodo_id`, `programa_id`, `plan_version_id` nullable, `origen` enum `PRIMERA_VEZ`/`REINGRESO`/`CAMBIO_PROGRAMA`/`TRASLADO_EXTERNO`, `fecha_matricula`, `estatus` `ACTIVA`/`BAJA_TEMPORAL`/`BAJA_DEFINITIVA`/`EGRESADO`, `UNIQUE(alumno_id, periodo_id)`, soft deletes) y `2026_10_03_142323_create_inscripciones_materias_table` (`matricula_periodo_id`, `grupo_id`, `materia_id`, `tipo_prerrequisito` enum `RECOMENDADO`/`OBLIGATORIO` nullable, `prerrequisito_cumplido`, `estatus` `CURSANDO`/`APROBADA`/`REPROBADA`/`BAJA`/`VALIDADA`, `calificacion_final`, `fecha_baja`, `UNIQUE(matricula_periodo_id, grupo_id)`, soft deletes).
+- **Enums:** `EstatusMatriculaPeriodo`, `OrigenMatricula`, `EstatusInscripcionMateria`, `TipoPrerrequisito` (`OBLIGATORIO`, `RECOMENDADO` — **sin `NINGUNO`**).
+- **Modelos:** `MatriculaPeriodo` (FK `alumno`, `periodo`, `programa`, `plan_version`; `hasMany InscripcionesMaterias`, `scopeActivas`, `isActiva()`), `InscripcionMateria` (FK `matricula_periodo`, `grupo`, `materia`; `tipo_prerrequisito`, `prerrequisito_cumplido`, `estatus`, `calificacion_final` decimal:2; scopes `Cursando`, `PorMatricula`, `PorGrupo`; helpers `isCursando()`, `isAprobada()`, `tienePrerrequisitoObligatorioPendiente()`).
+- **Servicios:** `MatriculaService` (`crearDesdeInscripcion()` desde `ENROLLED`, `crear()` manual, `cambiarEstatus()` con transiciones permitidas, `puedeMatricularse()`, `obtenerActiva()`); `InscripcionMateriaService` (`inscribir()`, `inscribirLote()`, `cambiarEstatus()` con transiciones, **validación de prerrequisitos**: RECOMENDADO = solo advertencia; OBLIGATORIO = bloquea **SOLO** si hay historial de cursado y no está APROBADA/VALIDADA; sin historial ⇒ no bloquea; validaciones: cupo, grupo ABIERTO, matrícula ACTIVA, no duplicados, conflictos de horario; `tieneCupo()` en Grupo usa `CURSANDO`).
+- **Prerrequisitos:** `TipoPrerrequisito::OBLIGATORIO` / `RECOMENDADO` (sin `NINGUNO`). Lógica en `InscripcionMateriaService::validarPrerrequisitos()`: OBLIGATORIO bloquea **solo** si existe inscripción previa con estatus terminal NO aprobado; sin historial ⇒ no bloquea (se trata como recomendado); RECOMENDADO nunca bloquea.
+- **Policies:** `MatriculaPeriodoPolicy`, `InscripcionMateriaPolicy` (admin-only).
+- **Factories:** `MatriculaPeriodoFactory`, `InscripcionMateriaFactory` (estados, relaciones).
+- **Autorización:** `matricula.*`, `inscripcion_materia.*`, `prerrequisito.validar` en `AuthServiceProvider` (admin-only).
+- **Pruebas:** 10 `MatriculaServicePhpUnitTest` + 13 `InscripcionMateriaServicePhpUnitTest` = 23 pruebas (CRUD, validaciones, transiciones, prerrequisitos OBLIGATORIO/RECOMENDADO, bloqueo por reprobado, permiso por aprobado, sin historial no bloquea, cupo, horarios, duplicados, autorización).
+
+### Métricas finales del macrobloque
+
+- **Tests totales:** 514 (386 previas + 101 nuevas del macrobloque: 39 + 39 + 23).
+- **Assertions:** 2645.
+- **Migraciones nuevas:** 10 (`docentes`, `aulas`, `grupos`, `grupo_horarios`, `matriculas_periodo`, `inscripciones_materias` + 4 incrementales).
+- **Rutas:** 4 nuevas (`admin.docentes`, `admin.aulas`, `admin.grupos`, `admin.grupos.horarios`).
+- **Enums nuevos:** 7 (`TipoDocente`, `TipoAula`, `EstatusGrupo`, `TurnoGrupo`, `DiaSemana`, `EstatusMatriculaPeriodo`, `OrigenMatricula`, `EstatusInscripcionMateria`, `TipoPrerrequisito` — 9 enums totales).
+- **Build:** `npm run build` → **OK**.
+- **Rutas:** `php artisan route:list` → 37 rutas (33 previas + 4 nuevas).
+- **Tests:** `composer test` → **514 tests / 2645 assertions / 0 fallos**.
+- **Migraciones:** 10 nuevas + 4 incrementales = 14 en total para el macrobloque.
+
+---
+
+## Pendientes / registrados
 
 - **Checkpoint Hostinger completo y aprobado** (ver sección anterior) y **F1–F14 completas** (ETAPA 1 — Admisión e Inscripción).
 - **Roadmap 2.0 APROBADO en planeación** (`docs/analisis-evolucion-control-escolar.md`, actualizado con todas las decisiones): 18 fases (**2.0-00 … 2.0-17**) y **23 tablas nuevas propuestas**.
@@ -376,8 +430,6 @@
 - **Estado de fases de la Etapa 2: 2.0-00 ✅ COMPLETA e integrada en master** · **2.0-01 ✅ COMPLETA e integrada en master** · 2.0-02 … 2.0-17 ⬜ NO INICIADAS.
 
 ## Pendientes / registrados
-
-- **2.0-00 (ex-F15/F16, Blindaje del núcleo) COMPLETA e integrada en master** · **2.0-01 (Estructura académica) COMPLETA e integrada en master** · 2.0-02 en adelante: NO INICIADAS.
 - **`docs/reglas-desarrollo.md`**: documento permanente de reglas (fuentes de verdad, alcance, stack, seguridad, BD, Git, cierre de fase, pruebas, reglas críticas, branding, cambios no previstos) — obligatorio en todas las fases futuras.
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies: las 8 clases existen desde la Fase 2; `PagoPolicy`, `DocumentoPolicy` y `ObservacionPolicy` están **registradas explícitamente** en `AuthServiceProvider` (modelo real) y el resto se resuelve por convención cuando los modelos las usen (sin código artificial).

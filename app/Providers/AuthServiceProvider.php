@@ -4,6 +4,10 @@ namespace App\Providers;
 
 use App\Enums\RolUsuario;
 use App\Models\Documento;
+use App\Models\Grupo;
+use App\Models\GrupoHorario;
+use App\Models\InscripcionMateria;
+use App\Models\MatriculaPeriodo;
 use App\Models\Materia;
 use App\Models\Observacion;
 use App\Models\Pago;
@@ -11,6 +15,10 @@ use App\Models\PlanEstudio;
 use App\Models\PlanVersion;
 use App\Models\User;
 use App\Policies\DocumentoPolicy;
+use App\Policies\GrupoHorarioPolicy;
+use App\Policies\GrupoPolicy;
+use App\Policies\InscripcionMateriaPolicy;
+use App\Policies\MatriculaPeriodoPolicy;
 use App\Policies\MateriaPolicy;
 use App\Policies\ObservacionPolicy;
 use App\Policies\PagoPolicy;
@@ -66,6 +74,28 @@ class AuthServiceProvider extends ServiceProvider
         'materia.update' => [],
         'materia.delete' => [],
         'prerrequisito.gestionar' => [],
+        // 2.0-02 — Docentes y Aulas (admin-only, patrón usuario.manage)
+        'docente.create' => [],
+        'docente.update' => [],
+        'docente.delete' => [],
+        'aula.create' => [],
+        'aula.update' => [],
+        'aula.delete' => [],
+        // 2.0-03 — Grupos y Horarios (admin-only, patrón usuario.manage)
+        'grupo.create' => [],
+        'grupo.update' => [],
+        'grupo.delete' => [],
+        'grupo_horario.create' => [],
+        'grupo_horario.update' => [],
+        'grupo_horario.delete' => [],
+        // 2.0-04 — Matrícula y Carga Académica (admin-only, patrón usuario.manage)
+        'matricula.create' => [],
+        'matricula.update' => [],
+        'matricula.delete' => [],
+        'inscripcion_materia.create' => [],
+        'inscripcion_materia.update' => [],
+        'inscripcion_materia.delete' => [],
+        'prerrequisito.validar' => [],
     ];
 
     public function boot(): void
@@ -91,6 +121,10 @@ class AuthServiceProvider extends ServiceProvider
         Gate::policy(PlanEstudio::class, PlanEstudioPolicy::class);
         Gate::policy(PlanVersion::class, PlanVersionPolicy::class);
         Gate::policy(Materia::class, MateriaPolicy::class);
+        Gate::policy(Grupo::class, GrupoPolicy::class);
+        Gate::policy(GrupoHorario::class, GrupoHorarioPolicy::class);
+        Gate::policy(MatriculaPeriodo::class, MatriculaPeriodoPolicy::class);
+        Gate::policy(InscripcionMateria::class, InscripcionMateriaPolicy::class);
 
         // Las policies de modelos de fases futuras ya existen en App\Policies
         // y Laravel las resuelve por convención; aquí solo se registran las que tienen modelo.

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Concerns\HasAudit;
+use App\Models\Concerns\HasAudit;
 use App\Enums\DiaSemana;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,8 +29,8 @@ class GrupoHorario extends Model
     {
         return [
             'dia' => DiaSemana::class,
-            'hora_inicio' => 'time',
-            'hora_fin' => 'time',
+            'hora_inicio' => 'datetime',
+            'hora_fin' => 'datetime',
         ];
     }
 
@@ -40,5 +40,21 @@ class GrupoHorario extends Model
     public function grupo(): BelongsTo
     {
         return $this->belongsTo(Grupo::class, 'grupo_id');
+    }
+
+    /**
+     * Obtiene la hora de inicio formateada como H:i.
+     */
+    public function getHoraInicioFormateadaAttribute(): string
+    {
+        return $this->hora_inicio?->format('H:i') ?? '';
+    }
+
+    /**
+     * Obtiene la hora de fin formateada como H:i.
+     */
+    public function getHoraFinFormateadaAttribute(): string
+    {
+        return $this->hora_fin?->format('H:i') ?? '';
     }
 }

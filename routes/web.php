@@ -5,6 +5,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Documentos\DescargaArchivosController;
 use App\Http\Controllers\Pagos\ComprobantePagoController;
 use App\Http\Controllers\Pagos\ComprobantePdfController;
+use App\Livewire\Academico\GrupoAdmin;
+use App\Livewire\Academico\GrupoHorarioAdmin;
 use App\Livewire\Academico\MateriaAdmin;
 use App\Livewire\Academico\PlanEstudioAdmin;
 use App\Livewire\Academico\PlanVersionAdmin;
@@ -90,6 +92,10 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     // Recursos académicos (2.0-02) — solo ADMIN.
     Route::get('/docentes', Docentes::class)->name('docentes');
     Route::get('/aulas', Aulas::class)->name('aulas');
+
+    // Grupos y horarios (2.0-03) — solo ADMIN.
+    Route::get('/grupos', GrupoAdmin::class)->name('grupos');
+    Route::get('/grupos/{grupo}/horarios', GrupoHorarioAdmin::class)->name('grupos.horarios');
 
     // Estructura académica (2.0-01) — solo ADMIN.
     Route::get('/planes-estudio', PlanEstudioAdmin::class)->name('planes-estudio');

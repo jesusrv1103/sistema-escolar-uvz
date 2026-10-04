@@ -79,6 +79,14 @@ class Alumno extends Model
         return $this->belongsTo(User::class, 'creado_por');
     }
 
+    /**
+     * Matrículas por periodo del alumno.
+     */
+    public function matriculas(): HasMany
+    {
+        return $this->hasMany(MatriculaPeriodo::class, 'alumno_id');
+    }
+
     /** Búsqueda por nombre, apellidos, CURP o número de control. */
     public function scopeBuscar(Builder $consulta, ?string $termino): Builder
     {

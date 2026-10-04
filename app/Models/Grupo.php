@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Concerns\HasAudit;
+use App\Models\Concerns\HasAudit;
 use App\Enums\EstatusGrupo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -107,6 +107,6 @@ class Grupo extends Model
      */
     public function tieneCupo(): bool
     {
-        return $this->inscripcionesMaterias()->where('estatus', 'CARGADA')->count() < $this->cupo;
+        return $this->inscripcionesMaterias()->where('estatus', \App\Enums\EstatusInscripcionMateria::CURSANDO->value)->count() < $this->cupo;
     }
 }

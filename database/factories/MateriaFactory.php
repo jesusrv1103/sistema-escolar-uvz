@@ -53,4 +53,9 @@ class MateriaFactory extends Factory
     {
         return $this->state(fn (array $attributes) => ['periodo_orden' => $orden]);
     }
+
+    public function paraPlanVersion(PlanVersion $planVersion): static
+    {
+        return $this->state(fn (array $attributes) => ['plan_version_id' => $planVersion->id]);
+    }
 }

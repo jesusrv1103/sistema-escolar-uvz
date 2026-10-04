@@ -19,8 +19,8 @@ class PeriodoFactory extends Factory
         $fin = (clone $inicio)->modify('+4 months');
 
         return [
-            'clave' => $inicio->format('Y') . '-' . fake()->unique()->numberBetween(1, 2),
-            'nombre' => $inicio->format('Y') . ' Periodo ' . fake()->numberBetween(1, 4),
+            'clave' => $inicio->format('Y') . '-' . $this->faker->unique()->numberBetween(1, 20),
+            'nombre' => $inicio->format('Y') . ' Periodo ' . $this->faker->numberBetween(1, 4),
             'fecha_inicio' => $inicio->format('Y-m-d'),
             'fecha_fin' => $fin->format('Y-m-d'),
             'activo' => true,

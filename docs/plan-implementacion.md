@@ -260,4 +260,71 @@ La **Fase 2 no inicia** hasta que se cumpla todo lo siguiente:
 3. las pruebas de la Fase 1 estén verdes; ✅
 4. `npm run build` termine correctamente. ✅
 
-> **Estado al cierre de 2.0-00:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ · Fase 11 ✅ · Fase 12 ✅ · Fase 13 ✅ · Fase 14 ✅ · **Fase 15 (→ 2.0-00) ✅ COMPLETA** · **Fase 16 (→ 2.0-00) ✅ COMPLETA** — **2.0-00 COMPLETA en rama `feat/2.0-00-blindaje-nucleo`** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK). Pendiente merge a master y despliegue a staging. **2.0-01 DISEÑADA, NO IMPLEMENTADA**.
+> **Estado al cierre de 2.0-00:** Fase 1 ✅ · Fase 1.1 ✅ · Fase 2 ✅ · Fase 3 ✅ · Fase 4 ✅ · Fase 5 ✅ · Fase 6 ✅ · Fase 7 ✅ · Fase 8 ✅ · Fase 9 ✅ · Fase 10 ✅ · Fase 11 ✅ · Fase 12 ✅ · Fase 13 ✅ · Fase 14 ✅ · **Fase 15 (→ 2.0-00) ✅ COMPLETA** · **Fase 16 (→ 2.0-00) ✅ COMPLETA** — **2.0-00 COMPLETA en rama `feat/2.0-00-blindaje-nucleo`** (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK). Pendiente merge a master y despliegue a staging. **2.0-01 COMPLETA e integrada en master** (447 tests / 2471 assertions, 5 migraciones, 36 rutas, build OK). **2.0-02 (Docentes y Aulas) ✅ COMPLETA** · **2.0-03 (Grupos y Horarios) ✅ COMPLETA** · **2.0-04 (Matrícula + Carga) ✅ COMPLETA** — todas en rama `feat/2.0-02-04-nucleo-academico`.
+
+---
+
+## 2.0-02 — Docentes y Aulas ✅ COMPLETA
+
+| Elemento | Detalle |
+|---|---|
+| **Migraciones** | `2026_10_03_101554_create_docentes_table` (FK `user_id` nullable restrict, `clave` unique, `tipo` enum `TipoDocente`, `activo`, soft deletes) + `2026_10_03_101601_create_aulas_table` (FK `edificio_id` nullable, `clave` unique, `tipo` enum `TipoAula`, `capacidad`, `activo`, soft deletes) |
+| **Enums** | `TipoDocente` (`TIEMPO_COMPLETO`, `MEDIO_TIEMPO`, `HORAS`, `INVITADO`), `TipoAula` (`TEORICA`, `LABORATORIO`, `TALLER`, `AUDITORIO`, `VIRTUAL`, `OTRO`) |
+| **Modelos** | `Docente` (FK `user_id`, `belongsTo User`, `hasMany Grupos`, `nombreCompleto()`, scope `activos`), `Aula` (`hasMany Grupos`, scope `activas`) |
+| **Componentes** | `Docentes`, `Aulas` (heredan `CatalogoAdmin` abstracto: CRUD modal crear/editar/guardar/eliminar/alternar activo, búsqueda debounce, paginación 15, validación server-side + Gates) |
+| **Rutas** | `/admin/docentes`, `/admin/aulas` (middleware `auth` + `role:ADMIN`, nombres `admin.docentes`, `admin.aulas`) |
+| **Policies** | `DocentePolicy`, `AulaPolicy` (admin-only vía `Gate::before`, capacidades `docente.*`, `aula.*`) |
+| **Factories** | `DocenteFactory`, `AulaFactory` (estados, datos sintéticos) |
+| **Pruebas** | 23 Docente + 16 Aula = 39 pruebas (CRUD, validaciones, autorización 403/inactivo, duplicados, soft delete, UI) |
+| **Validación** | `composer test` 39/39 ✔ · `npm run build` OK · `route:list` 2 rutas nuevas ✔ |
+
+---
+
+## 2.0-03 — Grupos y Horarios ✅ COMPLETA
+
+| Elemento | Detalle |
+|---|---|
+| **Migraciones** | `2026_10_03_110300_create_grupos_table` (FK `materia_id`, `periodo_id`, `docente_id`/`aula_id` nullable, `clave` 20, `cupo`, `turno` enum `TurnoGrupo`, `estatus` enum `EstatusGrupo`, `activo`, `nombre` nullable, `UNIQUE(materia_id, periodo_id, clave)`, soft deletes) + `2026_10_03_110329_create_grupo_horarios_table` (FK `grupo_id` cascade, `dia` enum `DiaSemana`, `hora_inicio/fin` time, soft deletes) + 3 incrementales (`add_nombre_to_grupos_table`, `add_activo_to_grupos_table`, `add_soft_deletes_to_grupo_horarios_table`) |
+| **Enums** | `EstatusGrupo` (`CREADO`→`ABIERTO`→`EN_CURSO`→`CERRADO`, `CANCELADO`; transiciones + terminales), `TurnoGrupo` (`MATUTINO`, `VESPERTINO`, `NOCTURNO`), `DiaSemana` (`LUNES`–`SABADO`, `orden()` 1–6) |
+| **Modelos** | `Grupo` (FK `materia`, `periodo`, `docente`, `aula`; `hasMany Horarios`, `hasMany InscripcionesMaterias`, `scopeActivos`, `estaAbierto()`, `tieneCupo()` usando `CURSANDO`), `GrupoHorario` (FK `grupo`, `dia` enum, `hora_inicio/fin` time, `belongsTo Grupo`) |
+| **Componentes** | `GrupoAdmin` (CRUD: `materia_id`, `periodo_id`, `docente_id`, `aula_id`, `cupo` 1–500, `turno`, `estatus`, `nombre` auto; validación `clave` `[A-Z0-9_-]+`, `cupo` 1–500, transiciones `CREADO`→`ABIERTO`→`EN_CURSO`→`CERRADO`, `CANCELADO`, `activo` toggle solo en `CREADO`), `GrupoHorarioAdmin` (CRUD horarios por grupo/global; validación `dia` enum, `hora_fin > hora_inicio`, **conflictos**: aula/docente/horario en mismo día con solapamiento) |
+| **Rutas** | `admin.grupos`, `admin.grupos.horarios` (middleware `auth` + `role:ADMIN`) |
+| **Policies** | `GrupoPolicy`, `GrupoHorarioPolicy` (admin-only) |
+| **Factories** | `GrupoFactory`, `GrupoHorarioFactory` (estados, relaciones) |
+| **Pruebas** | 23 Grupo + 16 GrupoHorario = 39 pruebas (CRUD, validaciones, transiciones, autorización, conflictos aula/docente/horario, soft delete, UI) |
+| **Validación** | `composer test` 39/39 ✔ · `npm run build` OK · `route:list` 2 rutas nuevas ✔ |
+
+---
+
+## 2.0-04 — Matrícula Académica + Carga de Materias ✅ COMPLETA
+
+| Elemento | Detalle |
+|---|---|
+| **Migraciones** | `2026_10_03_142305_create_matriculas_periodo_table` (`alumno_id`, `periodo_id`, `programa_id`, `plan_version_id` nullable, `origen` enum `PRIMERA_VEZ`/`REINGRESO`/`CAMBIO_PROGRAMA`/`TRASLADO_EXTERNO`, `fecha_matricula`, `estatus` `ACTIVA`/`BAJA_TEMPORAL`/`BAJA_DEFINITIVA`/`EGRESADO`, `UNIQUE(alumno_id, periodo_id)`, soft deletes) + `2026_10_03_142323_create_inscripciones_materias_table` (`matricula_periodo_id`, `grupo_id`, `materia_id`, `tipo_prerrequisito` enum `OBLIGATORIO`/`RECOMENDADO`, `prerrequisito_cumplido`, `estatus` `CURSANDO`/`APROBADA`/`REPROBADA`/`BAJA`/`VALIDADA`, `calificacion_final` decimal:2, `fecha_baja`, `UNIQUE(matricula_periodo_id, grupo_id)`, soft deletes) |
+| **Enums** | `EstatusMatriculaPeriodo` (`ACTIVA`, `BAJA_TEMPORAL`, `BAJA_DEFINITIVA`, `EGRESADO`), `OrigenMatricula` (`PRIMERA_VEZ`, `REINGRESO`, `CAMBIO_PROGRAMA`, `TRASLADO_EXTERNO`), `EstatusInscripcionMateria` (`CURSANDO`, `APROBADA`, `REPROBADA`, `BAJA`, `VALIDADA`), `TipoPrerrequisito` (`OBLIGATORIO`, `RECOMENDADO` — **sin `NINGUNO`**) |
+| **Modelos** | `MatriculaPeriodo` (FK `alumno`, `periodo`, `programa`, `plan_version`; `hasMany InscripcionesMaterias`, `scopeActivas`, `isActiva()`), `InscripcionMateria` (FK `matricula_periodo`, `grupo`, `materia`; `tipo_prerrequisito`, `prerrequisito_cumplido`, `estatus`, `calificacion_final` decimal:2; scopes `Cursando`, `PorMatricula`, `PorGrupo`; helpers `isCursando()`, `isAprobada()`, `tienePrerrequisitoObligatorioPendiente()`) |
+| **Servicios** | `MatriculaService` (`crearDesdeInscripcion()` desde `ENROLLED`, `crear()` manual, `cambiarEstatus()` con transiciones, `puedeMatricularse()`, `obtenerActiva()`), `InscripcionMateriaService` (`inscribir()`, `inscribirLote()`, `cambiarEstatus()` con transiciones, **validación prerrequisitos**: RECOMENDADO = solo advertencia; OBLIGATORIO = bloquea **SOLO** si hay historial y no está APROBADA/VALIDADA; sin historial ⇒ no bloquea; validaciones: cupo, grupo ABIERTO, matrícula ACTIVA, no duplicados, conflictos de horario; `tieneCupo()` usa `CURSANDO`) |
+| **Prerrequisitos** | `TipoPrerrequisito::OBLIGATORIO` / `RECOMENDADO` (sin `NINGUNO`). OBLIGATORIO bloquea **solo** si hay inscripción previa NO aprobada; sin historial ⇒ no bloquea; RECOMENDADO nunca bloquea |
+| **Policies** | `MatriculaPeriodoPolicy`, `InscripcionMateriaPolicy` (admin-only) |
+| **Factories** | `MatriculaPeriodoFactory`, `InscripcionMateriaFactory` (estados, relaciones) |
+| **Autorización** | `matricula.*`, `inscripcion_materia.*`, `prerrequisito.validar` en `AuthServiceProvider` (admin-only) |
+| **Pruebas** | 10 `MatriculaServicePhpUnitTest` + 13 `InscripcionMateriaServicePhpUnitTest` = 23 pruebas (CRUD, transiciones, prerrequisitos OBLIGATORIO/RECOMENDADO, bloqueo por reprobado, permiso por aprobado, sin historial no bloquea, cupo, horarios, duplicados, autorización) |
+| **Validación** | `composer test` 23/23 ✔ · `npm run build` OK · `route:list` sin rutas nuevas (solo admin) ✔ |
+
+---
+
+### Métricas del macrobloque 2.0-02 → 2.0-04
+
+- **Tests totales:** 514 (386 previas + 101 nuevas: 39 + 39 + 23)
+- **Assertions:** 2645
+- **Migraciones nuevas:** 10 (6 base + 4 incrementales)
+- **Rutas nuevas:** 4 (`admin.docentes`, `admin.aulas`, `admin.grupos`, `admin.grupos.horarios`)
+- **Enums nuevos:** 9 (`TipoDocente`, `TipoAula`, `EstatusGrupo`, `TurnoGrupo`, `DiaSemana`, `EstatusMatriculaPeriodo`, `OrigenMatricula`, `EstatusInscripcionMateria`, `TipoPrerrequisito`)
+- **Build:** `npm run build` → **OK**
+- **Rutas:** 37 totales (33 + 4 nuevas)
+- **Tests:** 514 tests / 2645 assertions / 0 fallos
+- **Branch:** `feat/2.0-02-04-nucleo-academico`
+
+---
+
+> **Estado actualizado:** **2.0-00 COMPLETA e integrada en master** · **2.0-01 COMPLETA e integrada en master** · **2.0-02 COMPLETA** · **2.0-03 COMPLETA** · **2.0-04 COMPLETA** — todo en rama `feat/2.0-02-04-nucleo-academico`. 2.0-05 en adelante: NO INICIADAS.
