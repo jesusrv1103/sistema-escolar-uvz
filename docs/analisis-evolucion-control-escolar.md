@@ -6,7 +6,7 @@
 > **Alcance del nuevo escenario:** conservar y reutilizar todo lo construido en F1–F14 y evolucionarlo hacia un Sistema de Control Escolar universitario (**ETAPA 2 — CONTROL ESCOLAR**). Los documentos académicos usarán **formatos estándar internos de UVZ**; **fuera de alcance**: formatos oficiales SEP, certificados oficiales, titulación electrónica, MEC, MET, SIGED e integraciones gubernamentales.
 >
 > **Fuentes revisadas por completo:** `docs/reglas-desarrollo.md`, `docs/arquitectura-mvp.md` (v3, §1–§23), `docs/plan-implementacion.md`, `docs/estado-proyecto.md`, `docs/roadmap-sistema-escolar.md`; código de apoyo: `app/Providers/AuthServiceProvider.php`, `app/Enums/*`, `app/Services/*`, `app/Livewire/*`, `database/migrations/*`.
-> **F1–F14 = ETAPA 1 — ADMISIÓN E INSCRIPCIÓN (COMPLETA)** · **F15/F16 → 2.0-00 (NO iniciadas — estado histórico previo a ejecución)** · **2.0-00 ✅ COMPLETADA (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK)** · **2.0-01 ✅ COMPLETA e integrada en master** · **2.0-02 en adelante NO INICIADAS.**
+> **F1–F14 = ETAPA 1 — ADMISIÓN E INSCRIPCIÓN (COMPLETA)** · **F15/F16 → 2.0-00 (NO iniciadas — estado histórico previo a ejecución)** · **2.0-00 ✅ COMPLETADA (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK)** · **2.0-01 ✅ COMPLETA e integrada en master** · **2.0-02 ✅ COMPLETA e integrada en master** · **2.0-03 ✅ COMPLETA e integrada en master** · **2.0-04 ✅ COMPLETA e integrada en master** · 2.0-05 en adelante NO INICIADAS.
 
 ---
 
