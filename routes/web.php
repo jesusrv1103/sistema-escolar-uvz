@@ -18,6 +18,11 @@ use App\Livewire\Academico\PlanEstudioAdmin;
 use App\Livewire\Academico\PlanVersionAdmin;
 use App\Livewire\Academico\AsistenciaAdmin;
 use App\Livewire\Academico\ActaAdmin;
+use App\Livewire\Academico\HistorialAcademico;
+use App\Livewire\Academico\FormatoAcademico;
+use App\Livewire\Academico\BajaAdmin;
+use App\Livewire\Academico\EquivalenciaAdmin;
+use App\Livewire\Academico\BecaAdmin;
 use App\Livewire\Alumnos\FormAlumno;
 use App\Livewire\Alumnos\FormContactos;
 use App\Livewire\Alumnos\FormInfoMedica;
@@ -94,6 +99,38 @@ Route::middleware('auth')->prefix('pagos')->name('pagos.')->group(function () {
     // pagos VALIDADO, sin persistir copia; semántica propia y separada de la
     // evidencia cargada anterior.
     Route::get('/{pago}/comprobante-pdf', ComprobantePdfController::class)->name('comprobante-pdf');
+});
+
+// Historiales y Avance (2.0-09) — acceso académico.
+Route::middleware(['auth'])->prefix('historial')->name('historial.')->group(function () {
+    Route::get('/', HistorialAcademico::class)->name('index');
+    Route::get('/{alumno}', HistorialAcademico::class)->name('ver');
+});
+
+// Formatos académicos II (2.0-10)
+Route::middleware(['auth'])->prefix('formatos-academicos')->name('formatos-academicos.')->group(function () {
+    Route::get('/', FormatoAcademico::class)->name('index');
+    Route::get('/kardex/{alumno}', FormatoAcademico::class)->name('kardex');
+    Route::get('/boleta/{alumno}', FormatoAcademico::class)->name('boleta');
+    Route::get('/historial/{alumno}', FormatoAcademico::class)->name('historial');
+    Route::get('/acta/{acta}', FormatoAcademico::class)->name('acta');
+    Route::get('/tira/{alumno}', FormatoAcademico::class)->name('tira');
+    Route::get('/avance/{alumno}', FormatoAcademico::class)->name('avance');
+});
+
+// Bajas y Equivalencias (2.0-11)
+Route::middleware(['auth'])->prefix('bajas-equivalencias')->name('bajas-equivalencias.')->group(function () {
+    Route::get('/', BajaAdmin::class)->name('index');
+    Route::get('/bajas', BajaAdmin::class)->name('bajas');
+    Route::get('/equivalencias', EquivalenciaAdmin::class)->name('equivalencias');
+});
+
+// Becas y Descuentos (2.0-12, D-N3)
+Route::middleware(['auth'])->prefix('becas-descuentos')->name('becas-descuentos.')->group(function () {
+    Route::get('/', BecaAdmin::class)->name('index');
+    Route::get('/becas', BecaAdmin::class)->name('becas');
+    Route::get('/estado-cuenta', BecaAdmin::class)->name('estado-cuenta');
+    Route::get('/carta-no-adeudo', BecaAdmin::class)->name('carta-no-adeudo');
 });
 
 // Catálogos administrables (Fase 3) — solo ADMIN.

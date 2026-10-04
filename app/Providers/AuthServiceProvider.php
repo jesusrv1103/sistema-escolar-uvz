@@ -122,6 +122,26 @@ class AuthServiceProvider extends ServiceProvider
         'acta.crear' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
         'acta.cerrar' => [RolUsuario::CONTROL_ESCOLAR],
         'acta.ver' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
+        // 2.0-09 — Historiales y Avance
+        'historial.ver' => [RolUsuario::CONTROL_ESCOLAR, RolUsuario::ADMINISTRACION],
+        // 2.0-10 — Formatos académicos II
+        'formato_academico.generar' => [RolUsuario::CONTROL_ESCOLAR, RolUsuario::ADMINISTRACION],
+        // 2.0-11 — Bajas y Equivalencias
+        'baja.crear' => [RolUsuario::CONTROL_ESCOLAR],
+        'baja.reingreso' => [RolUsuario::CONTROL_ESCOLAR],
+        'baja.ver' => [RolUsuario::CONTROL_ESCOLAR, RolUsuario::ADMINISTRACION],
+        'equivalencia.crear' => [RolUsuario::CONTROL_ESCOLAR],
+        'equivalencia.actualizar' => [RolUsuario::CONTROL_ESCOLAR],
+        'equivalencia.ver' => [RolUsuario::CONTROL_ESCOLAR, RolUsuario::ADMINISTRACION],
+        // 2.0-12 — Becas y Descuentos (D-N3)
+        'beca.crear' => [RolUsuario::CONTROL_ESCOLAR],
+        'beca.actualizar' => [RolUsuario::CONTROL_ESCOLAR],
+        'beca.ver' => [RolUsuario::CONTROL_ESCOLAR, RolUsuario::ADMINISTRACION],
+        'beca.asignar' => [RolUsuario::CONTROL_ESCOLAR],
+        'beca.aprobar' => [RolUsuario::ADMINISTRACION],
+        'beca.rechazar' => [RolUsuario::ADMINISTRACION],
+        'estado_cuenta.ver' => [RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
+        'carta_no_adeudo.generar' => [RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
     ];
 
     public function boot(): void
@@ -156,6 +176,11 @@ class AuthServiceProvider extends ServiceProvider
         Gate::policy(Calificacion::class, CalificacionPolicy::class);
         Gate::policy(Asistencia::class, AsistenciaPolicy::class);
         Gate::policy(Acta::class, ActaPolicy::class);
+        Gate::policy(Baja::class, BajaPolicy::class);
+        Gate::policy(Equivalencia::class, EquivalenciaPolicy::class);
+        Gate::policy(Beca::class, BecaPolicy::class);
+        Gate::policy(BecaAlumno::class, BecaAlumnoPolicy::class);
+        Gate::policy(AjusteFinanciero::class, AjusteFinancieroPolicy::class);
 
         // Las policies de modelos de fases futuras ya existen en App\Policies
         // y Laravel las resuelve por convención; aquí solo se registran las que tienen modelo.

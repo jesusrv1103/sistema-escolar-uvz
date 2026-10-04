@@ -265,7 +265,7 @@ DATOS Y REGLAS ACADÉMICAS  →  SERVICIO  →  PLANTILLA BLADE  →  PDF
 | **2.0-09** | **Históricos y avance:** kardex, historial, promedio, créditos, avance | Pruebas de cálculo + rendimiento | 2.0-08 | **Alta** |
 | **2.0-10** | **Formatos académicos (II):** kardex, boleta, historial, acta, tira de materias, reporte de avance | Pruebas de contenido y autorización | 2.0-09 | Media |
 | **2.0-11** | Bajas (temporal/definitiva/de materia) + equivalencias/revalidaciones internas | Pruebas de efectos en avance/carga | 2.0-09 | Media |
-| **2.0-12** | Becas/descuentos + estado de cuenta + carta de no adeudo (+ recargos si se aprueban) | Pruebas four-eyes + pagos históricos intactos | 2.0-04 (**+ decisión D-N3 diferida**) | **Alta** |
+| **2.0-12** | Becas/descuentos (D-N3 RESUELTA) + estado de cuenta + carta de no adeudo | Pruebas four-eyes + pagos históricos intactos | 2.0-04 (**+ decisión D-N3 RESUELTA**) | **Alta** |
 | **2.0-13** | Servicio social + prácticas profesionales | Pruebas de validación/avance | 2.0-09 | Baja–Media |
 | **2.0-14** | Egreso + titulación (internos) + constancia de terminación | Pruebas de requisitos de egreso | 2.0-09, 2.0-13 | Media |
 | **2.0-15** | Portal de docente (sus grupos, captura) | Matriz de 403/lectura + pruebas | 2.0-06 | Media |
@@ -319,7 +319,7 @@ Sin plazos (no hay datos de capacidad): **18 fases pequeñas**, cada una con gua
 |---|---|---|
 | **D-N1** | Semántica de reinscripción (fila en `inscripciones` vs. entidad nueva) | **RESUELTA** → entidad `matriculas_periodo` (C2/C3); detalles de implementación en 2.0-04 |
 | **D-N2** | Rol `DOCENTE` | **APROBADO** para su fase (**2.0-06**) |
-| **D-N3** | Reglas detalladas de becas/descuentos | **DIFERIDA** — se define cuando llegue su fase (**2.0-12**) |
+| **D-N3** | Reglas detalladas de becas/descuentos | **RESUELTA** — PORCENTAJE/MONTO, alcance INSCRIPCION/MENSUALIDADES/AMBOS, no acumulación, vigencia por periodo, four-eyes CE→ADMIN, ledger ajustes_financieros; 2.0-12 |
 | **D-N4** | Modalidades/reglas de extraordinarios | **RESUELTA** — 1 oportunidad, solo desde REPROBADA, sin requisito adicional, fechas flexibles, misma escala/aprobatoria, sustituye calificación_final, conserva trazabilidad, sin cobros; implementada en **2.0-07** |
 | **D-N5** | Rol `ALUMNO` / portal de alumno | **APROBADO** para **2.0-16**, con aislamiento estricto (C1) |
 | **D-N6** | Exportaciones CSV/Excel en reportes | **DIFERIDA** — se define en **2.0-17** |
@@ -331,5 +331,5 @@ Sin plazos (no hay datos de capacidad): **18 fases pequeñas**, cada una con gua
 - ✅ Análisis actualizado con las decisiones aprobadas (C1–C8 resueltas, D-N1/D-N2/D-N4/D-N5/D-N7 aprobadas, D-N3/D-N6 diferidas, `matriculas_periodo` incorporada al modelo, ER/flujo/riesgos/roadmap/dependencias corregidos, referencias C*/D-N* verificadas).
 - ✅ Documentación relacionada actualizada: `roadmap-sistema-escolar.md` (Etapa 2), `arquitectura-mvp.md` (§7.3, §19, §24), `plan-implementacion.md` (F15/F16 → 2.0-00), `estado-proyecto.md` (Etapa 2 y estado del checkpoint).
 - ❌ Sin código, sin migraciones, sin tests ejecutados (tarea documental); ❌ sin borrado de información histórica; ✅ commit local solo de documentación.
-- **Estado de fases:** Etapa 1: F1–F14 **COMPLETAS** · **2.0-00 ✅ COMPLETA** · **2.0-01 ✅ COMPLETA** · **2.0-02 ✅ COMPLETA** · **2.0-03 ✅ COMPLETA** · **2.0-04 ✅ COMPLETA** · **2.0-05 ✅ COMPLETA** · **2.0-06 ✅ COMPLETA** · **2.0-07 ✅ COMPLETA** · **2.0-08 ✅ COMPLETA** · 2.0-09 en adelante: NO INICIADAS.
+- **Estado de fases:** Etapa 1: F1–F14 **COMPLETAS** · **2.0-00 ✅ COMPLETA** · **2.0-01 ✅ COMPLETA** · **2.0-02 ✅ COMPLETA** · **2.0-03 ✅ COMPLETA** · **2.0-04 ✅ COMPLETA** · **2.0-05 ✅ COMPLETA** · **2.0-06 ✅ COMPLETA** · **2.0-07 ✅ COMPLETA** · **2.0-08 ✅ COMPLETA** · **2.0-09 ✅ COMPLETA** · **2.0-10 ✅ COMPLETA** · **2.0-11 ✅ COMPLETA** · **2.0-12 ✅ COMPLETA** · 2.0-13 en adelante: NO INICIADAS.
 - **Pendiente:** aprobación del usuario sobre esta persistencia documental.
