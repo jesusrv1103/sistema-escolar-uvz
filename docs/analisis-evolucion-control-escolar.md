@@ -331,5 +331,5 @@ Sin plazos (no hay datos de capacidad): **18 fases pequeñas**, cada una con gua
 - ✅ Análisis actualizado con las decisiones aprobadas (C1–C8 resueltas, D-N1/D-N2/D-N4/D-N5/D-N7 aprobadas, D-N3/D-N6 diferidas, `matriculas_periodo` incorporada al modelo, ER/flujo/riesgos/roadmap/dependencias corregidos, referencias C*/D-N* verificadas).
 - ✅ Documentación relacionada actualizada: `roadmap-sistema-escolar.md` (Etapa 2), `arquitectura-mvp.md` (§7.3, §19, §24), `plan-implementacion.md` (F15/F16 → 2.0-00), `estado-proyecto.md` (Etapa 2 y estado del checkpoint).
 - ❌ Sin código, sin migraciones, sin tests ejecutados (tarea documental); ❌ sin borrado de información histórica; ✅ commit local solo de documentación.
-- **Estado de fases:** Etapa 1: F1–F14 **COMPLETAS** · **2.0-00 NO INICIADA** · 2.0-01…2.0-17 **NO INICIADAS**.
+- **Estado de fases:** Etapa 1: F1–F14 **COMPLETAS** · **2.0-00 ✅ COMPLETA** · **2.0-01 ✅ COMPLETA** · **2.0-02 ✅ COMPLETA** · **2.0-03 ✅ COMPLETA** · **2.0-04 ✅ COMPLETA** · **2.0-05 ✅ COMPLETA** · **2.0-06 ✅ COMPLETA** · **2.0-07 ✅ COMPLETA** · **2.0-08 ✅ COMPLETA** · 2.0-09 en adelante: NO INICIADAS.
 - **Pendiente:** aprobación del usuario sobre esta persistencia documental.

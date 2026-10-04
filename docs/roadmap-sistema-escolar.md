@@ -1,7 +1,7 @@
 # Roadmap — Sistema Escolar UVZ
 
 > **Universidad Villa de Zacatecas (UVZ)** · "Aumentamos la excelencia".
-> Documento de evolución futura. **La ETAPA 2 (Control Escolar) fue APROBADA en planeación (02/10/2026); 2.0-00 COMPLETADA e integrada en master; 2.0-01 COMPLETA e integrada en master; 2.0-02 COMPLETA e integrada en master; 2.0-03 COMPLETA e integrada en master; 2.0-04 COMPLETA e integrada en master; 2.0-05 COMPLETA; 2.0-06 COMPLETA; 2.0-07 COMPLETA; 2.0-08 COMPLETA; 2.0-09 en adelante NO INICIADAS**.
+> Documento de evolución futura. **La ETAPA 2 (Control Escolar) fue APROBADA en planeación (02/10/2026); 2.0-00 COMPLETADA e integrada en master; 2.0-01 COMPLETA e integrada en master; 2.0-02 COMPLETA e integrada en master; 2.0-03 COMPLETA e integrada en master; 2.0-04 COMPLETA e integrada en master; 2.0-05 COMPLETA e integrada en master; 2.0-06 COMPLETA e integrada en master; 2.0-07 COMPLETA e integrada en master; 2.0-08 COMPLETA e integrada en master; 2.0-09 en adelante NO INICIADAS**.
 > Principio rector: **"Preparado para crecer, pero implementar únicamente lo que el MVP necesita."**
 
 ## ETAPA 1 — ADMISIÓN E INSCRIPCIÓN (MVP, Fases 1–14 ✅ COMPLETAS)
