@@ -109,4 +109,12 @@ class Grupo extends Model
     {
         return $this->inscripcionesMaterias()->where('estatus', \App\Enums\EstatusInscripcionMateria::CURSANDO->value)->count() < $this->cupo;
     }
+
+    /**
+     * Documentos generados de este grupo.
+     */
+    public function documentosGenerados(): HasMany
+    {
+        return $this->hasMany(DocumentoGenerado::class, 'grupo_id');
+    }
 }

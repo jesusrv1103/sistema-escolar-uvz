@@ -3,8 +3,14 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Documentos\DescargaArchivosController;
+use App\Http\Controllers\Documentos\DescargaDocumentoGeneradoController;
 use App\Http\Controllers\Pagos\ComprobantePagoController;
 use App\Http\Controllers\Pagos\ComprobantePdfController;
+use App\Livewire\Academico\CrearEvaluacion;
+use App\Livewire\Academico\EditarEvaluacion;
+use App\Livewire\Academico\CalificacionAdmin;
+use App\Livewire\Academico\EvaluacionAdmin;
+use App\Livewire\Academico\GenerarFormato;
 use App\Livewire\Academico\GrupoAdmin;
 use App\Livewire\Academico\GrupoHorarioAdmin;
 use App\Livewire\Academico\MateriaAdmin;
@@ -70,6 +76,12 @@ Route::middleware('auth')->prefix('documentos')->name('documentos.')->group(func
     Route::get('/{documento}/archivo', DescargaArchivosController::class)->name('archivo');
 });
 
+// Descarga de documentos generados (formatos académicos 2.0-05): disco PRIVADO, policy,
+// ruta resuelta desde BD. Semántica distinta a los documentos del expediente.
+Route::middleware('auth')->prefix('documentos-generados')->name('documentos.generados.')->group(function () {
+    Route::get('/{documentoGenerado}', DescargaDocumentoGeneradoController::class)->name('descargar');
+});
+
 // Comprobante de pago cargado (Fase 8): archivo PRIVADO servido por un
 // controlador mínimo con policy; la ruta interna se resuelve desde BD
 // (nunca desde el cliente) y se impide path traversal. NO es el PDF
@@ -96,6 +108,11 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     // Grupos y horarios (2.0-03) — solo ADMIN.
     Route::get('/grupos', GrupoAdmin::class)->name('grupos');
     Route::get('/grupos/{grupo}/horarios', GrupoHorarioAdmin::class)->name('grupos.horarios');
+
+    // Formatos académicos (2.0-05) — solo ADMIN.
+    Route::get('/formatos', GenerarFormato::class)->name('formatos');
+    Route::get('/evaluaciones', EvaluacionAdmin::class)->name('evaluaciones');
+    Route::get('/calificaciones', CalificacionAdmin::class)->name('calificaciones');
 
     // Estructura académica (2.0-01) — solo ADMIN.
     Route::get('/planes-estudio', PlanEstudioAdmin::class)->name('planes-estudio');

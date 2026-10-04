@@ -7,17 +7,21 @@ namespace App\Enums;
  *
  * Enum mínimo y deliberadamente separado de los demás enums: los otros
  * (`TipoConcepto`, `TipoObservacion`, …) tienen semántica propia y NO se
- * reutilizan para secuenciales. En el MVP solo existe un tipo soportado.
+ * reutilizan para secuenciales.
  */
 enum TipoConsecutivo: string
 {
     case NUMERO_CONTROL = 'NUMERO_CONTROL';
+    case CONSTANCIA_INSCRIPCION = 'CONSTANCIA_INSCRIPCION';
+    case ACTA_CALIFICACIONES = 'ACTA_CALIFICACIONES';
 
     /** Etiqueta visible en español; nunca exponer `->value` al usuario. */
     public function label(): string
     {
         return match ($this) {
             self::NUMERO_CONTROL => 'Número de control',
+            self::CONSTANCIA_INSCRIPCION => 'Constancia de inscripción',
+            self::ACTA_CALIFICACIONES => 'Acta de calificaciones',
         };
     }
 }

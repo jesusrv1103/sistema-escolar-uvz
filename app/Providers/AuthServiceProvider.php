@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use App\Enums\RolUsuario;
+use App\Models\Calificacion;
 use App\Models\Documento;
+use App\Models\DocumentoGenerado;
+use App\Models\Evaluacion;
 use App\Models\Grupo;
 use App\Models\GrupoHorario;
 use App\Models\InscripcionMateria;
@@ -14,7 +17,10 @@ use App\Models\Pago;
 use App\Models\PlanEstudio;
 use App\Models\PlanVersion;
 use App\Models\User;
+use App\Policies\CalificacionPolicy;
+use App\Policies\DocumentoGeneradoPolicy;
 use App\Policies\DocumentoPolicy;
+use App\Policies\EvaluacionPolicy;
 use App\Policies\GrupoHorarioPolicy;
 use App\Policies\GrupoPolicy;
 use App\Policies\InscripcionMateriaPolicy;
@@ -96,6 +102,18 @@ class AuthServiceProvider extends ServiceProvider
         'inscripcion_materia.update' => [],
         'inscripcion_materia.delete' => [],
         'prerrequisito.validar' => [],
+        // 2.0-05 — Motor de formatos + formatos académicos
+        'documento_generado.crear' => [],
+        'documento_generado.ver' => [],
+        // 2.0-06 — Evaluaciones y Calificaciones + Rol DOCENTE
+        'evaluacion.crear' => [RolUsuario::DOCENTE],
+        'evaluacion.actualizar' => [RolUsuario::DOCENTE],
+        'evaluacion.publicar' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
+        'evaluacion.cerrar' => [RolUsuario::CONTROL_ESCOLAR],
+        'evaluacion.eliminar' => [RolUsuario::CONTROL_ESCOLAR],
+        'calificacion.crear' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
+        'calificacion.actualizar' => [RolUsuario::DOCENTE, RolUsuario::CONTROL_ESCOLAR],
+        'calificacion.consolidar' => [RolUsuario::CONTROL_ESCOLAR],
     ];
 
     public function boot(): void
@@ -117,6 +135,7 @@ class AuthServiceProvider extends ServiceProvider
         Gate::policy(User::class, UsuarioPolicy::class);
         Gate::policy(Pago::class, PagoPolicy::class);
         Gate::policy(Documento::class, DocumentoPolicy::class);
+        Gate::policy(DocumentoGenerado::class, DocumentoGeneradoPolicy::class);
         Gate::policy(Observacion::class, ObservacionPolicy::class);
         Gate::policy(PlanEstudio::class, PlanEstudioPolicy::class);
         Gate::policy(PlanVersion::class, PlanVersionPolicy::class);
@@ -125,6 +144,8 @@ class AuthServiceProvider extends ServiceProvider
         Gate::policy(GrupoHorario::class, GrupoHorarioPolicy::class);
         Gate::policy(MatriculaPeriodo::class, MatriculaPeriodoPolicy::class);
         Gate::policy(InscripcionMateria::class, InscripcionMateriaPolicy::class);
+        Gate::policy(Evaluacion::class, EvaluacionPolicy::class);
+        Gate::policy(Calificacion::class, CalificacionPolicy::class);
 
         // Las policies de modelos de fases futuras ya existen en App\Policies
         // y Laravel las resuelve por convención; aquí solo se registran las que tienen modelo.

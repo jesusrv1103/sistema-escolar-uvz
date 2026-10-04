@@ -87,6 +87,14 @@ class Alumno extends Model
         return $this->hasMany(MatriculaPeriodo::class, 'alumno_id');
     }
 
+    /**
+     * Documentos generados (formatos académicos) del alumno.
+     */
+    public function documentosGenerados(): HasMany
+    {
+        return $this->hasMany(DocumentoGenerado::class, 'alumno_id');
+    }
+
     /** Búsqueda por nombre, apellidos, CURP o número de control. */
     public function scopeBuscar(Builder $consulta, ?string $termino): Builder
     {

@@ -122,4 +122,12 @@ class MatriculaPeriodo extends Model
     {
         return $query->where('alumno_id', $alumnoId)->where('periodo_id', $periodoId);
     }
+
+    /**
+     * Documentos generados de esta matrícula.
+     */
+    public function documentosGenerados(): HasMany
+    {
+        return $this->hasMany(DocumentoGenerado::class, 'matricula_periodo_id');
+    }
 }

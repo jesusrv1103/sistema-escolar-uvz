@@ -11,6 +11,7 @@ enum RolUsuario: string
     case ADMISIONES = 'ADMISIONES';
     case ADMINISTRACION = 'ADMINISTRACION';
     case CONTROL_ESCOLAR = 'CONTROL_ESCOLAR';
+    case DOCENTE = 'DOCENTE';
 
     /** Etiqueta visible en español; nunca exponer `->value` al usuario. */
     public function label(): string
@@ -20,6 +21,7 @@ enum RolUsuario: string
             self::ADMISIONES => 'Admisiones',
             self::ADMINISTRACION => 'Administración',
             self::CONTROL_ESCOLAR => 'Control Escolar',
+            self::DOCENTE => 'Docente',
         };
     }
 }

@@ -8,6 +8,7 @@ use App\Enums\TipoPrerrequisito;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -123,5 +124,13 @@ class InscripcionMateria extends Model
     public function scopePorGrupo($query, int $grupoId)
     {
         return $query->where('grupo_id', $grupoId);
+    }
+
+    /**
+     * Calificaciones de esta inscripción.
+     */
+    public function calificaciones(): HasMany
+    {
+        return $this->hasMany(Calificacion::class, 'inscripcion_materia_id');
     }
 }
