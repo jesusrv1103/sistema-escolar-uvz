@@ -1,99 +1,116 @@
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0">Bajas y Equivalencias</h1>
-    </div>
+<div>
+    <x-ui.page-header title="Bajas"
+        description="Baja temporal, definitiva o por materia; el reingreso es exclusivo de la baja temporal.">
+        <x-slot:actions>
+            @foreach (\App\Enums\TipoBaja::cases() as $tipo)
+                @can('baja.crear')
+                    <x-ui.button variant="secondary" icon="no-symbol"
+                        wire:click="abrirModalBaja('{{ $tipo->value }}')">
+                        {{ $tipo->label() }}
+                    </x-ui.button>
+                @endcan
+            @endforeach
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <!-- Filtros -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Buscar</label>
-                    <input type="text" class="form-control" wire:model.debounce.300ms="busqueda" placeholder="Alumno, motivo...">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Tipo</label>
-                    <select class="form-select" wire:model="filtroTipo">
+    @error('reingreso')
+        <div class="mt-4"><x-ui.alert tone="danger">{{ $message }}</x-ui.alert></div>
+    @enderror
+
+    {{-- ------------------------- Filtros compactos ------------------------- --}}
+    <div class="mt-5">
+        <x-ui.filters>
+            <div class="grid gap-3 md:grid-cols-3">
+                <x-ui.field label="Buscar">
+                    <x-ui.input type="text" wire:model.live.debounce.300ms="busqueda"
+                        placeholder="Alumno, motivo…" aria-label="Buscar bajas" />
+                </x-ui.field>
+
+                <x-ui.field label="Tipo">
+                    <x-ui.select wire:model.live="filtroTipo" aria-label="Filtrar por tipo">
                         <option value="">Todos</option>
-                        @foreach($tipos as $t)
+                        @foreach ($tipos as $t)
                             <option value="{{ $t->value }}">{{ $t->label() }}</option>
                         @endforeach
-                    </select>
-                </div>
+                    </x-ui.select>
+                </x-ui.field>
             </div>
-        </div>
+
+            <div class="mt-3 flex justify-end border-t border-brand-line pt-3">
+                <x-ui.button size="sm" variant="ghost" icon="x-mark" wire:click="limpiarFiltros">
+                    Limpiar filtros
+                </x-ui.button>
+            </div>
+        </x-ui.filters>
     </div>
 
-    <!-- Botones de acción -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="d-flex flex-wrap gap-2">
-                @foreach(\App\Enums\TipoBaja::cases() as $tipo)
-                    <button type="button" class="btn btn-outline-primary" wire:click="abrirModalBaja('{{ $tipo->value }}')">
-                        <i class="bi bi-dash-circle me-1"></i> {{ $tipo->label() }}
-                    </button>
-                @endforeach
-            </div>
-        </div>
-    </div>
+    {{-- ------------------------------ Listado ------------------------------ --}}
+    <div class="mt-4">
+        <x-ui.card :flush="count($bajas) > 0">
+            @if (session('success'))
+                <div class="px-5 pt-4"><x-ui.alert tone="success">{{ session('success') }}</x-ui.alert></div>
+            @endif
 
-    <!-- Listado de bajas -->
-    <div class="card">
-        <div class="card-body p-0">
-            @if($bajas->isEmpty())
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-slash-circle display-4"></i>
-                    <p class="mt-2">No hay bajas registradas.</p>
-                </div>
+            @if (count($bajas) === 0)
+                <x-ui.empty-state icon="no-symbol" title="Sin bajas registradas"
+                    message="Ajusta los filtros o registra una nueva baja con los botones del encabezado." />
             @else
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <div class="overflow-x-auto">
+                    <table class="ui-table">
+                        <thead>
                             <tr>
-                                <th>Fecha</th>
-                                <th>Tipo</th>
-                                <th>Alumno</th>
-                                <th>Materia</th>
-                                <th>Motivo</th>
-                                <th>Registrado por</th>
-                                <th>Estatus</th>
-                                <th class="text-end">Acciones</th>
+                                <th scope="col">Fecha</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Alumno</th>
+                                <th scope="col">Materia</th>
+                                <th scope="col">Motivo</th>
+                                <th scope="col">Registrado por</th>
+                                <th scope="col">Estatus</th>
+                                <th scope="col" class="text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($bajas as $baja)
-                                <tr>
-                                    <td>{{ $baja->fecha->format('d/m/Y') }}</td>
+                            @foreach ($bajas as $baja)
+                                <tr wire:key="baja-{{ $baja->id }}">
+                                    <td class="whitespace-nowrap">{{ $baja->fecha->format('d/m/Y') }}</td>
                                     <td>
-                                        <span class="badge {{ match($baja->tipo->value) {
-                                            'TEMPORAL' => 'bg-warning text-dark',
-                                            'DEFINITIVA' => 'bg-danger',
-                                            'MATERIA' => 'bg-info text-dark',
-                                            default => 'bg-secondary'
-                                        }}">{{ $baja->tipo->label() }}</span>
+                                        <x-ui.badge :tone="match ($baja->tipo->value) {
+                                            'DEFINITIVA' => 'danger',
+                                            'TEMPORAL' => 'warning',
+                                            'MATERIA' => 'info',
+                                            default => 'neutral',
+                                        }">
+                                            {{ $baja->tipo->label() }}
+                                        </x-ui.badge>
                                     </td>
-                                    <td>{{ $baja->alumno->nombre_completo }}</td>
-                                    <td>{{ $baja->inscripcionMateria?->materia->clave ?? '—' }}</td>
-                                    <td>{{ Str::limit($baja->motivo, 50) }}</td>
-                                    <td>{{ $baja->registradoPor?->name ?? '—' }}</td>
+                                    <td class="font-medium text-brand-text">{{ $baja->alumno->nombre_completo }}</td>
+                                    <td class="whitespace-nowrap text-brand-muted">
+                                        {{ $baja->inscripcionMateria?->materia->clave ?? '—' }}
+                                    </td>
+                                    <td class="max-w-[280px] text-brand-muted">{{ \Illuminate\Support\Str::limit($baja->motivo, 50) }}</td>
+                                    <td class="text-brand-muted">{{ $baja->registradoPor?->name ?? '—' }}</td>
                                     <td>
-                                        @if($baja->esTemporal())
-                                            @if($baja->tieneReingreso())
-                                                <span class="badge bg-success">Reingresado</span>
+                                        @if ($baja->esTemporal())
+                                            @if ($baja->tieneReingreso())
+                                                <x-ui.badge tone="success">Reingresado</x-ui.badge>
                                             @else
-                                                <span class="badge bg-warning text-dark">Vigente</span>
+                                                <x-ui.badge tone="warning">Vigente</x-ui.badge>
                                             @endif
-                                        @elseif($baja->esDefinitiva())
-                                            <span class="badge bg-danger">Definitiva</span>
+                                        @elseif ($baja->esDefinitiva())
+                                            <x-ui.badge tone="danger">Definitiva</x-ui.badge>
                                         @else
-                                            <span class="badge bg-info text-dark">Materia</span>
+                                            <x-ui.badge tone="info">Materia</x-ui.badge>
                                         @endif
                                     </td>
-                                    <td class="text-end">
-                                        @if($baja->esTemporal() && !$baja->tieneReingreso())
-                                            <button type="button" class="btn btn-sm btn-success" wire:click="abrirModalReingreso({{ $baja->id }})">
-                                                <i class="bi bi-door-open me-1"></i> Reingreso
-                                            </button>
+                                    <td class="text-right">
+                                        @if ($baja->esTemporal() && ! $baja->tieneReingreso())
+                                            <div class="ui-row-actions" role="group"
+                                                aria-label="Acciones de la baja de {{ $baja->alumno->nombre_completo }}">
+                                                <x-ui.button size="sm" variant="success" icon="arrow-right"
+                                                    wire:click="abrirModalReingreso({{ $baja->id }})">
+                                                    Reingreso
+                                                </x-ui.button>
+                                            </div>
                                         @endif
                                     </td>
                                 </tr>
@@ -101,100 +118,113 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="card-footer">
-                    {{ $bajas->links() }}
-                </div>
+
+                <div class="border-t border-brand-line px-5 py-3">{{ $bajas->links() }}</div>
             @endif
-        </div>
+        </x-ui.card>
     </div>
 
-    <!-- Modal Registrar Baja -->
-    @if($modalBajaAbierto)
-    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Registrar Baja {{ $tipoBaja }}</h5>
-                    <button type="button" class="btn-close" wire:click="$set('modalBajaAbierto', false)"></button>
-                </div>
-                <form wire:submit.prevent="registrarBaja">
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Alumno</label>
-                                <select class="form-select" wire:model="alumno" required>
-                                    <option value="">Seleccionar alumno</option>
-                                    @foreach(\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
-                                        <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
+    {{-- -------------------------- Modal: registrar baja -------------------------- --}}
+    @if ($modalBajaAbierto)
+        <x-ui.modal id="modal-registrar-baja" size="lg" :title="'Registrar Baja ' . $tipoBaja"
+            :open="true" close="$set('modalBajaAbierto', false)">
+            <form wire:submit="registrarBaja">
+                <div class="grid gap-3 md:grid-cols-2">
+                    @if ($errors->any())
+                        <div class="md:col-span-2">
+                            <x-ui.alert tone="danger">
+                                <ul class="list-inside list-disc space-y-0.5">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
                                     @endforeach
-                                </select>
-                                @error('alumno') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-                            @if($tipoBaja === 'MATERIA')
-                            <div class="col-md-6">
-                                <label class="form-label">Materia (Inscripción)</label>
-                                <select class="form-select" wire:model="inscripcion" required>
-                                    <option value="">Seleccionar inscripción</option>
-                                    @foreach(\App\Models\InscripcionMateria::with('grupo.materia', 'matriculaPeriodo.alumno')->where('estatus', '!=', 'BAJA')->get() as $i)
-                                        <option value="{{ $i->id }}">{{ $i->matriculaPeriodo->alumno->nombre_completo }} - {{ $i->grupo->materia->clave }}</option>
-                                    @endforeach
-                                </select>
-                                @error('inscripcion') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-                            @endif
-                            <div class="col-md-6">
-                                <label class="form-label">Fecha</label>
-                                <input type="date" class="form-control" wire:model="fecha" required max="{{ now()->format('Y-m-d') }}">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Motivo</label>
-                                <textarea class="form-control" wire:model="motivo" rows="3" required minlength="5" maxlength="2000" placeholder="Motivo de la baja (mínimo 5 caracteres, máximo 2000)"></textarea>
-                                @error('motivo') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                                </ul>
+                            </x-ui.alert>
                         </div>
+                    @endif
+
+                    <x-ui.field label="Alumno" for="baja-alumno" required :error="$errors->first('alumno')">
+                        <x-ui.select id="baja-alumno" wire:model="alumno">
+                            <option value="">Seleccionar alumno</option>
+                            @foreach (\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
+                                <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
+
+                    @if ($tipoBaja === 'MATERIA')
+                        <x-ui.field label="Materia (Inscripción)" for="baja-inscripcion" required
+                            :error="$errors->first('inscripcion')">
+                            <x-ui.select id="baja-inscripcion" wire:model="inscripcion">
+                                <option value="">Seleccionar inscripción</option>
+                                @foreach (\App\Models\InscripcionMateria::with('grupo.materia', 'matriculaPeriodo.alumno')
+                                    ->where('estatus', '!=', 'BAJA')->get() as $i)
+                                    <option value="{{ $i->id }}">
+                                        {{ $i->matriculaPeriodo->alumno->nombre_completo }} - {{ $i->grupo->materia->clave }}
+                                    </option>
+                                @endforeach
+                            </x-ui.select>
+                        </x-ui.field>
+                    @endif
+
+                    <x-ui.field label="Fecha" for="baja-fecha" required :error="$errors->first('fecha')">
+                        <x-ui.input id="baja-fecha" type="date" wire:model="fecha"
+                            :max="now()->format('Y-m-d')" />
+                    </x-ui.field>
+
+                    <div class="md:col-span-2">
+                        <x-ui.field label="Motivo" for="baja-motivo" required :error="$errors->first('motivo')"
+                            hint="Mínimo 5 y máximo 2000 caracteres.">
+                            <textarea id="baja-motivo" wire:model="motivo" rows="3" minlength="5" maxlength="2000"
+                                class="ui-textarea"
+                                placeholder="Motivo de la baja (mínimo 5 caracteres, máximo 2000)"></textarea>
+                        </x-ui.field>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="$set('modalBajaAbierto', false)">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save me-1"></i> Registrar Baja
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+                </div>
+
+                <x-slot:footer>
+                    <x-ui.button variant="secondary" wire:click="$set('modalBajaAbierto', false)">Cancelar</x-ui.button>
+                    <x-ui.button type="submit" icon="check"
+                        wire:loading.attr="disabled" wire:target="registrarBaja">
+                        <span wire:loading.remove wire:target="registrarBaja">Registrar Baja</span>
+                        <span wire:loading wire:target="registrarBaja"><x-ui.loading label="Registrando…" /></span>
+                    </x-ui.button>
+                </x-slot:footer>
+            </form>
+        </x-ui.modal>
     @endif
 
-    <!-- Modal Reingreso -->
-    @if($modalReingresoAbierto)
-    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Autorizar Reingreso</h5>
-                    <button type="button" class="btn-close" wire:click="$set('modalReingresoAbierto', false)"></button>
+    {{-- -------------------------- Modal: reingreso -------------------------- --}}
+    @if ($modalReingresoAbierto)
+        <x-ui.modal id="modal-reingreso" title="Autorizar Reingreso"
+            :open="true" close="$set('modalReingresoAbierto', false)">
+            <form wire:submit="autorizarReingreso">
+                <div class="space-y-3">
+                    <x-ui.alert tone="info">
+                        Autorizando reingreso para
+                        <strong>{{ $baja?->alumno->nombre_completo }}</strong>
+                        (Baja {{ $baja?->tipo->label() }} del {{ $baja?->fecha->format('d/m/Y') }}).
+                    </x-ui.alert>
+
+                    <x-ui.field label="Fecha y hora de reingreso" for="reingreso-at" required
+                        :error="$errors->first('reingresoAt')">
+                        <x-ui.input id="reingreso-at" type="datetime-local" wire:model="reingresoAt"
+                            :max="now()->format('Y-m-d\TH:i')" />
+                    </x-ui.field>
+
+                    @error('reingreso')
+                        <p class="ui-error">{{ $message }}</p>
+                    @enderror
                 </div>
-                <form wire:submit.prevent="autorizarReingreso">
-                    <div class="modal-body">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Autorizando reingreso para <strong>{{ $baja?->alumno->nombre_completo }}</strong> (Baja {{ $baja?->tipo->label() }} del {{ $baja?->fecha->format('d/m/Y') }}).
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Fecha y hora de reingreso</label>
-                            <input type="datetime-local" class="form-control" wire:model="reingresoAt" required max="{{ now()->format('Y-m-d\TH:i') }}">
-                            @error('reingresoAt') <div class="text-danger small">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="$set('modalReingresoAbierto', false)">Cancelar</button>
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-door-open me-1"></i> Autorizar Reingreso
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+
+                <x-slot:footer>
+                    <x-ui.button variant="secondary" wire:click="$set('modalReingresoAbierto', false)">Cancelar</x-ui.button>
+                    <x-ui.button variant="success" icon="check"
+                        wire:loading.attr="disabled" wire:target="autorizarReingreso">
+                        <span wire:loading.remove wire:target="autorizarReingreso">Autorizar Reingreso</span>
+                        <span wire:loading wire:target="autorizarReingreso"><x-ui.loading label="Autorizando…" /></span>
+                    </x-ui.button>
+                </x-slot:footer>
+            </form>
+        </x-ui.modal>
     @endif
 </div>

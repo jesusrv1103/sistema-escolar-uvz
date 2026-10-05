@@ -15,35 +15,29 @@
             </div>
 
             @if ($errors->any())
-                <div class="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {{ $errors->first() }}
+                <div class="mt-6">
+                    <x-ui.alert tone="danger">{{ $errors->first() }}</x-ui.alert>
                 </div>
             @endif
 
             <form method="POST" action="{{ route('login.attempt') }}" class="mt-6 space-y-5">
                 @csrf
 
-                <div>
-                    <label for="email" class="block text-sm font-medium text-brand-text">Correo electrónico</label>
-                    <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus
-                        class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                </div>
+                <x-ui.field label="Correo electrónico" for="email">
+                    <x-ui.input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus />
+                </x-ui.field>
 
-                <div>
-                    <label for="password" class="block text-sm font-medium text-brand-text">Contraseña</label>
-                    <input id="password" name="password" type="password" required
-                        class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                </div>
+                <x-ui.field label="Contraseña" for="password">
+                    <x-ui.input id="password" name="password" type="password" required />
+                </x-ui.field>
 
                 <label class="flex items-center gap-2 text-sm text-brand-muted">
-                    <input type="checkbox" name="remember" value="1" class="rounded border-brand-line">
+                    <input type="checkbox" name="remember" value="1"
+                        class="h-4 w-4 rounded border-brand-line accent-brand-primary">
                     Recordarme
                 </label>
 
-                <button type="submit"
-                    class="w-full rounded-md bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-secondary focus:outline-none focus:ring-2 focus:ring-brand-accent">
-                    Iniciar sesión
-                </button>
+                <x-ui.button type="submit" block>Iniciar sesión</x-ui.button>
             </form>
         </div>
 

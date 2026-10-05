@@ -35,6 +35,15 @@ class BajaAdmin extends Component
 
     protected $listeners = ['bajaRegistrada', 'reingresoAutorizado'];
 
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
+        $this->filtroTipo = '';
+        $this->filtroEstatus = '';
+        $this->filtroPeriodo = '';
+        $this->resetPage();
+    }
+
     public function abrirModalBaja(string $tipo): void
     {
         Gate::authorize('baja.crear');
@@ -105,7 +114,7 @@ class BajaAdmin extends Component
         $bajas = Baja::with(['alumno', 'inscripcionMateria.grupo.materia', 'registradoPor'])
             ->when($this->busqueda, fn ($q) => $q->whereHas('alumno', fn ($q) => $q->where('nombre', 'like', "%{$this->busqueda}%")->orWhere('apellidos', 'like', "%{$this->busqueda}%")))
             ->when($this->filtroTipo, fn ($q) => $q->where('tipo', $this->filtroTipo))
-            ->when($this->filtroPeriodo, fn ($q) => $q->whereHas('alumno.matriculasPeriodo', fn ($q) => $q->where('periodo_id', $this->filtroPeriodo)))
+            ->when($this->filtroPeriodo, fn ($q) => $q->whereHas('alumno.matriculas', fn ($q) => $q->where('periodo_id', $this->filtroPeriodo)))
             ->orderByDesc('fecha')
             ->paginate(15);
 

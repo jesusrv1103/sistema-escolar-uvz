@@ -182,6 +182,13 @@
             @error('generar')
                 <div class="mt-4"><x-ui.alert tone="danger">{{ $message }}</x-ui.alert></div>
             @enderror
+
+            <div id="aviso-formato-generado" class="mt-4" hidden role="status" aria-live="polite">
+                <x-ui.alert tone="success">
+                    Formato generado correctamente. Queda registrado en la trazabilidad de
+                    documentos generados.
+                </x-ui.alert>
+            </div>
         </x-ui.card>
     </section>
 
@@ -281,13 +288,12 @@
 
     @script
         <script>
-            $wire.on('pdf-generado', function (path) {
-                window.open(
-                    '{{ route('documentos.generados.descargar', ['path' => '__PATH__']) }}'.replace(
-                        '__PATH__', encodeURIComponent(path)
-                    ),
-                    '_blank'
-                );
+            $wire.on('pdf-generado', function () {
+                const aviso = document.getElementById('aviso-formato-generado');
+                if (aviso) {
+                    aviso.hidden = false;
+                    aviso.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
             });
         </script>
     @endscript

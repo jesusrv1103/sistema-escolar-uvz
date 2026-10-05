@@ -1,58 +1,79 @@
-@if($modalAsignacionAbierto)
-<div class="modal fade show d-block" tabindex="-1" role="dialog" style="background: rgba(0,0,0,0.5);">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Asignar Beca</h5>
-                <button type="button" class="btn-close" wire:click="$set('modalAsignacionAbierto', false)"></button>
-            </div>
-            <form wire:submit.prevent="asignarBeca">
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Beca</label>
-                            <select class="form-select" wire:model="becaAsignar" required>
-                                <option value="">Seleccionar beca</option>
-                                @foreach(\App\Models\Beca::where('activo', true)->get() as $b)
-                                    <option value="{{ $b->id }}">{{ $b->clave }} - {{ $b->nombre }} ({{ $b->tipo->label() }}: {{ $b->tipo->value === 'PORCENTAJE' ? $b->valor . '%' : '$' . number_format($b->valor, 2) }})</option>
+@if ($modalAsignacionAbierto)
+    <x-ui.modal id="modal-asignar-beca" size="lg" title="Asignar beca"
+        :open="true" close="$set('modalAsignacionAbierto', false)">
+        <form wire:submit="asignarBeca">
+            <div class="grid gap-3 sm:grid-cols-2">
+                @if ($errors->any())
+                    <div class="sm:col-span-2">
+                        <x-ui.alert tone="danger">
+                            <ul class="list-inside list-disc space-y-0.5">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
                                 @endforeach
-                            </select>
-                            @error('becaAsignar') <div class="text-danger small">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Alumno</label>
-                            <select class="form-select" wire:model="alumnoAsignar" required>
-                                <option value="">Seleccionar alumno</option>
-                                @foreach(\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
-                                    <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
-                                @endforeach
-                            </select>
-                            @error('alumnoAsignar') <div class="text-danger small">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Periodo</label>
-                            <select class="form-select" wire:model="periodoAsignar" required>
-                                <option value="">Seleccionar periodo</option>
-                                @foreach(\App\Models\Periodo::where('activo', true)->orderByDesc('fecha_inicio')->get() as $p)
-                                    <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
-                                @endforeach
-                            </select>
-                            @error('periodoAsignar') <div class="text-danger small">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Observación</label>
-                            <textarea class="form-control" wire:model="observacion" rows="3" maxlength="1000" placeholder="Motivo de la asignación, condiciones especiales..."></textarea>
-                        </div>
+                            </ul>
+                        </x-ui.alert>
                     </div>
+                @endif
+
+                <div class="sm:col-span-2">
+                    <x-ui.field label="Beca" for="asig-beca" required :error="$errors->first('becaAsignar')">
+                        <x-ui.select id="asig-beca" wire:model="becaAsignar">
+                            <option value="">Seleccionar beca</option>
+                            @foreach (\App\Models\Beca::where('activo', true)->get() as $b)
+                                <option value="{{ $b->id }}">
+                                    {{ $b->clave }} - {{ $b->nombre }} ({{ $b->tipo->label() }}:
+                                    {{ $b->tipo->value === 'PORCENTAJE' ? $b->valor . '%' : '$' . number_format($b->valor, 2) }})
+                                </option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" wire:click="$set('modalAsignacionAbierto', false)">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-person-plus me-1"></i> Asignar
-                    </button>
+
+                <div class="sm:col-span-2">
+                    <x-ui.field label="Alumno" for="asig-alumno" required :error="$errors->first('alumnoAsignar')">
+                        <x-ui.select id="asig-alumno" wire:model="alumnoAsignar">
+                            <option value="">Seleccionar alumno</option>
+                            @foreach (\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
+                                <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
                 </div>
-            </form>
-        </div>
-    </div>
-</div>
+
+                <div class="sm:col-span-2">
+                    <x-ui.field label="Periodo" for="asig-periodo" required :error="$errors->first('periodoAsignar')">
+                        <x-ui.select id="asig-periodo" wire:model="periodoAsignar">
+                            <option value="">Seleccionar periodo</option>
+                            @foreach (\App\Models\Periodo::where('activo', true)->orderByDesc('fecha_inicio')->get() as $p)
+                                <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <x-ui.field label="Observación" for="asig-obs" :error="$errors->first('observacion')">
+                        <textarea id="asig-obs" wire:model="observacion" rows="3" maxlength="1000"
+                            class="ui-textarea"
+                            placeholder="Motivo de la asignación, condiciones especiales…"></textarea>
+                    </x-ui.field>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <x-ui.alert tone="info">
+                        La asignación queda en estado <strong>Pendiente</strong>: debe ser aprobada
+                        por Administración antes de aplicar el descuento.
+                    </x-ui.alert>
+                </div>
+            </div>
+
+            <x-slot:footer>
+                <x-ui.button variant="secondary" wire:click="$set('modalAsignacionAbierto', false)">Cancelar</x-ui.button>
+                <x-ui.button type="submit" icon="plus" wire:loading.attr="disabled" wire:target="asignarBeca">
+                    <span wire:loading.remove wire:target="asignarBeca">Asignar</span>
+                    <span wire:loading wire:target="asignarBeca"><x-ui.loading label="Asignando…" /></span>
+                </x-ui.button>
+            </x-slot:footer>
+        </form>
+    </x-ui.modal>
 @endif

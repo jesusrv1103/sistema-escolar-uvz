@@ -14,8 +14,15 @@ class HistorialAcademico extends Component
 {
     public ?Alumno $alumno = null;
     public string $busqueda = '';
+    public string $filtroPeriodo = '';
 
     protected $listeners = ['alumnoSeleccionado'];
+
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
+        $this->filtroPeriodo = '';
+    }
 
     public function alumnoSeleccionado(Alumno $alumno): void
     {
@@ -25,7 +32,7 @@ class HistorialAcademico extends Component
 
     public function render()
     {
-        $alumnos = Alumno::with(['matriculasPeriodo.periodo', 'matriculasPeriodo.programa'])
+        $alumnos = Alumno::with(['matriculas.periodo', 'matriculas.programa'])
             ->when($this->busqueda, fn ($q) => $q->where('nombre', 'like', "%{$this->busqueda}%")
                 ->orWhere('apellidos', 'like', "%{$this->busqueda}%")
                 ->orWhere('curp', 'like', "%{$this->busqueda}%")

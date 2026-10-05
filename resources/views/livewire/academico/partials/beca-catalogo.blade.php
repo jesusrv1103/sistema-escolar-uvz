@@ -1,75 +1,106 @@
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Catálogo de Becas</h5>
-        <button type="button" class="btn btn-primary btn-sm" wire:click="abrirModalBeca">
-            <i class="bi bi-plus-lg me-1"></i> Nueva Beca
-        </button>
-    </div>
-    <div class="card-body">
-        <div class="row g-3 mb-3">
-            <div class="col-md-4">
-                <input type="text" class="form-control" wire:model.debounce.300ms="busqueda" placeholder="Buscar por nombre o clave...">
+<div>
+    <x-ui.card :flush="$becas->isNotEmpty()">
+        <x-slot:header>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-brand-text">Catálogo de becas</p>
+                    <p class="mt-0.5 text-xs text-brand-muted">
+                        Porcentaje sobre cargos o monto fijo, con vigencia por periodo.
+                    </p>
+                </div>
+                @can('beca.crear')
+                    <x-ui.button size="sm" icon="plus" wire:click="abrirModalBeca">Nueva beca</x-ui.button>
+                @endcan
             </div>
-            <div class="col-md-3">
-                <select class="form-select" wire:model="filtroEstatus">
-                    <option value="">Todos los estatus</option>
-                    <option value="ACTIVA">Activas</option>
-                    <option value="INACTIVA">Inactivas</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <select class="form-select" wire:model="filtroPeriodo">
-                    <option value="">Todos los periodos</option>
-                    @foreach($periodos as $p)
-                        <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
-                    @endforeach
-                </select>
+        </x-slot:header>
+
+        <div class="border-b border-brand-line px-5 py-4">
+            <div class="grid gap-3 md:grid-cols-4">
+                <x-ui.field label="Buscar">
+                    <x-ui.input type="text" wire:model.live.debounce.300ms="busqueda"
+                        placeholder="Nombre o clave…" aria-label="Buscar becas" />
+                </x-ui.field>
+
+                <x-ui.field label="Estatus">
+                    <x-ui.select wire:model.live="filtroEstatus" aria-label="Filtrar por estatus">
+                        <option value="">Todos los estatus</option>
+                        <option value="ACTIVA">Activas</option>
+                        <option value="INACTIVA">Inactivas</option>
+                    </x-ui.select>
+                </x-ui.field>
+
+                <x-ui.field label="Periodo">
+                    <x-ui.select wire:model.live="filtroPeriodo" aria-label="Filtrar por periodo">
+                        <option value="">Todos los periodos</option>
+                        @foreach ($periodos as $p)
+                            <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
+
+                <div class="flex items-end">
+                    <x-ui.button size="sm" variant="ghost" icon="x-mark" block wire:click="limpiarFiltros">
+                        Limpiar filtros
+                    </x-ui.button>
+                </div>
             </div>
         </div>
 
-        @if($becas->isEmpty())
-            <div class="text-center py-5 text-muted">
-                <i class="bi bi-award display-4"></i>
-                <p class="mt-2">No hay becas registradas.</p>
-            </div>
+        @if ($becas->isEmpty())
+            <x-ui.empty-state icon="percent" title="Sin becas registradas"
+                message="Ajusta los filtros o crea la primera beca con el botón del encabezado.">
+                <x-slot:action>
+                    @can('beca.crear')
+                        <x-ui.button icon="plus" wire:click="abrirModalBeca">Nueva beca</x-ui.button>
+                    @endcan
+                </x-slot:action>
+            </x-ui.empty-state>
         @else
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
+            <div class="overflow-x-auto">
+                <table class="ui-table">
+                    <thead>
                         <tr>
-                            <th>Clave</th>
-                            <th>Nombre</th>
-                            <th>Tipo</th>
-                            <th>Valor</th>
-                            <th>Alcance</th>
-                            <th>Periodo</th>
-                            <th>Vigencia</th>
-                            <th>Estatus</th>
-                            <th class="text-end">Acciones</th>
+                            <th scope="col">Clave</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col" class="text-right">Valor</th>
+                            <th scope="col">Alcance</th>
+                            <th scope="col">Periodo</th>
+                            <th scope="col">Vigencia</th>
+                            <th scope="col">Estatus</th>
+                            <th scope="col" class="text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($becas as $b)
-                            <tr>
-                                <td>{{ $b->clave }}</td>
-                                <td>{{ $b->nombre }}</td>
+                        @foreach ($becas as $b)
+                            <tr wire:key="beca-{{ $b->id }}">
+                                <td class="font-mono text-xs">{{ $b->clave }}</td>
+                                <td class="font-medium text-brand-text">{{ $b->nombre }}</td>
                                 <td>
-                                    <span class="badge {{ $b->tipo->value === 'PORCENTAJE' ? 'bg-info text-dark' : 'bg-primary' }}">{{ $b->tipo->label() }}</span>
+                                    <x-ui.badge :tone="$b->tipo->value === 'PORCENTAJE' ? 'info' : 'primary'">
+                                        {{ $b->tipo->label() }}
+                                    </x-ui.badge>
                                 </td>
-                                <td>{{ $b->tipo->value === 'PORCENTAJE' ? $b->valor . '%' : '$' . number_format($b->valor, 2) }}</td>
-                                <td>{{ $b->alcance->label() }}</td>
-                                <td>{{ $b->periodo->clave }}</td>
-                                <td>{{ $b->fecha_inicio?->format('d/m/Y') }} - {{ $b->fecha_fin?->format('d/m/Y') }}</td>
+                                <td class="text-right tabular-nums">
+                                    {{ $b->tipo->value === 'PORCENTAJE' ? $b->valor . '%' : '$' . number_format($b->valor, 2) }}
+                                </td>
+                                <td class="text-brand-muted">{{ $b->alcance->label() }}</td>
+                                <td class="whitespace-nowrap text-brand-muted">{{ $b->periodo->clave }}</td>
+                                <td class="whitespace-nowrap text-brand-muted">
+                                    {{ $b->fecha_inicio?->format('d/m/Y') ?? '—' }} -
+                                    {{ $b->fecha_fin?->format('d/m/Y') ?? '—' }}
+                                </td>
                                 <td>
-                                    <span class="badge {{ $b->activo ? 'bg-success' : 'bg-secondary' }}">
+                                    <x-ui.badge :tone="$b->activo ? 'success' : 'neutral'">
                                         {{ $b->activo ? 'Activa' : 'Inactiva' }}
-                                    </span>
+                                    </x-ui.badge>
                                 </td>
-                                <td class="text-end">
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-primary" wire:click="abrirModalEditar({{ $b->id }})" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
+                                <td class="text-right">
+                                    <div class="ui-row-actions" role="group" aria-label="Acciones de la beca {{ $b->nombre }}">
+                                        @can('beca.actualizar', $b)
+                                            <x-ui.icon-button label="Editar la beca {{ $b->nombre }}" icon="pencil"
+                                                wire:click="abrirModalEditar({{ $b->id }})" />
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>
@@ -77,9 +108,8 @@
                     </tbody>
                 </table>
             </div>
-            <div class="card-footer">
-                {{ $becas->links() }}
-            </div>
+
+            <div class="border-t border-brand-line px-5 py-3">{{ $becas->links() }}</div>
         @endif
-    </div>
+    </x-ui.card>
 </div>

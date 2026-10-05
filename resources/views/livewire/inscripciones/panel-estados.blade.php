@@ -29,7 +29,22 @@
         <div class="mt-4"><x-ui.alert tone="success">{{ session('revision') }}</x-ui.alert></div>
     @endif
 
-    <div class="mt-5 grid gap-4 lg:grid-cols-3">
+    <div class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+        <span class="text-brand-muted">
+            Número de control:
+            <span class="font-medium text-brand-primary">{{ $alumno?->numero_control ?? 'Se asigna al finalizar' }}</span>
+        </span>
+        <span class="text-brand-muted">
+            Programa:
+            <span class="font-medium text-brand-text">{{ $programa?->nombre ?? '—' }}</span>
+        </span>
+        <span class="text-brand-muted">
+            Periodo:
+            <span class="font-medium text-brand-text">{{ $periodo?->nombre ?? '—' }}</span>
+        </span>
+    </div>
+
+    <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {{-- ---------------------- Concepto de pago ---------------------- --}}
         <x-ui.card>
             <x-slot:header>
@@ -84,7 +99,7 @@
         {{-- ---------------------- Observaciones ---------------------- --}}
         <x-ui.card>
             <x-slot:header>
-                <p class="text-sm font-semibold text-brand-text">Faltantes señalados</p>
+                <p class="text-sm font-semibold text-brand-text">Observaciones de tipo Faltante abiertas</p>
             </x-slot:header>
 
             <p class="text-lg font-semibold text-brand-text">{{ $faltantesAbiertos }} abiertos</p>
@@ -98,6 +113,27 @@
                     Ver observaciones
                 </x-ui.button>
             </div>
+        </x-ui.card>
+
+        {{-- -------------------------- Convenio -------------------------- --}}
+        <x-ui.card>
+            <x-slot:header>
+                <p class="text-sm font-semibold text-brand-text">Convenio</p>
+            </x-slot:header>
+
+            @if ($convenioOk)
+                <x-ui.badge tone="success">
+                    {{ $convenioEstado === null ? 'No aplica' : \App\Enums\EstatusConvenio::APROBADO->label() }}
+                </x-ui.badge>
+            @else
+                <x-ui.badge tone="danger">
+                    {{ \App\Enums\EstatusConvenio::tryFrom($convenioEstado)?->label() ?? 'sin resolver' }}
+                </x-ui.badge>
+            @endif
+
+            <p class="mt-2 text-sm text-brand-muted">
+                El convenio vinculado a la inscripción debe estar aprobado antes de cerrar.
+            </p>
         </x-ui.card>
     </div>
 

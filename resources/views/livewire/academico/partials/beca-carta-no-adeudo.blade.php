@@ -1,34 +1,38 @@
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">Carta de No Adeudo</h5>
-    </div>
-    <div class="card-body">
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <label class="form-label">Alumno</label>
-                <select class="form-select" wire:model="alumnoCarta" required>
-                    <option value="">Seleccionar alumno</option>
-                    @foreach(\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
-                        <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
-                    @endforeach
-                </select>
+<div>
+    <x-ui.card>
+        <x-slot:header>
+            <p class="text-sm font-semibold text-brand-text">Carta de no adeudo</p>
+        </x-slot:header>
+
+        <div class="grid items-end gap-3 md:grid-cols-4">
+            <div class="md:col-span-3">
+                <x-ui.field label="Alumno" for="cna-alumno" :error="$errors->first('alumnoCarta')">
+                    <x-ui.select id="cna-alumno" wire:model="alumnoCarta">
+                        <option value="">Seleccionar alumno</option>
+                        @foreach (\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
+                            <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
             </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="button" class="btn btn-primary w-100" wire:click="abrirCartaNoAdeudo($alumnoCarta)" @if(!$alumnoCarta) disabled @endif>
-                    <i class="bi bi-file-earmark-check me-1"></i> Generar Carta
-                </button>
-            </div>
+
+            <x-ui.button icon="document-text" wire:click="abrirCartaNoAdeudo($alumnoCarta)"
+                :disabled="! $alumnoCarta" wire:loading.attr="disabled" wire:target="abrirCartaNoAdeudo">
+                <span wire:loading.remove wire:target="abrirCartaNoAdeudo">Generar carta</span>
+                <span wire:loading wire:target="abrirCartaNoAdeudo"><x-ui.loading label="Generando…" /></span>
+            </x-ui.button>
         </div>
 
-        @if($alumnoCarta)
+        @if ($alumnoCarta)
             @php
-                $service = app(\App\Services\HistorialAcademicoService::class);
-                $conceptos = \App\Models\ConceptoPago::where('inscripcion.matriculaPeriodo.alumno_id', $alumnoCarta->id)
-                    ->with('inscripcion.matriculaPeriodo.alumno')
+                $conceptos = \App\Models\ConceptoPago::query()
+                    ->whereHas('inscripcion', fn ($q) => $q->where('alumno_id', $alumnoCarta->id))
+                    ->with('inscripcion.alumno')
                     ->get();
-                $pagos = \App\Models\Pago::where('concepto_pago.inscripcion.matriculaPeriodo.alumno_id', $alumnoCarta->id)
+                $pagos = \App\Models\Pago::query()
+                    ->whereHas('conceptoPago.inscripcion', fn ($q) => $q->where('alumno_id', $alumnoCarta->id))
                     ->where('estatus', 'VALIDADO')
-                    ->with('conceptoPago')
+                    ->with('conceptoPago.inscripcion')
                     ->get();
                 $ajustes = \App\Models\AjusteFinanciero::where('alumno_id', $alumnoCarta->id)
                     ->get();
@@ -39,91 +43,86 @@
                 $saldo = $totalCargos - $totalPagos - $totalAjustes;
             @endphp
 
-            <div class="alert alert-{{ $saldo <= 0 ? 'success' : 'warning' }} mb-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>Saldo Exigible: ${{ number_format($saldo, 2) }}</strong>
+            <div class="mt-5">
+                <x-ui.alert :tone="$saldo <= 0 ? 'success' : 'warning'">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <p class="text-sm font-semibold">Saldo exigible: ${{ number_format($saldo, 2) }}</p>
+                        <x-ui.badge :tone="$saldo <= 0 ? 'success' : 'warning'">
+                            {{ $saldo <= 0 ? 'Sin adeudo' : 'Con adeudo' }}
+                        </x-ui.badge>
                     </div>
-                    <span class="badge {{ $saldo <= 0 ? 'bg-success' : 'bg-warning text-dark' }} fs-6">
-                        {{ $saldo <= 0 ? 'SIN ADEUDO' : 'CON ADEUDO' }}
-                    </span>
+                </x-ui.alert>
+            </div>
+
+            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                <div class="ui-card p-5">
+                    <p class="tabular-nums text-2xl font-semibold text-brand-text">${{ number_format($totalCargos, 2) }}</p>
+                    <p class="mt-1 text-xs text-brand-muted">Total cargos</p>
+                </div>
+                <div class="ui-card p-5">
+                    <p class="tabular-nums text-2xl font-semibold text-success-ink">${{ number_format($totalPagos, 2) }}</p>
+                    <p class="mt-1 text-xs text-brand-muted">Pagos validados</p>
+                </div>
+                <div class="ui-card p-5">
+                    <p class="tabular-nums text-2xl font-semibold text-brand-primary">${{ number_format($totalAjustes, 2) }}</p>
+                    <p class="mt-1 text-xs text-brand-muted">Ajustes / descuentos</p>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Detalle del Saldo</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body text-center">
-                                    <div class="h5 mb-0">${{ number_format($totalCargos, 2) }}</div>
-                                    <small>Total Cargos</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card bg-success text-white">
-                                <div class="card-body text-center">
-                                    <div class="h5 mb-0">${{ number_format($totalPagos, 2) }}</div>
-                                    <small>Pagos Validados</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card bg-info text-white">
-                                <div class="card-body text-center">
-                                    <div class="h5 mb-0">${{ number_format($totalAjustes, 2) }}</div>
-                                    <small>Ajustes/Descuentos</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="mt-4">
+                <x-ui.card :flush="$conceptos->isNotEmpty()">
+                    <x-slot:header>
+                        <p class="text-sm font-semibold text-brand-text">Detalle de conceptos</p>
+                    </x-slot:header>
 
-                    <h6 class="mb-3">Detalle de Conceptos</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Concepto</th>
-                                    <th>Vencimiento</th>
-                                    <th>Monto</th>
-                                    <th>Descuento</th>
-                                    <th>Total</th>
-                                    <th>Pagado</th>
-                                    <th>Saldo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach(\App\Models\ConceptoPago::where('inscripcion.matriculaPeriodo.alumno_id', $alumnoCarta->id)->get() as $c)
-                                    @php
-                                        $pagado = \App\Models\Pago::where('concepto_pago_id', $c->id)->where('estatus', 'VALIDADO')->sum('monto');
-                                        $ajustesC = \App\Models\AjusteFinanciero::where('concepto_pago_id', $c->id)->sum('efectoSobreSaldo');
-                                        $saldoC = $c->monto_total - $pagado - $ajustesC;
-                                    @endphp
-                                    <tr class="{{ $saldoC > 0 ? 'table-danger' : 'table-success' }}">
-                                        <td>{{ $c->tipo }} {{ $c->numero ?? '' }}</td>
-                                        <td>{{ $c->fecha_vencimiento?->format('d/m/Y') }}</td>
-                                        <td>${{ number_format($c->monto, 2) }}</td>
-                                        <td>${{ number_format($c->descuento, 2) }}</td>
-                                        <td>${{ number_format($c->monto_total, 2) }}</td>
-                                        <td>${{ number_format($pagado, 2) }}</td>
-                                        <td class="{{ $saldoC > 0 ? 'text-danger' : 'text-success' }} fw-bold">${{ number_format($saldoC, 2) }}</td>
+                    @if ($conceptos->isEmpty())
+                        <x-ui.empty-state icon="receipt" title="Sin conceptos"
+                            message="Este alumno no tiene conceptos de pago generados." />
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="ui-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Concepto</th>
+                                        <th scope="col">Vencimiento</th>
+                                        <th scope="col" class="text-right">Monto</th>
+                                        <th scope="col" class="text-right">Descuento</th>
+                                        <th scope="col" class="text-right">Total</th>
+                                        <th scope="col" class="text-right">Pagado</th>
+                                        <th scope="col" class="text-right">Saldo</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                                </thead>
+                                <tbody>
+                                    @foreach ($conceptos as $c)
+                                        @php
+                                            $pagado = \App\Models\Pago::where('concepto_pago_id', $c->id)->where('estatus', 'VALIDADO')->sum('monto');
+                                            $ajustesC = \App\Models\AjusteFinanciero::where('concepto_pago_id', $c->id)->sum('efectoSobreSaldo');
+                                            $saldoC = $c->monto_total - $pagado - $ajustesC;
+                                        @endphp
+                                        <tr wire:key="concepto-cna-{{ $c->id }}">
+                                            <td class="font-medium text-brand-text">{{ $c->tipo->label() }} {{ $c->numero ?? '' }}</td>
+                                            <td class="whitespace-nowrap text-brand-muted">{{ $c->fecha_vencimiento?->format('d/m/Y') }}</td>
+                                            <td class="text-right tabular-nums">${{ number_format($c->monto, 2) }}</td>
+                                            <td class="text-right tabular-nums">${{ number_format($c->descuento, 2) }}</td>
+                                            <td class="text-right tabular-nums">${{ number_format($c->monto_total, 2) }}</td>
+                                            <td class="text-right tabular-nums">${{ number_format($pagado, 2) }}</td>
+                                            <td class="text-right tabular-nums font-semibold {{ $saldoC > 0 ? 'text-danger-ink' : 'text-success-ink' }}">
+                                                ${{ number_format($saldoC, 2) }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </x-ui.card>
+            </div>
 
-                <div class="d-flex gap-2 mt-3">
-                    <button type="button" class="btn btn-primary" wire:click="$set('modalCartaNoAdeudoAbierto', true)">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> Generar PDF
-                    </button>
-                </div>
-            @endif
-        </div>
-    </div>
+            <div class="mt-4 flex justify-end">
+                <x-ui.button icon="eye" wire:click="$set('modalCartaNoAdeudoAbierto', true)">
+                    Ver carta de no adeudo
+                </x-ui.button>
+            </div>
+        @endif
+    </x-ui.card>
 </div>

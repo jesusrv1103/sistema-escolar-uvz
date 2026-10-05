@@ -1,61 +1,73 @@
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0">Formatos Académicos II</h1>
-    </div>
+<div>
+    <x-ui.page-header title="Formatos Académicos II"
+        description="Generación de PDFs institucionales: kardex, boleta, historial, acta, tira de materias y avance." />
 
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">Generar Formato Académico</h5>
-        </div>
-        <div class="card-body">
-            <form wire:submit.prevent="generarFormato">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Tipo de Formato</label>
-                        <select class="form-select" wire:model="tipo" required>
-                            @foreach($tipos as $key => $label)
-                                <option value="{{ $key }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        @error('tipo') <div class="text-danger small">{{ $message }}</div> @enderror
+    @if (session('success'))
+        <div class="mt-4"><x-ui.alert tone="success">{{ session('success') }}</x-ui.alert></div>
+    @endif
+    @error('generar')
+        <div class="mt-4"><x-ui.alert tone="danger">{{ $message }}</x-ui.alert></div>
+    @enderror
+
+    <div class="mt-5">
+        <x-ui.card>
+            <x-slot:header>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm font-semibold text-brand-text">Generar formato académico</p>
+                    <x-ui.badge tone="info">{{ $tipos[$tipo] ?? $tipo }}</x-ui.badge>
+                </div>
+            </x-slot:header>
+
+            <form wire:submit="generarFormato($tipo, {{ $alumno?->id ?? 'null' }}, {{ $acta?->id ?? 'null' }})">
+                <div class="grid gap-3 md:grid-cols-3">
+                    <div>
+                        <x-ui.field label="Tipo de formato" for="fmt-tipo" required :error="$errors->first('tipo')">
+                            <x-ui.select id="fmt-tipo" wire:model.live="tipo">
+                                @foreach ($tipos as $key => $label)
+                                    <option value="{{ $key }}">{{ $label }}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </x-ui.field>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Alumno</label>
-                        <select class="form-select" wire:model="alumno" required>
-                            <option value="">Seleccionar alumno</option>
-                            @foreach(\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
-                                <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
-                            @endforeach
-                        </select>
-                        @error('alumno') <div class="text-danger small">{{ $message }}</div> @enderror
+
+                    <div>
+                        <x-ui.field label="Alumno" for="fmt-alumno" required :error="$errors->first('alumno')">
+                            <x-ui.select id="fmt-alumno" wire:model.live="alumno">
+                                <option value="">Seleccionar alumno</option>
+                                @foreach (\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
+                                    <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
+                                @endforeach
+                            </x-ui.select>
+                        </x-ui.field>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Acta</label>
-                        <select class="form-select" wire:model="acta">
-                            <option value="">Seleccionar acta (solo para Acta de Calificaciones)</option>
-                            @foreach(\App\Models\Acta::with('grupo.materia')->orderByDesc('created_at')->get() as $a)
-                                <option value="{{ $a->id }}">{{ $a->grupo->clave }} - {{ $a->grupo->materia->nombre }} ({{ $a->periodo->clave }})</option>
-                            @endforeach
-                        </select>
+
+                    <div>
+                        <x-ui.field label="Acta" for="fmt-acta" :error="$errors->first('acta')"
+                            hint="Solo necesario para el acta de calificaciones.">
+                            <x-ui.select id="fmt-acta" wire:model.live="acta">
+                                <option value="">Seleccionar acta (solo para Acta de Calificaciones)</option>
+                                @foreach (\App\Models\Acta::with('grupo.materia')->orderByDesc('created_at')->get() as $a)
+                                    <option value="{{ $a->id }}">
+                                        {{ $a->grupo->clave }} - {{ $a->grupo->materia->nombre }} ({{ $a->periodo->clave }})
+                                    </option>
+                                @endforeach
+                            </x-ui.select>
+                        </x-ui.field>
                     </div>
                 </div>
-                <div class="d-flex gap-2 mt-3">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> Generar PDF
-                    </button>
-                    <button type="button" class="btn btn-secondary" wire:click="$reset('tipo', 'alumno', 'acta')">
-                        <i class="bi bi-x-circle me-1"></i> Limpiar
-                    </button>
+
+                <div class="mt-4 flex flex-wrap justify-end gap-2 border-t border-brand-line pt-4">
+                    <x-ui.button variant="secondary" icon="x-mark"
+                        wire:click="$reset('tipo', 'alumno', 'acta')">
+                        Limpiar
+                    </x-ui.button>
+                    <x-ui.button type="submit" icon="document-text"
+                        wire:loading.attr="disabled" wire:target="generarFormato">
+                        <span wire:loading.remove wire:target="generarFormato">Generar PDF</span>
+                        <span wire:loading wire:target="generarFormato"><x-ui.loading label="Generando…" /></span>
+                    </x-ui.button>
                 </div>
             </form>
-        </div>
+        </x-ui.card>
     </div>
-
-    <!-- Descarga directa para testing -->
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
 </div>

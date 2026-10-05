@@ -30,6 +30,13 @@ class EquivalenciaAdmin extends Component
 
     protected $listeners = ['equivalenciaRegistrada', 'equivalenciaActualizada'];
 
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
+        $this->filtroEstatus = '';
+        $this->resetPage();
+    }
+
     public function abrirModalCrear(): void
     {
         Gate::authorize('equivalencia.crear');

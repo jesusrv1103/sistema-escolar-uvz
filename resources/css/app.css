@@ -213,9 +213,17 @@
         line-height: 1.4;
     }
 
-    /* Color de texto para mensajes/encabezados de error (semántica, no marca). */
+    /* Colores de texto semánticos (no de marca): los mismos que usa .ui-badge-*. */
     .text-danger-ink {
         color: #b91c1c;
+    }
+
+    .text-success-ink {
+        color: #047857;
+    }
+
+    .text-warning-ink {
+        color: #b45309;
     }
 
     .ui-input,

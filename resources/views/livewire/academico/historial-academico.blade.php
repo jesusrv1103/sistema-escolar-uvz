@@ -1,194 +1,201 @@
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0">Historial Académico</h1>
-    </div>
+<div>
+    <x-ui.page-header title="Historial Académico"
+        description="Kardex y avance académico por alumno: tira de materias y detalle por periodos." />
 
-    <!-- Búsqueda de alumno -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Buscar alumno</label>
-                    <div class="input-group">
-                        <input type="text" class="form-control" wire:model.debounce.300ms="busqueda" placeholder="Nombre, apellidos, CURP, número de control...">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    </div>
+    {{-- --------------------------- Búsqueda ---------------------------- --}}
+    <div class="mt-5">
+        <x-ui.filters>
+            <div class="grid gap-3 md:grid-cols-5">
+                <div class="md:col-span-3">
+                    <x-ui.field label="Buscar alumno">
+                        <x-ui.input type="text" wire:model.live.debounce.300ms="busqueda"
+                            placeholder="Nombre, apellidos, CURP, número de control…"
+                            aria-label="Buscar alumno" />
+                    </x-ui.field>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Filtrar por periodo</label>
-                    <select class="form-select" wire:model="filtroPeriodo">
-                        <option value="">Todos los periodos</option>
-                        @foreach($periodos as $p)
-                            <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
-                        @endforeach
-                    </select>
+
+                <div class="md:col-span-2">
+                    <x-ui.field label="Filtrar por periodo">
+                        <x-ui.select wire:model.live="filtroPeriodo" aria-label="Filtrar por periodo">
+                            <option value="">Todos los periodos</option>
+                            @foreach ($periodos as $p)
+                                <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
                 </div>
             </div>
-        </div>
+
+            <div class="mt-3 flex justify-end border-t border-brand-line pt-3">
+                <x-ui.button size="sm" variant="ghost" icon="x-mark" wire:click="limpiarFiltros">
+                    Limpiar filtros
+                </x-ui.button>
+            </div>
+        </x-ui.filters>
     </div>
 
-    <!-- Listado de alumnos -->
-    @if(!$alumno)
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Seleccione un alumno</h5>
-            </div>
-            <div class="card-body p-0">
-                @if($alumnos->isEmpty())
-                    <div class="text-center py-5 text-muted">
-                        <i class="bi bi-people display-4"></i>
-                        <p class="mt-2">No hay alumnos registrados{{ $busqueda ? ' con ese criterio' : '' }}.</p>
-                    </div>
+    @if (! $alumno)
+        {{-- ----------------------- Selector de alumno ---------------------- --}}
+        <div class="mt-4">
+            <x-ui.card :flush="$alumnos->isNotEmpty()">
+                <x-slot:header>
+                    <p class="text-sm font-semibold text-brand-text">Seleccione un alumno</p>
+                </x-slot:header>
+
+                @if ($alumnos->isEmpty())
+                    <x-ui.empty-state icon="users" title="Sin alumnos"
+                        message="No hay alumnos registrados{{ $busqueda ? ' con ese criterio' : '' }}." />
                 @else
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                    <div class="overflow-x-auto">
+                        <table class="ui-table">
+                            <thead>
                                 <tr>
-                                    <th>Número de Control</th>
-                                    <th>Alumno</th>
-                                    <th>CURP</th>
-                                    <th>Programa</th>
-                                    <th>Periodo Activo</th>
-                                    <th class="text-end">Acciones</th>
+                                    <th scope="col">N.º de control</th>
+                                    <th scope="col">Alumno</th>
+                                    <th scope="col">CURP</th>
+                                    <th scope="col">Programa</th>
+                                    <th scope="col">Periodo activo</th>
+                                    <th scope="col" class="text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($alumnos as $a)
-                                    <tr wire:click="alumnoSeleccionado({{ $a->id }})" style="cursor: pointer;">
-                                        <td>{{ $a->numero_control ?? '<span class="text-muted">Por asignar</span>' }}</td>
-                                        <td>{{ $a->nombre_completo }}</td>
-                                        <td>{{ $a->curp }}</td>
-                                        <td>{{ $a->matriculasPeriodo->first()?->programa->clave ?? '—' }}</td>
-                                        <td>{{ $a->matriculasPeriodo->first()?->periodo->clave ?? '—' }}</td>
-                                        <td class="text-end">
-                                            <button type="button" class="btn btn-sm btn-primary" wire:click.prevent="alumnoSeleccionado({{ $a->id }})">
-                                                <i class="bi bi-clipboard-data me-1"></i> Ver historial
-                                            </button>
+                                @foreach ($alumnos as $a)
+                                    <tr wire:key="alumno-hist-{{ $a->id }}" wire:click="alumnoSeleccionado({{ $a->id }})"
+                                        class="cursor-pointer">
+                                        <td class="font-mono text-xs">{{ $a->numero_control ?? 'Por asignar' }}</td>
+                                        <td class="font-medium text-brand-text">{{ $a->nombre_completo }}</td>
+                                        <td class="font-mono text-xs">{{ $a->curp }}</td>
+                                        <td class="text-brand-muted">
+                                            {{ $a->matriculas->first()?->programa->clave ?? '—' }}
+                                        </td>
+                                        <td class="text-brand-muted">
+                                            {{ $a->matriculas->first()?->periodo->clave ?? '—' }}
+                                        </td>
+                                        <td class="text-right">
+                                            <x-ui.button size="sm" variant="secondary" icon="clipboard"
+                                                wire:click.stop="alumnoSeleccionado({{ $a->id }})">
+                                                Ver historial
+                                            </x-ui.button>
                                         </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
-                    <div class="card-footer">
-                        {{ $alumnos->links() }}
-                    </div>
+
+                    <div class="border-t border-brand-line px-5 py-3">{{ $alumnos->links() }}</div>
                 @endif
-            </div>
+            </x-ui.card>
         </div>
     @else
-        <!-- Resumen académico -->
+        {{-- -------------------------- Resumen académico ---------------------- --}}
         @php
             $service = app(\App\Services\HistorialAcademicoService::class);
             $resumen = $service->resumenAcademico($alumno);
             $tira = $service->tiraMaterias($alumno);
         @endphp
 
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body text-center">
-                        <div class="display-4">{{ $resumen['promedio'] ?? '—' }}</div>
-                        <div class="text-white-50">Promedio Ponderado</div>
-                    </div>
-                </div>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="ui-card p-5">
+                <p class="tabular-nums text-3xl font-semibold text-brand-text">{{ $resumen['promedio'] ?? '—' }}</p>
+                <p class="mt-1 text-xs text-brand-muted">Promedio ponderado</p>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body text-center">
-                        <div class="display-4">{{ $resumen['porcentaje_avance'] }}%</div>
-                        <div class="text-white-50">Avance Académico</div>
-                    </div>
-                </div>
+            <div class="ui-card p-5">
+                <p class="tabular-nums text-3xl font-semibold text-brand-primary">{{ $resumen['porcentaje_avance'] }}%</p>
+                <p class="mt-1 text-xs text-brand-muted">Avance académico</p>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body text-center">
-                        <div class="display-4">{{ $resumen['creditos_aprobados'] }} / {{ $resumen['creditos_totales'] }}</div>
-                        <div class="text-white-50">Créditos Aprobados / Totales</div>
-                    </div>
-                </div>
+            <div class="ui-card p-5">
+                <p class="tabular-nums text-3xl font-semibold text-brand-text">
+                    {{ $resumen['creditos_aprobados'] }} / {{ $resumen['creditos_totales'] }}
+                </p>
+                <p class="mt-1 text-xs text-brand-muted">Créditos aprobados / totales</p>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body text-center">
-                        <div class="display-4">{{ $resumen['creditos_pendientes'] }}</div>
-                        <div class="text-white-50">Créditos Pendientes</div>
-                    </div>
-                </div>
+            <div class="ui-card p-5">
+                <p class="tabular-nums text-3xl font-semibold text-warning-ink">{{ $resumen['creditos_pendientes'] }}</p>
+                <p class="mt-1 text-xs text-brand-muted">Créditos pendientes</p>
             </div>
         </div>
 
-        <!-- Datos del alumno -->
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    {{ $alumno->nombre_completo }}
-                    @if($alumno->numero_control)
-                        <span class="text-muted fw-normal fs-6 ms-2">{{ $alumno->numero_control }}</span>
-                    @endif
-                </h5>
-                <div class="btn-group btn-group-sm">
-                    <a href="{{ route('documentos.generados.descargar', ['tipo' => 'kardex', 'alumno' => $alumno->id]) }}" class="btn btn-outline-primary" target="_blank">
-                        <i class="bi bi-file-earmark-text me-1"></i> Kardex PDF
-                    </a>
-                    <a href="{{ route('documentos.generados.descargar', ['tipo' => 'boleta', 'alumno' => $alumno->id]) }}" class="btn btn-outline-primary" target="_blank">
-                        <i class="bi bi-file-earmark-text me-1"></i> Boleta PDF
-                    </a>
-                    <a href="{{ route('documentos.generados.descargar', ['tipo' => 'historial', 'alumno' => $alumno->id]) }}" class="btn btn-outline-primary" target="_blank">
-                        <i class="bi bi-file-earmark-text me-1"></i> Historial PDF
-                    </a>
+        {{-- --------------------------- Datos del alumno ----------------------- --}}
+        <div class="mt-4">
+            <x-ui.card>
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="text-base font-semibold text-brand-text">{{ $alumno->nombre_completo }}</p>
+                        @if ($alumno->numero_control)
+                            <p class="font-mono text-xs text-brand-muted">{{ $alumno->numero_control }}</p>
+                        @endif
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-semibold uppercase tracking-wide text-brand-muted">Generar formatos</span>
+                        <x-ui.button size="sm" variant="secondary" icon="document-text"
+                            :href="route('formatos-academicos.kardex', $alumno)">
+                            Kardex
+                        </x-ui.button>
+                        <x-ui.button size="sm" variant="secondary" icon="receipt"
+                            :href="route('formatos-academicos.boleta', $alumno)">
+                            Boleta
+                        </x-ui.button>
+                        <x-ui.button size="sm" variant="secondary" icon="clipboard"
+                            :href="route('formatos-academicos.historial', $alumno)">
+                            Historial
+                        </x-ui.button>
+                    </div>
                 </div>
-            </div>
+            </x-ui.card>
         </div>
 
-        <!-- Tira de materias / Historial por periodos -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Tira de Materias / Historial Académico</h5>
-            </div>
-            <div class="card-body p-0">
-                @if($tira->isEmpty())
-                    <div class="text-center py-5 text-muted">
-                        <i class="bi bi-book display-4"></i>
-                        <p class="mt-2">No hay materias registradas en el plan de estudios.</p>
-                    </div>
+        {{-- ---------------------- Tira de materias ------------------------- --}}
+        <div class="mt-4">
+            <x-ui.card :flush="$tira->isNotEmpty()">
+                <x-slot:header>
+                    <p class="text-sm font-semibold text-brand-text">Tira de materias / historial académico</p>
+                </x-slot:header>
+
+                @if ($tira->isEmpty())
+                    <x-ui.empty-state icon="clipboard" title="Sin materias"
+                        message="No hay materias registradas en el plan de estudios." />
                 @else
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                    <div class="overflow-x-auto">
+                        <table class="ui-table">
+                            <thead>
                                 <tr>
-                                    <th>Clave</th>
-                                    <th>Materia</th>
-                                    <th>Créditos</th>
-                                    <th>Estatus</th>
-                                    <th>Calificación</th>
-                                    <th>Observación</th>
+                                    <th scope="col">Clave</th>
+                                    <th scope="col">Materia</th>
+                                    <th scope="col" class="text-right">Créditos</th>
+                                    <th scope="col">Estatus</th>
+                                    <th scope="col" class="text-right">Calificación</th>
+                                    <th scope="col">Observación</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($tira as $m)
-                                    <tr class="{{ $m['es_aprobada'] ? 'table-success' : ($m['es_reprobada'] ? 'table-danger' : ($m['estatus'] === 'CURSANDO' ? 'table-warning' : '')) }}">
-                                        <td>{{ $m['materia']['clave'] }}</td>
-                                        <td>{{ $m['materia']['nombre'] }}</td>
-                                        <td>{{ $m['materia']['creditos'] }}</td>
+                                @foreach ($tira as $m)
+                                    <tr wire:key="tira-{{ $m['materia']['clave'] }}-{{ $m['estatus'] }}">
+                                        <td class="font-mono text-xs">{{ $m['materia']['clave'] }}</td>
+                                        <td class="font-medium text-brand-text">{{ $m['materia']['nombre'] }}</td>
+                                        <td class="text-right tabular-nums">{{ $m['materia']['creditos'] }}</td>
                                         <td>
-                                            <span class="badge {{ match($m['estatus']) {
-                                                'APROBADA' => 'bg-success',
-                                                'REPROBADA' => 'bg-danger',
-                                                'EXTRAORDINARIO' => 'bg-warning text-dark',
-                                                'CURSANDO' => 'bg-warning text-dark',
-                                                default => 'bg-secondary'
-                                            }}">{{ $m['estatus'] }}</span>
+                                            <x-ui.badge :tone="match ($m['estatus']) {
+                                                'APROBADA' => 'success',
+                                                'REPROBADA' => 'danger',
+                                                'EXTRAORDINARIO' => 'warning',
+                                                'CURSANDO' => 'primary',
+                                                default => 'neutral',
+                                            }">
+                                                {{ $m['estatus'] }}
+                                            </x-ui.badge>
                                         </td>
-                                        <td>{{ $m['calificacion_final'] ?? '—' }}</td>
+                                        <td class="text-right tabular-nums">{{ $m['calificacion_final'] ?? '—' }}</td>
                                         <td>
-                                            @if($m['es_extraordinario'])
-                                                <span class="badge bg-warning text-dark"><i class="bi bi-star me-1"></i> Extraordinario</span>
-                                            @endif
-                                            @if($m['es_equivalencia'])
-                                                <span class="badge bg-info text-dark"><i class="bi bi-arrow-left-right me-1"></i> Equivalencia</span>
-                                            @endif
+                                            <div class="flex flex-wrap gap-1.5">
+                                                @if ($m['es_extraordinario'])
+                                                    <x-ui.badge tone="warning">Extraordinario</x-ui.badge>
+                                                @endif
+                                                @if ($m['es_equivalencia'])
+                                                    <x-ui.badge tone="info">Equivalencia</x-ui.badge>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -196,53 +203,61 @@
                         </table>
                     </div>
                 @endif
-            </div>
+            </x-ui.card>
         </div>
 
-        <!-- Detalle por periodos -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">Detalle por Periodos</h5>
-            </div>
-            <div class="card-body p-0">
-                @php
-                    $historialPorPeriodo = $resumen['historial']->groupBy('periodo.clave');
-                @endphp
-                @foreach($historialPorPeriodo as $periodoClave => $materias)
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">{{ $periodoClave }}</h6>
+        {{-- ------------------------ Detalle por periodos --------------------- --}}
+        @php
+            $historialPorPeriodo = $resumen['historial']->groupBy('periodo.clave');
+        @endphp
+
+        <div class="mt-4">
+            <x-ui.card :flush="$historialPorPeriodo->isNotEmpty()">
+                <x-slot:header>
+                    <p class="text-sm font-semibold text-brand-text">Detalle por periodos</p>
+                </x-slot:header>
+
+                @forelse ($historialPorPeriodo as $periodoClave => $materias)
+                    @if (! $loop->first)
+                        <div class="border-t border-brand-line"></div>
+                    @endif
+                    <div class="border-t border-brand-line px-5 py-3 text-xs font-semibold uppercase tracking-wide text-brand-muted first:border-t-0">
+                        {{ $periodoClave }}
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light">
+
+                    <div class="overflow-x-auto">
+                        <table class="ui-table">
+                            <thead>
                                 <tr>
-                                    <th style="width: 15%;">Clave</th>
-                                    <th>Materia</th>
-                                    <th style="width: 8%;">Créditos</th>
-                                    <th style="width: 12%;">Estatus</th>
-                                    <th style="width: 10%;">Calificación</th>
-                                    <th>Observación</th>
+                                    <th scope="col">Clave</th>
+                                    <th scope="col">Materia</th>
+                                    <th scope="col" class="text-right">Créditos</th>
+                                    <th scope="col">Estatus</th>
+                                    <th scope="col" class="text-right">Calificación</th>
+                                    <th scope="col">Observación</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($materias as $m)
-                                    <tr class="{{ $m['es_aprobada'] ? 'table-success' : ($m['es_reprobada'] ? 'table-danger' : ($m['estatus'] === 'CURSANDO' ? 'table-warning' : '')) }}">
-                                        <td>{{ $m['materia']['clave'] }}</td>
-                                        <td>{{ $m['materia']['nombre'] }}</td>
-                                        <td>{{ $m['materia']['creditos'] }}</td>
+                                @foreach ($materias as $m)
+                                    <tr wire:key="hist-{{ $periodoClave }}-{{ $m['materia']['clave'] }}">
+                                        <td class="font-mono text-xs">{{ $m['materia']['clave'] }}</td>
+                                        <td class="font-medium text-brand-text">{{ $m['materia']['nombre'] }}</td>
+                                        <td class="text-right tabular-nums">{{ $m['materia']['creditos'] }}</td>
                                         <td>
-                                            <span class="badge {{ match($m['estatus']) {
-                                                'APROBADA' => 'bg-success',
-                                                'REPROBADA' => 'bg-danger',
-                                                'EXTRAORDINARIO' => 'bg-warning text-dark',
-                                                'CURSANDO' => 'bg-warning text-dark',
-                                                default => 'bg-secondary'
-                                            }}">{{ $m['estatus'] }}</span>
+                                            <x-ui.badge :tone="match ($m['estatus']) {
+                                                'APROBADA' => 'success',
+                                                'REPROBADA' => 'danger',
+                                                'EXTRAORDINARIO' => 'warning',
+                                                'CURSANDO' => 'primary',
+                                                default => 'neutral',
+                                            }">
+                                                {{ $m['estatus'] }}
+                                            </x-ui.badge>
                                         </td>
-                                        <td>{{ $m['calificacion_final'] ?? '—' }}</td>
+                                        <td class="text-right tabular-nums">{{ $m['calificacion_final'] ?? '—' }}</td>
                                         <td>
-                                            @if($m['es_extraordinario'])
-                                                <span class="badge bg-warning text-dark"><i class="bi bi-star me-1"></i> Extraordinario</span>
+                                            @if ($m['es_extraordinario'])
+                                                <x-ui.badge tone="warning">Extraordinario</x-ui.badge>
                                             @endif
                                         </td>
                                     </tr>
@@ -250,14 +265,17 @@
                             </tbody>
                         </table>
                     </div>
-                @endforeach
-            </div>
+                @empty
+                    <x-ui.empty-state icon="clipboard" title="Sin periodos"
+                        message="Aún no hay historial por periodos para este alumno." />
+                @endforelse
+            </x-ui.card>
         </div>
 
-        <div class="text-center mt-4">
-            <a href="{{ url()->previous() }}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Volver a la lista
-            </a>
+        <div class="mt-4 flex justify-start">
+            <x-ui.button variant="secondary" icon="arrow-left" :href="url()->previous()">
+                Volver a la lista
+            </x-ui.button>
         </div>
     @endif
 </div>

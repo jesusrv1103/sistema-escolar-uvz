@@ -139,6 +139,14 @@ class BecaAdmin extends Component
         }
     }
 
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
+        $this->filtroEstatus = '';
+        $this->filtroPeriodo = '';
+        $this->resetPage();
+    }
+
     public function abrirModalAsignacion(): void
     {
         Gate::authorize('beca_asignar');
