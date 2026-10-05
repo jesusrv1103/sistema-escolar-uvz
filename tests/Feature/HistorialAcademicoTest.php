@@ -71,7 +71,7 @@ test('promedio ponderado por créditos con materias aprobadas y reprobadas', fun
     $grupo1 = Grupo::factory()->paraMateria($materia1)->paraPeriodo($periodo)->abierto()->create(['activo' => true, 'cupo' => 40]);
     $grupo2 = Grupo::factory()->paraMateria($materia2)->paraPeriodo($periodo)->abierto()->create(['activo' => true, 'cupo' => 40]);
     
-    $matricula = MatriculaPeriodo::factory()->paraAlumno($alumno)->paraPeriodo($periodo)->paraPrograma($programa)->create([
+    $matricula = MatriculaPeriodo::factory()->activa()->paraAlumno($alumno)->paraPeriodo($periodo)->paraPrograma($programa)->create([
             'plan_version_id' => $planVersion->id,
         ]);
     $inscripcion1 = InscripcionMateria::factory()->paraMatricula($matricula)->paraGrupo($grupo1)->cursando()->create();
@@ -116,7 +116,7 @@ test('créditos aprobados solo cuenta materias APROBADA', function () {
     $grupo2 = Grupo::factory()->paraMateria($materia2)->paraPeriodo($periodo)->abierto()->create(['activo' => true, 'cupo' => 40]);
     $grupo3 = Grupo::factory()->paraMateria($materia3)->paraPeriodo($periodo)->abierto()->create(['activo' => true, 'cupo' => 40]);
     
-    $matricula = MatriculaPeriodo::factory()->paraAlumno($alumno)->paraPeriodo($periodo)->paraPrograma($programa)->create([
+    $matricula = MatriculaPeriodo::factory()->activa()->paraAlumno($alumno)->paraPeriodo($periodo)->paraPrograma($programa)->create([
             'plan_version_id' => $planVersion->id,
         ]);
     $inscripcion1 = InscripcionMateria::factory()->paraMatricula($matricula)->paraGrupo($grupo1)->cursando()->create();
@@ -154,7 +154,7 @@ test('avance académico calcula correctamente', function () {
     
     $grupos = $materias->map(fn($m) => Grupo::factory()->paraMateria($m)->paraPeriodo(Periodo::factory()->create(['activo' => true]))->abierto()->create(['activo' => true, 'cupo' => 40]));
     
-    $matricula = MatriculaPeriodo::factory()->paraAlumno($alumno)->paraPeriodo(Periodo::factory()->create(['activo' => true]))->paraPrograma(Programa::factory()->create(['activo' => true]))->create();
+    $matricula = MatriculaPeriodo::factory()->activa()->paraAlumno($alumno)->paraPeriodo(Periodo::factory()->create(['activo' => true]))->paraPrograma(Programa::factory()->create(['activo' => true]))->create();
     
     $service = app(HistorialAcademicoService::class);
     
