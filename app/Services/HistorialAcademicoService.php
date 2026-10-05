@@ -37,24 +37,24 @@ class HistorialAcademicoService
                 'periodo',
                 'programa',
                 'planVersion',
-                'inscripcionesMaterias.grupo.materia',
-                'inscripcionesMaterias.grupo.periodo',
-                'inscripcionesMaterias.calificaciones.evaluacion',
+                'inscripciones.grupo.materia',
+                'inscripciones.grupo.periodo',
+                'inscripciones.calificaciones.evaluacion',
             ])
             ->orderBy('periodo_id')
             ->get();
 
         return $matriculas->flatMap(function ($matricula) {
-            return $matricula->inscripcionesMaterias
+            return $matricula->inscripciones
                 ->where('estatus', '!=', 'BAJA')
                 ->map(function ($inscripcion) use ($matricula) {
                     $grupo = $inscripcion->grupo;
                     $materia = $grupo?->materia;
 
                     $calificacionFinal = $inscripcion->calificacion_final;
-                    $esAprobada = $inscripcion->esAprobada();
-                    $esReprobada = $inscripcion->esReprobada();
-                    $esCursando = $inscripcion->esCursando();
+                    $esAprobada = $inscripcion->isAprobada();
+                    $esReprobada = $inscripcion->isReprobada();
+                    $esCursando = $inscripcion->isCursando();
                     $esExtraordinario = $inscripcion->estatus === 'EXTRAORDINARIO';
 
                     return [

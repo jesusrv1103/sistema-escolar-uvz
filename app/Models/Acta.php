@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Concerns\HasAudit;
+use App\Models\Concerns\HasAudit;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,6 +37,20 @@ class Acta extends Model
             'estatus' => 'string',
             'cerrada_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (self $acta) {
+            if (!$acta->folio) {
+                $acta->folio = resolve(\App\Services\ConsecutivoService::class)->generar(\App\Enums\TipoConsecutivo::ACTA_CALIFICACIONES);
+            }
+        });
     }
 
     /**

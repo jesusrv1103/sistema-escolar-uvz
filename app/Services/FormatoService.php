@@ -61,7 +61,17 @@ class FormatoService
         // Generar folio si el formato lo requiere
         $folio = null;
         if ($tipo->requiereFolio()) {
-            $folio = $this->generarFolio($tipo);
+            // Para ACTA, verificar si se proporciona un acta_id para reutilizar el folio
+            if ($tipo === TipoFormato::ACTA && isset($datos['acta_id'])) {
+                $actaExistente = \App\Models\Acta::find($datos['acta_id']);
+                if ($actaExistente && $actaExistente->folio) {
+                    $folio = $actaExistente->folio;
+                } else {
+                    $folio = $this->generarFolio($tipo);
+                }
+            } else {
+                $folio = $this->generarFolio($tipo);
+            }
         }
 
         // Renderizar PDF
@@ -232,6 +242,35 @@ class FormatoService
             ];
         }
 
+        // Cargar datos específicos para formatos 2.0-10
+        if (in_array($tipo->value, ['KARDEX', 'BOLETA', 'HISTORIAL', 'TIRA', 'AVANCE'])) {
+            if ($alumno) {
+                $service = app(\App\Services\HistorialAcademicoService::class);
+                $datos['historial'] = $service->obtenerHistorial($alumno);
+                $datos['resumen'] = $service->resumenAcademico($alumno);
+            }
+        }
+
+        if ($tipo->value === 'ACTA') {
+            if ($grupo) {
+                $acta = \App\Models\Acta::where('grupo_id', $grupo->id)
+                    ->where('periodo_id', $grupo->periodo_id)
+                    ->first();
+                if ($acta) {
+                    $acta->loadMissing(['grupo.materia', 'periodo', 'cerradaPor', 'grupo.inscripcionesMaterias.matriculaPeriodo.alumno']);
+                    $datos['acta'] = $acta;
+                }
+            }
+        }
+
+        if (in_array($tipo->value, ['TIRA', 'AVANCE'])) {
+            if ($alumno) {
+                $service = app(\App\Services\HistorialAcademicoService::class);
+                $datos['tira'] = $service->tiraMaterias($alumno);
+                $datos['resumen'] = $service->resumenAcademico($alumno);
+            }
+        }
+
         return array_merge($datos, $datosExtra);
     }
 
@@ -277,6 +316,12 @@ class FormatoService
             TipoFormato::FICHA => 'ficha',
             TipoFormato::HORARIO => 'horario',
             TipoFormato::LISTA_GRUPO => 'lista_grupo',
+            TipoFormato::KARDEX => 'kardex',
+            TipoFormato::BOLETA => 'boleta',
+            TipoFormato::HISTORIAL => 'historial',
+            TipoFormato::ACTA => 'acta',
+            TipoFormato::TIRA => 'tira',
+            TipoFormato::AVANCE => 'avance',
         };
 
         return "{$prefijo}_{$timestamp}.pdf";
@@ -371,12 +416,12 @@ class FormatoService
             abort(403, 'Usuario no autenticado.');
         }
 
-        // Usar autorización estándar con el modelo DocumentoGenerado
-        Gate::authorize('create', DocumentoGenerado::class);
+        // Usar autorización para el usuario específico
+        Gate::forUser($usuario)->authorize('create', DocumentoGenerado::class);
 
         // Validaciones adicionales por tipo
         if (in_array($tipo, [TipoFormato::HORARIO, TipoFormato::LISTA_GRUPO], true) && $grupo) {
-            Gate::authorize('ver', $grupo);
+            Gate::forUser($usuario)->authorize('ver', $grupo);
         }
     }
 }

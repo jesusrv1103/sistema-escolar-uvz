@@ -68,6 +68,6 @@ class Beca extends Model
         }
 
         $hoy = now()->toDateString();
-        return ($this->fecha_inicio <= $hoy) && ($this->fecha_fin >= $hoy);
+        return ($this->fecha_inicio->toDateString() <= $hoy) && ($this->fecha_fin->toDateString() >= $hoy);
     }
 }

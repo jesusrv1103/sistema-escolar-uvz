@@ -15,6 +15,12 @@ enum TipoFormato: string
     case FICHA = 'FICHA';
     case HORARIO = 'HORARIO';
     case LISTA_GRUPO = 'LISTA_GRUPO';
+    case KARDEX = 'KARDEX';
+    case BOLETA = 'BOLETA';
+    case HISTORIAL = 'HISTORIAL';
+    case ACTA = 'ACTA';
+    case TIRA = 'TIRA';
+    case AVANCE = 'AVANCE';
 
     public function label(): string
     {
@@ -24,6 +30,12 @@ enum TipoFormato: string
             self::FICHA => 'Ficha del Alumno',
             self::HORARIO => 'Horario del Alumno',
             self::LISTA_GRUPO => 'Lista de Grupo',
+            self::KARDEX => 'Kardex',
+            self::BOLETA => 'Boleta de Calificaciones',
+            self::HISTORIAL => 'Historial Académico',
+            self::ACTA => 'Acta de Calificaciones',
+            self::TIRA => 'Tira de Materias',
+            self::AVANCE => 'Reporte de Avance Académico',
         };
     }
 
@@ -34,6 +46,7 @@ enum TipoFormato: string
     {
         return match ($this) {
             self::CONSTANCIA_INSCRIPCION => true,
+            self::ACTA => true,
             default => false,
         };
     }
@@ -45,6 +58,7 @@ enum TipoFormato: string
     {
         return match ($this) {
             self::LISTA_GRUPO => false,
+            self::ACTA => false,
             default => true,
         };
     }
@@ -56,6 +70,7 @@ enum TipoFormato: string
     {
         return match ($this) {
             self::CONSTANCIA_INSCRIPCION => 'CONSTANCIA_INSCRIPCION',
+            self::ACTA => 'ACTA_CALIFICACIONES',
             default => null,
         };
     }
