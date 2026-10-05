@@ -12,15 +12,16 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class PlanVersionFactory extends Factory
 {
+    protected static int $counter = 0;
+
     protected $model = PlanVersion::class;
 
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        static $i = 0;
         return [
             'plan_id' => PlanEstudio::factory(),
-            'version' => '1.' . ($i++ % 10),
+            'version' => '1.' . (self::$counter++ % 10),
             'fecha_vigencia' => fake()->optional(0.7)->dateTimeBetween('now', '+2 years')?->format('Y-m-d'),
             'estatus' => fake()->randomElement(EstatusPlanVersion::cases()),
             'aprobado_por' => null,
@@ -69,5 +70,10 @@ class PlanVersionFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'plan_id' => $planEstudio->id,
         ]);
+    }
+
+    public static function resetCounter(): void
+    {
+        self::$counter = 0;
     }
 }

@@ -16,14 +16,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class GrupoFactory extends Factory
 {
+    protected static int $counter = 0;
+
     protected $model = Grupo::class;
 
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        static $i = 0;
         $claves = ['GRP', 'GRU', 'SECC', 'SEC', 'GR'];
-        $clave = $claves[$i % count($claves)] . '_' . ($i++) . '_' . $this->faker->unique()->randomNumber(4);
+        $clave = $claves[self::$counter % count($claves)] . '_' . (self::$counter++) . '_' . $this->faker->unique()->randomNumber(4);
 
         return [
             'materia_id' => Materia::factory(),
@@ -102,5 +103,10 @@ class GrupoFactory extends Factory
     public function paraAula(Aula $aula): static
     {
         return $this->state(fn (array $attributes) => ['aula_id' => $aula->id]);
+    }
+
+    public static function resetCounter(): void
+    {
+        self::$counter = 0;
     }
 }

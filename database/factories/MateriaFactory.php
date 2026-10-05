@@ -11,14 +11,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class MateriaFactory extends Factory
 {
+    protected static int $counter = 0;
+
     protected $model = Materia::class;
 
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        static $i = 0;
         $claves = ['MAT', 'ALG', 'CAL', 'FIS', 'QUI', 'BIO', 'HIS', 'FIL', 'DER', 'ECO', 'ADM', 'CON', 'PSI', 'SOC', 'ANT', 'GEO', 'ART', 'MUS', 'EDU', 'DEP'];
-        $clave = $claves[$i % count($claves)] . '-' . str_pad($i++, 3, '0', STR_PAD_LEFT);
+        $clave = $claves[self::$counter % count($claves)] . '-' . str_pad(self::$counter++, 3, '0', STR_PAD_LEFT);
 
         return [
             'plan_version_id' => PlanVersion::factory()->propuesta(),
@@ -57,5 +58,10 @@ class MateriaFactory extends Factory
     public function paraPlanVersion(PlanVersion $planVersion): static
     {
         return $this->state(fn (array $attributes) => ['plan_version_id' => $planVersion->id]);
+    }
+
+    public static function resetCounter(): void
+    {
+        self::$counter = 0;
     }
 }

@@ -11,14 +11,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ConvenioFactory extends Factory
 {
+    protected static int $counter = 0;
+
     protected $model = Convenio::class;
 
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        static $i = 0;
         $claves = ['BEC_10', 'BEC_20', 'DESC_500', 'DESC_1000', 'PROMO_1', 'PROMO_2', 'CONV_1', 'CONV_2'];
-        $clave = $claves[$i % count($claves)] . '_' . $i++;
+        $clave = $claves[self::$counter % count($claves)] . '_' . self::$counter++;
         $tipo = fake()->randomElement(TipoConvenio::cases());
 
         return [
@@ -48,5 +49,10 @@ class ConvenioFactory extends Factory
             'fecha_inicio' => fake()->dateTimeBetween('-2 years', '-1 year')->format('Y-m-d'),
             'fecha_fin' => fake()->dateTimeBetween('-1 year', '-6 months')->format('Y-m-d'),
         ]);
+    }
+
+    public static function resetCounter(): void
+    {
+        self::$counter = 0;
     }
 }

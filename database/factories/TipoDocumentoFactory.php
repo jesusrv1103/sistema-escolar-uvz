@@ -10,14 +10,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TipoDocumentoFactory extends Factory
 {
+    protected static int $counter = 0;
+
     protected $model = TipoDocumento::class;
 
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        static $i = 0;
         $claves = ['ACTA_NAC', 'CURP', 'CERT_EST', 'IDENTIFICACION', 'COMP_DOM', 'FOTO', 'CARTA_COND', 'OTRO'];
-        $clave = $claves[$i % count($claves)] . '_' . $i++;
+        $clave = $claves[self::$counter % count($claves)] . '_' . self::$counter++;
 
         return [
             'clave' => $clave,
@@ -25,5 +26,10 @@ class TipoDocumentoFactory extends Factory
             'obligatorio' => fake()->boolean(70),
             'activo' => true,
         ];
+    }
+
+    public static function resetCounter(): void
+    {
+        self::$counter = 0;
     }
 }

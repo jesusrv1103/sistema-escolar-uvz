@@ -10,14 +10,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class DocenteFactory extends Factory
 {
+    protected static int $counter = 0;
+
     protected $model = Docente::class;
 
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        static $i = 0;
         $claves = ['DOC', 'PROF', 'MAES', 'LIC', 'DR'];
-        $clave = $claves[$i % count($claves)] . '_' . ($i++);
+        $clave = $claves[self::$counter % count($claves)] . '_' . (self::$counter++);
 
         $hasRfc = $this->faker->boolean(50);
         $hasTelefono = $this->faker->boolean(70);
@@ -26,7 +27,7 @@ class DocenteFactory extends Factory
 
         return [
             'user_id' => null,
-            'clave' => $claves[$i % count($claves)] . '_' . ($i++),
+            'clave' => $claves[self::$counter % count($claves)] . '_' . (self::$counter++),
             'nombre' => $this->faker->firstName(),
             'apellidos' => $this->faker->lastName(),
             'curp' => $this->faker->regexify('[A-Z]{4}[0-9]{6}[HM][A-Z]{2}[A-Z]{3}[0-9]{2}'),
@@ -50,5 +51,10 @@ class DocenteFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'user_id' => \App\Models\User::factory()->deRol(\App\Enums\RolUsuario::DOCENTE)->create(),
         ]);
+    }
+
+    public static function resetCounter(): void
+    {
+        self::$counter = 0;
     }
 }

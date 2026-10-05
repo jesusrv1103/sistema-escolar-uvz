@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class BecaFactory extends Factory
 {
+    protected static int $counter = 0;
+
     protected $model = Beca::class;
 
     /** @return array<string, mixed> */
@@ -65,5 +67,10 @@ class BecaFactory extends Factory
     public function paraPeriodo(\App\Models\Periodo $periodo): static
     {
         return $this->state(fn (array $attributes) => ['periodo_id' => $periodo->id]);
+    }
+
+    public static function resetCounter(): void
+    {
+        self::$counter = 0;
     }
 }

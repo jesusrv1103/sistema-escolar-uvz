@@ -12,14 +12,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class PlanEstudioFactory extends Factory
 {
+    protected static int $counter = 0;
+
     protected $model = PlanEstudio::class;
 
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        static $i = 0;
         $claves = ['DER', 'SAI', 'CF', 'LIN', 'ADM', 'PSI', 'DERE', 'CONT', 'ARQ', 'ING'];
-        $clave = $claves[$i % count($claves)] . '_' . ($i++);
+        $clave = $claves[self::$counter % count($claves)] . '_' . (self::$counter++);
 
         return [
             'programa_id' => Programa::factory(),
@@ -39,5 +40,10 @@ class PlanEstudioFactory extends Factory
     public function paraPrograma(Programa $programa): static
     {
         return $this->state(fn (array $attributes) => ['programa_id' => $programa->id]);
+    }
+
+    public static function resetCounter(): void
+    {
+        self::$counter = 0;
     }
 }

@@ -12,16 +12,17 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class EvaluacionFactory extends Factory
 {
+    protected static int $counter = 0;
+
     protected $model = Evaluacion::class;
 
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        static $i = 0;
         $tipos = ['PARCIAL', 'EXAMEN', 'PROYECTO', 'PRACTICA', 'TAREA', 'EXPOSICION', 'OTRO'];
-        $tipo = $tipos[$i % count($tipos)];
+        $tipo = $tipos[self::$counter % count($tipos)];
         $nombres = ['Parcial', 'Examen', 'Proyecto', 'Práctica', 'Tarea', 'Exposición', 'Otro'];
-        $nombre = $nombres[$i++ % count($nombres)] . ' ' . ($i);
+        $nombre = $nombres[self::$counter++ % count($nombres)] . ' ' . (self::$counter);
 
         return [
             'grupo_id' => Grupo::factory(),
@@ -36,5 +37,10 @@ class EvaluacionFactory extends Factory
     public function borrador(): static
     {
         return $this->state(fn (array $attributes) => []);
+    }
+
+    public static function resetCounter(): void
+    {
+        self::$counter = 0;
     }
 }

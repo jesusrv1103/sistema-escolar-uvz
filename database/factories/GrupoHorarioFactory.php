@@ -12,14 +12,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class GrupoHorarioFactory extends Factory
 {
+    protected static int $counter = 0;
+
     protected $model = GrupoHorario::class;
 
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        static $i = 0;
         $dias = [\App\Enums\DiaSemana::LUNES, \App\Enums\DiaSemana::MARTES, \App\Enums\DiaSemana::MIERCOLES, \App\Enums\DiaSemana::JUEVES, \App\Enums\DiaSemana::VIERNES, \App\Enums\DiaSemana::SABADO];
-        $dia = $dias[$i % count($dias)];
+        $dia = $dias[self::$counter % count($dias)];
         $horaInicio = $this->faker->time('H:i', '07:00:00', '12:00:00');
         $horaFin = $this->faker->time('H:i', '13:00:00', '18:00:00');
 
@@ -44,5 +45,10 @@ class GrupoHorarioFactory extends Factory
     public function paraGrupo(\App\Models\Grupo $grupo): static
     {
         return $this->state(fn (array $attributes) => ['grupo_id' => $grupo->id]);
+    }
+
+    public static function resetCounter(): void
+    {
+        self::$counter = 0;
     }
 }
