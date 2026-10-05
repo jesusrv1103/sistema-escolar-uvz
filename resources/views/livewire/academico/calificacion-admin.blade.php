@@ -1,134 +1,196 @@
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0">
-            Captura de Calificaciones
-            @if($grupo)
-                <span class="text-muted fw-normal fs-6"> — {{ $grupo->clave }} ({{ $grupo->materia->clave }})</span>
+<div>
+    <x-ui.page-header title="Captura de Calificaciones"
+        :description="$grupo
+            ? 'Matriz de calificaciones del grupo ' . $grupo->clave . ' (' . $grupo->materia->clave . ').'
+            : 'Selecciona un grupo desde el listado de evaluaciones para capturar calificaciones.'">
+        <x-slot:meta>
+            @if ($grupo)
+                <x-ui.badge tone="primary">{{ $grupo->clave }}</x-ui.badge>
+                <x-ui.badge tone="neutral">{{ $grupo->materia->clave }}</x-ui.badge>
             @endif
-        </h1>
-    </div>
+        </x-slot:meta>
+    </x-ui.page-header>
 
-    @if(!$grupo)
-        <div class="alert alert-warning">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            Seleccione un grupo desde el listado de evaluaciones para capturar calificaciones.
+    @if (! $grupo)
+        <div class="mt-5">
+            <x-ui.alert tone="warning">
+                Selecciona un grupo desde el listado de evaluaciones para capturar calificaciones.
+            </x-ui.alert>
         </div>
     @else
-        <!-- Resumen de ponderación -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Configuración del Grupo</h6>
-                        <p class="mb-1"><strong>Grupo:</strong> {{ $grupo->clave }} - {{ $grupo->materia->clave }} - {{ $grupo->materia->nombre }}</p>
-                        <p class="mb-1"><strong>Docente:</strong> {{ $grupo->docente?->nombreCompleto() ?? 'Sin asignar' }}</p>
-                        <p class="mb-1"><strong>Periodo:</strong> {{ $grupo->periodo->clave }} - {{ $grupo->periodo->nombre }}</p>
-                        <p class="mb-1"><strong>Cupo:</strong> {{ $grupo->cupo }} | <strong>Inscritos:</strong> {{ $grupo->inscripcionesMaterias()->where('estatus', 'CURSANDO')->count() }}</p>
+        {{-- ------------------- Resumen de ponderación ------------------- --}}
+        <div class="mt-5 grid gap-4 lg:grid-cols-2">
+            <x-ui.card>
+                <x-slot:header>
+                    <p class="text-sm font-semibold text-brand-text">Configuración del grupo</p>
+                </x-slot:header>
+
+                <dl class="grid gap-3 text-sm sm:grid-cols-2">
+                    <div>
+                        <dt class="text-xs text-brand-muted">Grupo</dt>
+                        <dd class="font-medium text-brand-text">
+                            {{ $grupo->clave }} · {{ $grupo->materia->clave }} · {{ $grupo->materia->nombre }}
+                        </dd>
                     </div>
-                    <div class="col-md-6">
-                        <h6>Ponderación de Evaluaciones</h6>
-                        @foreach($evaluaciones as $eval)
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>{{ $eval->nombre }} ({{ $eval->tipo }})</span>
-                                <strong>{{ $eval->ponderacion }}%</strong>
-                            </div>
+                    <div>
+                        <dt class="text-xs text-brand-muted">Docente</dt>
+                        <dd class="font-medium text-brand-text">{{ $grupo->docente?->nombreCompleto() ?? 'Sin asignar' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-brand-muted">Periodo</dt>
+                        <dd class="font-medium text-brand-text">{{ $grupo->periodo->clave }} · {{ $grupo->periodo->nombre }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-brand-muted">Cupo / inscritos</dt>
+                        <dd class="font-medium text-brand-text">
+                            {{ $grupo->cupo }} / {{ $grupo->inscripcionesMaterias()->where('estatus', 'CURSANDO')->count() }}
+                        </dd>
+                    </div>
+                </dl>
+            </x-ui.card>
+
+            <x-ui.card>
+                <x-slot:header>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <p class="text-sm font-semibold text-brand-text">Ponderación de evaluaciones</p>
+                        @php
+                            $ponderacionTotal = \App\Models\Evaluacion::ponderacionTotalGrupo($grupo->id);
+                        @endphp
+                        <x-ui.badge :tone="$ponderacionTotal === 100 ? 'success' : 'warning'">
+                            {{ $ponderacionTotal }}%
+                        </x-ui.badge>
+                    </div>
+                </x-slot:header>
+
+                @if (count($evaluaciones) === 0)
+                    <p class="text-sm text-brand-muted">Sin evaluaciones definidas para este grupo.</p>
+                @else
+                    <ul class="divide-y divide-brand-line text-sm">
+                        @foreach ($evaluaciones as $eval)
+                            <li class="flex items-center justify-between gap-3 py-1.5">
+                                <span class="min-w-0 text-brand-text">
+                                    {{ $eval->nombre }}
+                                    <span class="text-xs text-brand-muted">
+                                        · {{ \App\Enums\TipoEvaluacion::EJEMPLOS[$eval->tipo] ?? $eval->tipo }}
+                                    </span>
+                                </span>
+                                <span class="tabular-nums font-semibold text-brand-text">{{ $eval->ponderacion }}%</span>
+                            </li>
                         @endforeach
-                        <hr>
-                        <div class="d-flex justify-content-between fw-bold">
-                            <span>Total Ponderación:</span>
-                            <span class="{{ \App\Models\Evaluacion::ponderacionTotalGrupo($grupo->id) == 100 ? 'text-success' : 'text-danger' }}">
-                                {{ \App\Models\Evaluacion::ponderacionTotalGrupo($grupo->id) }}%
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    </ul>
+                @endif
+            </x-ui.card>
         </div>
 
-        <!-- Matriz de Calificaciones -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Matriz de Calificaciones</h5>
-                @if(\App\Models\Evaluacion::ponderacionTotalGrupo($grupo->id) == 100)
-                    <button type="button" class="btn btn-success btn-sm" wire:click="consolidar({{ $grupo->inscripcionesMaterias()->where('estatus', 'CURSANDO')->first()?->id ?? 0 }})" @if($inscripciones->isEmpty()) disabled @endif>
-                        <i class="bi bi-check-circle me-1"></i> Consolidar Calificaciones Finales
-                    </button>
-                @endif
-            </div>
-            <div class="card-body p-0">
-                @if($inscripciones->isEmpty())
-                    <div class="text-center py-5 text-muted">
-                        <i class="bi bi-people display-4"></i>
-                        <p class="mt-2">No hay alumnos inscritos en este grupo.</p>
+        {{-- ----------------------- Matriz de calificaciones ----------------------- --}}
+        <div class="mt-4">
+            <x-ui.card :flush="count($inscripciones) > 0">
+                <x-slot:header>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-brand-text">Matriz de calificaciones</p>
+                            <p class="mt-0.5 text-xs text-brand-muted">
+                                Promedio ponderado calculado con la ponderación de cada evaluación.
+                            </p>
+                        </div>
+
+                        @if (\App\Models\Evaluacion::ponderacionTotalGrupo($grupo->id) === 100)
+                            <x-ui.button size="sm" variant="success" icon="check-circle"
+                                wire:click="consolidar({{ $grupo->inscripcionesMaterias()->where('estatus', 'CURSANDO')->first()?->id ?? 0 }})"
+                                :disabled="count($inscripciones) === 0"
+                                wire:loading.attr="disabled" wire:target="consolidar">
+                                Consolidar Calificaciones Finales
+                            </x-ui.button>
+                        @endif
                     </div>
+                </x-slot:header>
+
+                @if (count($inscripciones) === 0)
+                    <x-ui.empty-state icon="users" title="Sin alumnos inscritos en este grupo"
+                        message="Inscribe alumnos al grupo para comenzar la captura." />
                 @else
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                    <div class="overflow-x-auto">
+                        <table class="ui-table">
+                            <thead>
                                 <tr>
-                                    <th style="min-width: 150px;">Alumno</th>
-                                    <th style="min-width: 100px;">NC</th>
-                                    @foreach($evaluaciones as $eval)
-                                        <th style="min-width: 80px;" title="{{ $eval->nombre }} ({{ $eval->tipo }})">
-                                            {{ $eval->nombre }}<br>
-                                            <small class="text-muted">{{ $eval->ponderacion }}%</small>
+                                    <th scope="col" class="min-w-[150px]">Alumno</th>
+                                    <th scope="col" class="min-w-[100px]">N.º de control</th>
+                                    @foreach ($evaluaciones as $eval)
+                                        <th scope="col" class="min-w-[80px] text-right"
+                                            title="{{ $eval->nombre }} ({{ $eval->tipo }})">
+                                            <span class="block font-semibold">{{ $eval->nombre }}</span>
+                                            <span class="block text-xs font-normal text-brand-muted">
+                                                {{ $eval->ponderacion }}%
+                                            </span>
                                         </th>
                                     @endforeach
-                                    <th style="min-width: 100px;">Promedio</th>
-                                    <th style="min-width: 100px;">Estatus</th>
-                                    <th class="text-end" style="min-width: 120px;">Acciones</th>
+                                    <th scope="col" class="min-w-[100px] text-right">Promedio</th>
+                                    <th scope="col" class="min-w-[110px]">Estatus</th>
+                                    <th scope="col" class="min-w-[120px] text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($inscripciones as $inscripcion)
+                                @foreach ($inscripciones as $inscripcion)
                                     @php
-                                        $calificaciones = [];
                                         $totalPonderado = 0;
                                         $totalPonderacion = 0;
-                                        foreach($evaluaciones as $eval) {
+                                        foreach ($evaluaciones as $eval) {
                                             $cal = $inscripcion->calificaciones->where('evaluacion_id', $eval->id)->first();
                                             if ($cal) {
-                                                $ponderacion = $eval->ponderacion / 100;
-                                                $totalPonderado += $cal->valor * $ponderacion;
+                                                $totalPonderado += $cal->valor * ($eval->ponderacion / 100);
                                                 $totalPonderacion += $eval->ponderacion / 100;
                                             }
                                         }
-                                        $promedio = $totalPonderacion > 0 ? $totalPonderado / $totalPonderacion : 0;
                                     @endphp
-                                    <tr>
-                                        <td>{{ $inscripcion->matriculaPeriodo->alumno->nombre_completo }}</td>
-                                        <td>{{ $inscripcion->matriculaPeriodo->alumno->numero_control ?? '—' }}</td>
-                                        @foreach($evaluaciones as $eval)
-                                            @php $cal = $inscripcion->calificaciones->where('evaluacion_id', $eval->id)->first(); @endphp
-                                            <td>
-                                                @if($cal = $inscripcion->calificaciones->where('evaluacion_id', $eval->id)->first())
-                                                    <span class="badge bg-{{ $cal->valor >= 60 ? 'success' : 'danger' }}">{{ number_format($cal->valor, 2) }}</span>
+                                    <tr wire:key="calif-{{ $inscripcion->id }}">
+                                        <td class="font-medium text-brand-text">
+                                            {{ $inscripcion->matriculaPeriodo->alumno->nombre_completo }}
+                                        </td>
+                                        <td class="font-mono text-xs text-brand-muted">
+                                            {{ $inscripcion->matriculaPeriodo->alumno->numero_control ?? '—' }}
+                                        </td>
+                                        @foreach ($evaluaciones as $eval)
+                                            @php
+                                                $cal = $inscripcion->calificaciones->where('evaluacion_id', $eval->id)->first();
+                                            @endphp
+                                            <td class="text-right tabular-nums">
+                                                @if ($cal !== null)
+                                                    <x-ui.badge :tone="$cal->valor >= 60 ? 'success' : 'danger'">
+                                                        {{ number_format($cal->valor, 2) }}
+                                                    </x-ui.badge>
                                                 @else
-                                                    <span class="text-muted">—</span>
+                                                    <span class="text-brand-muted">—</span>
                                                 @endif
                                             </td>
                                         @endforeach
-                                        <td>
-                                            @if($totalPonderacion > 0)
-                                                <strong>{{ number_format($totalPonderado / $totalPonderacion, 2) }}</strong>
+                                        <td class="text-right tabular-nums font-semibold text-brand-text">
+                                            @if ($totalPonderacion > 0)
+                                                {{ number_format($totalPonderado / $totalPonderacion, 2) }}
                                             @else
-                                                <span class="text-muted">—</span>
+                                                <span class="font-normal text-brand-muted">—</span>
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge badge-{{ $inscripcion->estatus->value === 'APROBADA' ? 'success' : ($inscripcion->estatus->value === 'REPROBADA' ? 'danger' : 'secondary') }}">
+                                            <x-ui.badge :tone="match ($inscripcion->estatus->value) {
+                                                'APROBADA' => 'success',
+                                                'REPROBADA' => 'danger',
+                                                default => 'neutral',
+                                            }">
                                                 {{ $inscripcion->estatus->label() }}
-                                            </span>
+                                            </x-ui.badge>
                                         </td>
-                                        <td class="text-end">
-                                            <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-outline-primary" wire:click="abrirModalCapturar({{ $inscripcion->id }}, {{ $evaluaciones->first()?->id ?? 0 }})" title="Capturar calificaciones">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                @if(\App\Models\Evaluacion::ponderacionTotalGrupo($grupo->id) == 100 && $inscripcion->estatus->value === 'CURSANDO')
-                                                    <button type="button" class="btn btn-outline-success" wire:click="consolidar({{ $inscripcion->id }})" title="Consolidar calificación final">
-                                                        <i class="bi bi-check-circle"></i>
-                                                    </button>
+                                        <td class="text-right">
+                                            <div class="ui-row-actions" role="group"
+                                                aria-label="Acciones de {{ $inscripcion->matriculaPeriodo->alumno->nombre_completo }}">
+                                                <x-ui.icon-button label="Capturar calificaciones"
+                                                    icon="pencil"
+                                                    wire:click="abrirModalCapturar({{ $inscripcion->id }}, {{ $evaluaciones->first()?->id ?? 0 }})" />
+                                                @if (\App\Models\Evaluacion::ponderacionTotalGrupo($grupo->id) === 100
+                                                    && $inscripcion->estatus->value === 'CURSANDO')
+                                                    <x-ui.icon-button label="Consolidar calificación final"
+                                                        icon="check-circle" variant="success"
+                                                        wire:click="consolidar({{ $inscripcion->id }})"
+                                                        wire:confirm="¿Consolidar la calificación final de este alumno? Esta acción no se puede deshacer." />
                                                 @endif
                                             </div>
                                         </td>
@@ -138,49 +200,55 @@
                         </table>
                     </div>
                 @endif
-            </div>
+            </x-ui.card>
         </div>
+
     @endif
 
-    <!-- Modal Capturar Calificación -->
-    <div class="modal fade" tabindex="-1" wire:model="modalCalificacionAbierto">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Capturar Calificación</h5>
-                    <button type="button" class="btn-close" wire:click="cerrarModalCalificacion"></button>
-                </div>
-                <form wire:submit="guardarCalificacion">
-                    <div class="modal-body">
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                @foreach ($errors->all() as $error)
-                                    <div>{{ $error }}</div>
-                                @endforeach
-                            </div>
-                        @endif
+    @if (session('success'))
+        <div class="mt-4"><x-ui.alert tone="success">{{ session('success') }}</x-ui.alert></div>
+    @endif
+    @error('consolidar')
+        <div class="mt-4"><x-ui.alert tone="danger">{{ $message }}</x-ui.alert></div>
+    @enderror
 
-                        <input type="hidden" wire:model="dispatch">
 
-                        <div class="mb-3">
-                            <label class="form-label required">Calificación *</label>
-                            <input type="number" class="form-control" wire:model="valor" min="0" max="100" step="0.01" required>
-                            @error('valor') <div class="text-danger small">{{ $message }}</div> @enderror
-                            <div class="form-text">Entre 0.00 y 100.00</div>
-                        </div>
+    {{-- ------------------------- Modal de captura ------------------------- --}}
+    <x-ui.modal id="modal-capturar-calificacion" title="Capturar Calificación"
+        :open="$modalCalificacionAbierto" close="cerrarModalCalificacion">
+        <form wire:submit="guardarCalificacion">
+            @if ($errors->any())
+                <x-ui.alert tone="danger">
+                    <ul class="list-inside list-disc space-y-0.5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-ui.alert>
+            @endif
 
-                        <div class="mb-3">
-                            <label class="form-label">Observación</label>
-                            <textarea class="form-control" wire:model="observacion" rows="3" maxlength="1000" placeholder="Observación opcional..."></textarea>
-                            @error('observacion') <div class="text-danger small">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="cerrarModalCalificacion">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar</button>
-                    </div>
-                </form>
+            <div class="mt-4 space-y-3">
+                <input type="hidden" wire:model="dispatch">
+
+                <x-ui.field label="Calificación" for="cal-valor" required
+                    :error="$errors->first('valor')" hint="Entre 0.00 y 100.00">
+                    <x-ui.input id="cal-valor" type="number" wire:model="valor"
+                        min="0" max="100" step="0.01" />
+                </x-ui.field>
+
+                <x-ui.field label="Observación" for="cal-observacion" :error="$errors->first('observacion')">
+                    <textarea id="cal-observacion" wire:model="observacion" rows="3" maxlength="1000"
+                        class="ui-textarea" placeholder="Observación opcional…"></textarea>
+                </x-ui.field>
             </div>
-        </div>
-    </div>
+
+            <x-slot:footer>
+                <x-ui.button variant="secondary" wire:click="cerrarModalCalificacion">Cancelar</x-ui.button>
+                <x-ui.button type="submit" icon="check" wire:loading.attr="disabled" wire:target="guardarCalificacion">
+                    <span wire:loading.remove wire:target="guardarCalificacion">Guardar</span>
+                    <span wire:loading wire:target="guardarCalificacion"><x-ui.loading label="Guardando…" /></span>
+                </x-ui.button>
+            </x-slot:footer>
+        </form>
+    </x-ui.modal>
 </div>

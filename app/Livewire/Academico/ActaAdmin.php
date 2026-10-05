@@ -34,6 +34,14 @@ class ActaAdmin extends Component
         session()->flash('success', 'Acta cerrada correctamente.');
     }
 
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
+        $this->filtroPeriodo = '';
+        $this->filtroEstatus = '';
+        $this->resetPage();
+    }
+
     public function abrirModalCrear(): void
     {
         $this->dispatch('abrir-modal-crear-acta');

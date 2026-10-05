@@ -47,6 +47,14 @@ class EvaluacionAdmin extends Component
         $this->resetPage();
     }
 
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
+        $this->filtroGrupo = '';
+        $this->filtroTipo = '';
+        $this->resetPage();
+    }
+
     public function abrirModalCrear(): void
     {
         $this->dispatch('abrir-modal-crear', grupoId: $this->grupo?->id);

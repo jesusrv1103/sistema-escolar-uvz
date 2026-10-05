@@ -1,66 +1,68 @@
-<div class="modal fade" tabindex="-1" wire:model="modalAbierto">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Nueva Evaluación</h5>
-                <button type="button" class="btn-close" wire:click="cerrarModal"></button>
-            </div>
-            <form wire:submit="guardar">
-                <div class="modal-body">
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            @foreach ($errors->all() as $error)
-                                <div>{{ $error }}</div>
+<div>
+    <x-ui.modal id="modal-crear-evaluacion" size="lg" title="Nueva Evaluación"
+        :open="$modalAbierto" close="cerrarModal">
+        <form wire:submit="guardar">
+            @if ($errors->any())
+                <x-ui.alert tone="danger">
+                    <ul class="list-inside list-disc space-y-0.5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-ui.alert>
+            @endif
+
+            <div class="mt-4 space-y-3">
+                <input type="hidden" wire:model="grupoId">
+
+                <div class="grid gap-3 sm:grid-cols-3">
+                    <div class="sm:col-span-2">
+                        <x-ui.field label="Nombre" for="eval-nombre" required :error="$errors->first('nombre')">
+                            <x-ui.input id="eval-nombre" type="text" wire:model="nombre" maxlength="100"
+                                placeholder="Primer parcial" />
+                        </x-ui.field>
+                    </div>
+
+                    <x-ui.field label="Tipo" for="eval-tipo" required :error="$errors->first('tipo')">
+                        <x-ui.select id="eval-tipo" wire:model="tipo">
+                            <option value="">— Selecciona —</option>
+                            @foreach ($tipos as $valor => $etiqueta)
+                                <option value="{{ $valor }}">{{ $etiqueta }}</option>
                             @endforeach
-                        </div>
-                    @endif
+                        </x-ui.select>
+                    </x-ui.field>
 
-                    <input type="hidden" wire:model="grupoId">
+                    <div>
+                        <x-ui.field label="Ponderación (%)" for="eval-ponderacion" required
+                            :error="$errors->first('ponderacion')"
+                            hint="Entre 1 y 100. La suma total no puede exceder 100%.">
+                            <x-ui.input id="eval-ponderacion" type="number" wire:model="ponderacion"
+                                min="1" max="100" />
+                        </x-ui.field>
+                    </div>
 
-                    <div class="row g-3">
-                        <div class="col-md-8">
-                            <label class="form-label required">Nombre *</label>
-                            <input type="text" class="form-control" wire:model="nombre" maxlength="100" placeholder="Ej. Primer Parcial, Examen Final, Proyecto Integrador" required>
-                            @error('nombre') <div class="text-danger small">{{ $message }}</div> @enderror
-                            <div class="form-text">Ej. Primer Parcial, Examen Final, Proyecto Integrador</div>
-                        </div>
+                    <x-ui.field label="Fecha" for="eval-fecha" required :error="$errors->first('fecha')">
+                        <x-ui.input id="eval-fecha" type="date" wire:model="fecha" />
+                    </x-ui.field>
 
-                        <div class="col-md-4">
-                            <label class="form-label required">Tipo *</label>
-                            <select class="form-select" wire:model="tipo" required>
-                                <option value="">Seleccione un tipo</option>
-                                @foreach($tipos as $t)
-                                    <option value="{{ $t->value }}">{{ $t->label() }}</option>
-                                @endforeach
-                            </select>
-                            @error('tipo') <div class="text-danger small">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label required">Ponderación (%) *</label>
-                            <input type="number" class="form-control" wire:model="ponderacion" min="1" max="100" required>
-                            @error('ponderacion') <div class="text-danger small">{{ $message }}</div> @enderror
-                            <div class="form-text">Entre 1 y 100. Suma total no puede exceder 100%.</div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label required">Fecha *</label>
-                            <input type="date" class="form-control" wire:model="fecha" required>
-                            @error('fecha') <div class="text-danger small">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label">Descripción</label>
-                            <textarea class="form-control" wire:model="descripcion" rows="3" maxlength="1000" placeholder="Descripción opcional de la evaluación..."></textarea>
-                            @error('descripcion') <div class="text-danger small">{{ $message }}</div> @enderror
-                        </div>
+                    <div class="sm:col-span-3">
+                        <x-ui.field label="Descripción" for="eval-descripcion"
+                            :error="$errors->first('descripcion')">
+                            <textarea id="eval-descripcion" wire:model="descripcion" rows="3" maxlength="1000"
+                                class="ui-textarea"
+                                placeholder="Descripción opcional de la evaluación…"></textarea>
+                        </x-ui.field>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" wire:click="cerrarModal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">{{ $modalAbierto ? 'Crear' : 'Guardar' }}</button>
-                </div>
-            </form>
-        </div>
-    </div>
+            </div>
+
+            <x-slot:footer>
+                <x-ui.button variant="secondary" wire:click="cerrarModal">Cancelar</x-ui.button>
+                <x-ui.button type="submit" icon="plus" wire:loading.attr="disabled" wire:target="guardar">
+                    <span wire:loading.remove wire:target="guardar">Crear</span>
+                    <span wire:loading wire:target="guardar"><x-ui.loading label="Guardando…" /></span>
+                </x-ui.button>
+            </x-slot:footer>
+        </form>
+    </x-ui.modal>
 </div>

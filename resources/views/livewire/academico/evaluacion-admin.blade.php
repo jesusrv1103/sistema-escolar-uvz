@@ -1,91 +1,116 @@
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0">
-            Evaluaciones
-            @if($grupo)
-                <span class="text-muted fw-normal fs-6"> — {{ $grupo->clave }} ({{ $grupo->materia->clave }})</span>
+<div>
+    <x-ui.page-header title="Evaluaciones"
+        :description="$grupo
+            ? 'Catálogo de evaluaciones del grupo ' . $grupo->clave . ' (' . $grupo->materia->clave . ').'
+            : 'Catálogo de evaluaciones de todos los grupos.'">
+        <x-slot:meta>
+            @if ($grupo)
+                <x-ui.badge tone="primary">{{ $grupo->clave }}</x-ui.badge>
+                <x-ui.badge tone="neutral">{{ $grupo->materia->clave }}</x-ui.badge>
             @endif
-        </h1>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-primary" wire:click="abrirModalCrear" @if(!$grupo) disabled @endif>
-                <i class="bi bi-plus-lg me-1"></i> Nueva Evaluación
-            </button>
-        </div>
-    </div>
+        </x-slot:meta>
+        <x-slot:actions>
+            @can('evaluacion.crear')
+                <x-ui.button icon="plus" wire:click="abrirModalCrear" :disabled="! $grupo">
+                    Nueva Evaluación
+                </x-ui.button>
+            @endcan
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <!-- Filtros -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Buscar</label>
-                    <input type="text" class="form-control" wire:model.debounce.300ms="busqueda" placeholder="Nombre de la evaluación...">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Grupo</label>
-                    <select class="form-select" wire:model="filtroGrupo">
-                        <option value="">Todos</option>
-                        @foreach($grupos as $g)
-                            <option value="{{ $g->id }}">{{ $g->clave }} - {{ $g->materia->clave }} ({{ $g->periodo->clave }})</option>
+    {{-- ------------------------- Filtros compactos ------------------------- --}}
+    <div class="mt-5">
+        <x-ui.filters>
+            <div class="grid gap-3 md:grid-cols-3">
+                <x-ui.field label="Buscar">
+                    <x-ui.input type="text" wire:model.live.debounce.300ms="busqueda"
+                        placeholder="Nombre de la evaluación…" aria-label="Buscar evaluación" />
+                </x-ui.field>
+
+                @unless ($grupo)
+                    <x-ui.field label="Grupo">
+                        <x-ui.select wire:model.live="filtroGrupo" aria-label="Filtrar por grupo">
+                            <option value="">Todos los grupos</option>
+                            @foreach ($grupos as $g)
+                                <option value="{{ $g->id }}">{{ $g->clave }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
+                @endunless
+
+                <x-ui.field label="Tipo">
+                    <x-ui.select wire:model.live="filtroTipo" aria-label="Filtrar por tipo">
+                        <option value="">Todos los tipos</option>
+                        @foreach ($tipos as $valor => $etiqueta)
+                            <option value="{{ $valor }}">{{ $etiqueta }}</option>
                         @endforeach
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Tipo</label>
-                    <select class="form-select" wire:model="filtroTipo">
-                        <option value="">Todos</option>
-                        @foreach($tipos as $t)
-                            <option value="{{ $t->value }}">{{ $t->label() }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                    </x-ui.select>
+                </x-ui.field>
             </div>
-        </div>
+
+            <div class="mt-3 flex justify-end border-t border-brand-line pt-3">
+                <x-ui.button size="sm" variant="ghost" icon="x-mark" wire:click="limpiarFiltros">
+                    Limpiar filtros
+                </x-ui.button>
+            </div>
+        </x-ui.filters>
     </div>
 
-    <!-- Tabla -->
-    <div class="card">
-        <div class="card-body p-0">
-            @if($evaluaciones->isEmpty())
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-list-check display-4"></i>
-                    <p class="mt-2">No hay evaluaciones registradas{{ $grupo ? ' para este grupo' : '' }}.</p>
-                </div>
-            @else
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+    {{-- ----------------------------- Listado ------------------------------ --}}
+    <div class="mt-4">
+        <x-ui.card :flush="count($evaluaciones) > 0">
+            @if (session('success'))
+                <div class="px-5 pt-4"><x-ui.alert tone="success">{{ session('success') }}</x-ui.alert></div>
+            @endif
+            @error('eliminar')
+                <div class="px-5 pt-4"><x-ui.alert tone="danger">{{ $message }}</x-ui.alert></div>
+            @enderror
+
+            @if (count($evaluaciones) > 0)
+                <div class="overflow-x-auto">
+                    <table class="ui-table">
+                        <thead>
                             <tr>
-                                <th>Nombre</th>
-                                <th>Tipo</th>
-                                <th>Ponderación</th>
-                                <th>Fecha</th>
-                                <th>Grupo</th>
-                                <th>Materia</th>
-                                <th>Creada por</th>
-                                <th class="text-end">Acciones</th>
+                                <th scope="col">Nombre</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col" class="text-right">Ponderación</th>
+                                <th scope="col">Fecha</th>
+                                <th scope="col">Grupo</th>
+                                <th scope="col">Creada por</th>
+                                <th scope="col" class="text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($evaluaciones as $e)
-                                <tr>
-                                    <td>{{ $e->nombre }}</td>
+                            @foreach ($evaluaciones as $evaluacion)
+                                <tr wire:key="evaluacion-{{ $evaluacion->id }}">
+                                    <td class="font-medium text-brand-text">{{ $evaluacion->nombre }}</td>
                                     <td>
-                                        <span class="badge bg-info text-dark">{{ $e->tipo }}</span>
+                                        <x-ui.badge tone="info">
+                                            {{ \App\Enums\TipoEvaluacion::EJEMPLOS[$evaluacion->tipo] ?? $evaluacion->tipo }}
+                                        </x-ui.badge>
                                     </td>
-                                    <td>{{ $e->ponderacion }}%</td>
-                                    <td>{{ $e->fecha?->format('d/m/Y') }}</td>
-                                    <td>{{ $e->grupo->clave ?? '—' }}</td>
-                                    <td>{{ $e->grupo->materia->clave ?? '—' }}</td>
-                                    <td>{{ $e->creadaPor?->name ?? '—' }}</td>
-                                    <td class="text-end">
-                                        <div class="btn-group btn-group-sm">
-                                            <button type="button" class="btn btn-outline-primary" wire:click="abrirModalEditar({{ $e->id }})" title="Editar">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger" wire:click="eliminar({{ $e->id }})" title="Eliminar">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                    <td class="text-right tabular-nums">{{ $evaluacion->ponderacion }}%</td>
+                                    <td class="whitespace-nowrap text-brand-muted">
+                                        {{ $evaluacion->fecha?->format('d/m/Y') ?? '—' }}
+                                    </td>
+                                    <td class="whitespace-nowrap">
+                                        {{ $evaluacion->grupo?->clave ?? '—' }}
+                                        <span class="text-brand-muted">· {{ $evaluacion->grupo?->materia?->clave ?? '—' }}</span>
+                                    </td>
+                                    <td class="text-brand-muted">{{ $evaluacion->creadaPor?->name ?? '—' }}</td>
+                                    <td class="text-right">
+                                        <div class="ui-row-actions" role="group"
+                                            aria-label="Acciones de {{ $evaluacion->nombre }}">
+                                            @can('evaluacion.actualizar', $evaluacion)
+                                                <x-ui.icon-button label="Editar {{ $evaluacion->nombre }}" icon="pencil"
+                                                    wire:click="abrirModalEditar({{ $evaluacion->id }})" />
+                                            @endcan
+                                            @can('evaluacion.eliminar', $evaluacion)
+                                                <x-ui.icon-button label="Eliminar {{ $evaluacion->nombre }}" icon="trash"
+                                                    variant="danger"
+                                                    wire:click="eliminar({{ $evaluacion->id }})"
+                                                    wire:confirm="¿Eliminar la evaluación «{{ $evaluacion->nombre }}»? Esta acción no se puede deshacer." />
+                                            @endcan
                                         </div>
                                     </td>
                                 </tr>
@@ -93,16 +118,26 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="card-footer">
-                    {{ $evaluaciones->links() }}
-                </div>
+            @else
+                <x-ui.empty-state icon="clipboard" title="Sin evaluaciones registradas"
+                    message="Ajusta los filtros o crea la primera evaluación del grupo.">
+                    <x-slot:action>
+                        @can('evaluacion.crear')
+                            <x-ui.button icon="plus" wire:click="abrirModalCrear" :disabled="! $grupo">
+                                Nueva Evaluación
+                            </x-ui.button>
+                        @endcan
+                    </x-slot:action>
+                </x-ui.empty-state>
             @endif
-        </div>
+        </x-ui.card>
     </div>
 
-    <!-- Modal Crear Evaluación -->
-    @livewire('academico.crear-evaluacion')
+    @if (count($evaluaciones) > 0)
+        <div class="mt-4">{{ $evaluaciones->links() }}</div>
+    @endif
 
-    <!-- Modal Editar Evaluación -->
-    @livewire('academico.editar-evaluacion')
+    {{-- ------------------------- Modales (hijos) -------------------------- --}}
+    <livewire:academico.crear-evaluacion />
+    <livewire:academico.editar-evaluacion />
 </div>

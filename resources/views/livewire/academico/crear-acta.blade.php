@@ -1,50 +1,54 @@
-@if($modalAbierto)
-<div class="modal fade show d-block" tabindex="-1" role="dialog" style="background: rgba(0,0,0,0.5);">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Crear Acta de Calificaciones</h5>
-                <button type="button" class="btn-close" wire:click="$set('modalAbierto', false)"></button>
+<div>
+    <x-ui.modal id="modal-crear-acta" title="Crear Acta de Calificaciones"
+        :open="$modalAbierto" close="$set('modalAbierto', false)">
+        <form wire:submit="crear">
+            <div class="space-y-3">
+                @if ($errors->any())
+                    <x-ui.alert tone="danger">
+                        <ul class="list-inside list-disc space-y-0.5">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </x-ui.alert>
+                @endif
+
+                <x-ui.field label="Periodo" for="acta-periodo" required :error="$errors->first('periodo')">
+                    <x-ui.select id="acta-periodo" wire:model.live="periodo">
+                        <option value="">Seleccionar periodo</option>
+                        @foreach ($periodos as $p)
+                            <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
+
+                <x-ui.field label="Grupo" for="acta-grupo" required :error="$errors->first('grupo')"
+                    hint="Solo grupos activos del periodo seleccionado.">
+                    <x-ui.select id="acta-grupo" wire:model="grupo">
+                        <option value="">Seleccionar grupo</option>
+                        @foreach ($grupos as $g)
+                            <option value="{{ $g->id }}">
+                                {{ $g->clave }} - {{ $g->materia->clave }} ({{ $g->materia->nombre }})
+                            </option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
+
+                <x-ui.alert tone="info">
+                    El acta se crea en estado <strong>Abierta</strong> sin folio.
+                    El folio <strong>ACT-YYYY-########</strong> se genera automáticamente
+                    al cerrar el acta (cuatro ojos: DOCENTE captura, CONTROL_ESCOLAR cierra).
+                </x-ui.alert>
             </div>
-            <form wire:submit.prevent="crear">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Periodo</label>
-                        <select class="form-select" wire:model="periodo" required>
-                            <option value="">Seleccionar periodo</option>
-                            @foreach($periodos as $p)
-                                <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
-                            @endforeach
-                        </select>
-                        @error('periodo') <div class="text-danger small">{{ $message }}</div> @enderror
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Grupo</label>
-                        <select class="form-select" wire:model="grupo" required>
-                            <option value="">Seleccionar grupo</option>
-                            @foreach($grupos as $g)
-                                <option value="{{ $g->id }}">{{ $g->clave }} - {{ $g->materia->clave }} ({{ $g->materia->nombre }})</option>
-                            @endforeach
-                        </select>
-                        @error('grupo') <div class="text-danger small">{{ $message }}</div> @enderror
-                    </div>
-
-                    <div class="alert alert-info small">
-                        <i class="bi bi-info-circle me-1"></i>
-                        El acta se crea en estado <strong>ABIERTA</strong> sin folio.
-                        El folio <strong>ACT-YYYY-########</strong> se genera automáticamente
-                        al cerrar el acta (four-eyes: DOCENTE captura, CONTROL_ESCOLAR cierra).
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" wire:click="$set('modalAbierto', false)">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-plus-lg me-1"></i> Crear acta
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+            <x-slot:footer>
+                <x-ui.button variant="secondary" wire:click="$set('modalAbierto', false)">Cancelar</x-ui.button>
+                <x-ui.button type="submit" icon="plus"
+                    wire:loading.attr="disabled" wire:target="crear">
+                    <span wire:loading.remove wire:target="crear">Crear acta</span>
+                    <span wire:loading wire:target="crear"><x-ui.loading label="Creando…" /></span>
+                </x-ui.button>
+            </x-slot:footer>
+        </form>
+    </x-ui.modal>
 </div>
-@endif
