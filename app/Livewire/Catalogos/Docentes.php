@@ -70,15 +70,17 @@ class Docentes extends CatalogoAdmin
         ];
     }
 
-    public function abrirModalCrear(): void
-    {
-        $this->resetFormulario();
-        $this->formulario = true;
-    }
-
     public function alternarActivo(int $registroId): void
     {
         parent::alternarActivo($registroId);
+    }
+
+    /** UX (2.0-12): limpia búsqueda y estado del listado. */
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
+        $this->filtroActivo = '';
+        $this->resetPage();
     }
 
     public function render()

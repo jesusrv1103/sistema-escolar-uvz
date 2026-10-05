@@ -18,6 +18,12 @@ abstract class CatalogoAdmin extends Component
 
     public ?int $registroId = null;
 
+    /**
+     * Búsqueda del listado (UX 2.0-12). Cada subclase la aplica en su render();
+     * aquí vive el estado y la limpieza compartida.
+     */
+    public string $busqueda = '';
+
     /** Clase del modelo del catálogo. */
     abstract protected function modelo(): string;
 
@@ -73,6 +79,12 @@ abstract class CatalogoAdmin extends Component
         $this->resetErrorBag();
         $this->formulario = false;
         $this->registroId = null;
+    }
+
+    /** UX (2.0-12): limpia los filtros del listado. */
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
     }
 
     public function guardar(): void

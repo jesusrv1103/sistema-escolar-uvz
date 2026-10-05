@@ -1,79 +1,87 @@
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0">Docentes</h1>
-        <button type="button" class="btn btn-primary" wire:click="crear">
-            <i class="bi bi-plus-lg me-1"></i> Nuevo Docente
-        </button>
-    </div>
+<div>
+    <x-ui.page-header title="Docentes"
+        description="Plantilla docente: identificación, especialidad y grado académico.">
+        <x-slot:actions>
+            <x-ui.button wire:click="crear" icon="plus">Nuevo docente</x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <!-- Filtros -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Buscar</label>
-                    <input type="text" class="form-control" wire:model.debounce.300ms="busqueda" placeholder="Nombre, apellidos, clave o CURP...">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Estado</label>
-                    <select class="form-select" wire:model="filtroActivo">
+    @if (session('catalogo'))
+        <div class="mt-4"><x-ui.alert tone="success">{{ session('catalogo') }}</x-ui.alert></div>
+    @endif
+
+    <div class="mt-5">
+        <x-ui.filters>
+            <x-slot:actions>
+                <x-ui.button variant="ghost" size="sm" wire:click="limpiarFiltros">Limpiar filtros</x-ui.button>
+            </x-slot:actions>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <x-ui.field label="Buscar" class="lg:col-span-2">
+                    <x-ui.input type="search" wire:model.debounce.300ms="busqueda"
+                        placeholder="Nombre, apellidos, clave o CURP…" aria-label="Buscar docentes" />
+                </x-ui.field>
+                <x-ui.field label="Estado">
+                    <x-ui.select wire:model.live="filtroActivo" aria-label="Filtrar por estado">
                         <option value="">Todos</option>
                         <option value="1">Activos</option>
                         <option value="0">Inactivos</option>
-                    </select>
-                </div>
+                    </x-ui.select>
+                </x-ui.field>
             </div>
-        </div>
+        </x-ui.filters>
     </div>
 
-    <!-- Tabla -->
-    <div class="card">
-        <div class="card-body p-0">
-            @if($docentes->isEmpty())
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-person-badge display-4"></i>
-                    <p class="mt-2">No hay docentes registrados.</p>
-                </div>
+    <div class="mt-4">
+        <x-ui.card :flush="$docentes->isNotEmpty()">
+            @if ($docentes->isEmpty())
+                <x-ui.empty-state icon="user" title="No hay docentes"
+                    message="Agrega al primer docente para poder asignarle grupos y evaluaciones.">
+                    <x-slot:action>
+                        <x-ui.button wire:click="crear" icon="plus">Nuevo docente</x-ui.button>
+                    </x-slot:action>
+                </x-ui.empty-state>
             @else
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <div class="ui-table-wrap">
+                    <table class="ui-table">
+                        <caption class="sr-only">Plantilla de docentes</caption>
+                        <thead>
                             <tr>
-                                <th>Clave</th>
-                                <th>Nombre</th>
-                                <th>CURP</th>
-                                <th>Especialidad</th>
-                                <th>Grado</th>
-                                <th>Cédula</th>
-                                <th>Estado</th>
-                                <th class="text-end">Acciones</th>
+                                <th scope="col">Clave</th>
+                                <th scope="col">Nombre</th>
+                                <th scope="col">CURP</th>
+                                <th scope="col">Especialidad</th>
+                                <th scope="col">Grado</th>
+                                <th scope="col">Cédula</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col" class="text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($docentes as $d)
-                                <tr>
-                                    <td>{{ $d->clave }}</td>
-                                    <td>{{ $d->nombreCompleto() }}</td>
-                                    <td>{{ $d->curp }}</td>
-                                    <td>{{ $d->especialidad ?? '—' }}</td>
-                                    <td>{{ $d->grado_estudios ?? '—' }}</td>
-                                    <td>{{ $d->cedula_profesional ?? '—' }}</td>
+                            @foreach ($docentes as $d)
+                                <tr wire:key="docente-{{ $d->id }}">
+                                    <td class="font-medium text-brand-primary">{{ $d->clave }}</td>
+                                    <td class="font-medium text-brand-text">{{ $d->nombreCompleto() }}</td>
+                                    <td class="text-brand-muted">{{ $d->curp }}</td>
+                                    <td class="text-brand-muted">{{ $d->especialidad ?? '—' }}</td>
+                                    <td class="text-brand-muted">{{ $d->grado_estudios ?? '—' }}</td>
+                                    <td class="text-brand-muted">{{ $d->cedula_profesional ?? '—' }}</td>
                                     <td>
-                                        <span class="badge {{ $d->activo ? 'bg-success' : 'bg-secondary' }}">
+                                        <x-ui.badge :tone="$d->activo ? 'success' : 'neutral'">
                                             {{ $d->activo ? 'Activo' : 'Inactivo' }}
-                                        </span>
+                                        </x-ui.badge>
                                     </td>
-                                    <td class="text-end">
-                                        <div class="btn-group btn-group-sm">
-                                            <button type="button" class="btn btn-outline-primary" wire:click="editar({{ $d->id }})" title="Editar">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button type="button" class="btn {{ $d->activo ? 'btn-outline-secondary' : 'btn-outline-success' }}" wire:click="alternarActivo({{ $d->id }})" title="{{ $d->activo ? 'Desactivar' : 'Activar' }}">
-                                                <i class="bi {{ $d->activo ? 'bi-pause' : 'bi-play' }}"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger" wire:click="confirmarEliminacion({{ $d->id }})" title="Eliminar">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                    <td>
+                                        <div class="ui-row-actions">
+                                            <x-ui.icon-button label="Editar {{ $d->nombreCompleto() }}" icon="cog"
+                                                wire:click="editar({{ $d->id }})" />
+                                            <x-ui.icon-button
+                                                :label="$d->activo ? 'Desactivar' : 'Activar'"
+                                                :icon="$d->activo ? 'no-symbol' : 'check-circle'"
+                                                :variant="$d->activo ? 'secondary' : 'primary'"
+                                                wire:click="alternarActivo({{ $d->id }})" />
+                                            <x-ui.icon-button label="Eliminar {{ $d->nombreCompleto() }}" icon="x-mark"
+                                                variant="danger" wire:click="eliminar({{ $d->id }})"
+                                                wire:confirm="¿Eliminar a {{ $d->nombreCompleto() }}? (borrado lógico)" />
                                         </div>
                                     </td>
                                 </tr>
@@ -81,118 +89,89 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="card-footer">
+
+                <div class="border-t border-brand-line px-5 py-3">
                     {{ $docentes->links() }}
                 </div>
             @endif
-        </div>
+        </x-ui.card>
     </div>
 
-    <!-- Modal Crear/Editar -->
-    <div class="modal fade" tabindex="-1" wire:model="formulario">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ $registroId ? 'Editar Docente' : 'Nuevo Docente' }}</h5>
-                    <button type="button" class="btn-close" wire:click="cancelar"></button>
-                </div>
-                <form wire:submit="guardar">
-                    <div class="modal-body">
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                @foreach ($errors->all() as $error)
-                                    <div>{{ $error }}</div>
-                                @endforeach
-                            </div>
-                        @endif
+    <x-ui.modal id="modal-docente" size="lg"
+        :title="$registroId ? 'Editar docente' : 'Nuevo docente'"
+        :open="$formulario" close="cancelar">
+        <form wire:submit="guardar" class="space-y-4">
+            @if ($errors->any())
+                <x-ui.alert tone="danger">
+                    <ul class="list-inside list-disc space-y-0.5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-ui.alert>
+            @endif
 
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label required">Clave *</label>
-                                <input type="text" class="form-control" wire:model="clave" maxlength="20" placeholder="Ej. DOC-001" pattern="[A-Z0-9_-]+" required>
-                                @error('clave') <div class="text-danger small">{{ $message }}</div> @enderror
-                                <div class="form-text">Solo mayúsculas, números, guión y guion bajo.</div>
-                            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <x-ui.field label="Clave" for="docente-clave" required
+                    hint="Solo mayúsculas, números, guión y guion bajo." :error="$errors->first('clave')">
+                    <x-ui.input id="docente-clave" wire:model="clave" maxlength="20" placeholder="Ej. DOC-001" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label required">CURP *</label>
-                                <input type="text" class="form-control" wire:model="curp" maxlength="18" placeholder="18 caracteres" required>
-                                @error('curp') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="CURP" for="docente-curp" required hint="18 caracteres."
+                    :error="$errors->first('curp')">
+                    <x-ui.input id="docente-curp" wire:model="curp" maxlength="18" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label required">Nombre(s) *</label>
-                                <input type="text" class="form-control" wire:model="nombre" maxlength="150" required>
-                                @error('nombre') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Nombre(s)" for="docente-nombre" required :error="$errors->first('nombre')">
+                    <x-ui.input id="docente-nombre" wire:model="nombre" maxlength="150" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label required">Apellidos *</label>
-                                <input type="text" class="form-control" wire:model="apellidos" maxlength="150" required>
-                                @error('apellidos') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Apellidos" for="docente-apellidos" required :error="$errors->first('apellidos')">
+                    <x-ui.input id="docente-apellidos" wire:model="apellidos" maxlength="150" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label">RFC</label>
-                                <input type="text" class="form-control" wire:model="rfc" maxlength="13" placeholder="13 caracteres">
-                                @error('rfc') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="RFC" for="docente-rfc" hint="13 caracteres." :error="$errors->first('rfc')">
+                    <x-ui.input id="docente-rfc" wire:model="rfc" maxlength="13" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Correo</label>
-                                <input type="email" class="form-control" wire:model="correo" maxlength="150" placeholder="docente@uvz.edu.mx">
-                                @error('correo') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Correo" for="docente-correo" :error="$errors->first('correo')">
+                    <x-ui.input id="docente-correo" type="email" wire:model="correo" maxlength="150"
+                        placeholder="docente@uvz.edu.mx" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Teléfono</label>
-                                <input type="text" class="form-control" wire:model="telefono" maxlength="20" placeholder="10 dígitos">
-                                @error('telefono') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Teléfono" for="docente-telefono" :error="$errors->first('telefono')">
+                    <x-ui.input id="docente-telefono" wire:model="telefono" maxlength="20" placeholder="10 dígitos" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Especialidad</label>
-                                <input type="text" class="form-control" wire:model="especialidad" maxlength="150" placeholder="Ej. Matemáticas">
-                                @error('especialidad') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Especialidad" for="docente-especialidad" :error="$errors->first('especialidad')">
+                    <x-ui.input id="docente-especialidad" wire:model="especialidad" maxlength="150"
+                        placeholder="Ej. Matemáticas" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Grado de estudios</label>
-                                <input type="text" class="form-control" wire:model="grado_estudios" maxlength="100" placeholder="Ej. Maestría">
-                                @error('grado_estudios') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Grado de estudios" for="docente-grado" :error="$errors->first('grado_estudios')">
+                    <x-ui.input id="docente-grado" wire:model="grado_estudios" maxlength="100"
+                        placeholder="Ej. Maestría" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Cédula profesional</label>
-                                <input type="text" class="form-control" wire:model="cedula_profesional" maxlength="50" placeholder="Número de cédula">
-                                @error('cedula_profesional') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-check form-switch">
-                                    <input type="checkbox" class="form-check-input" wire:model="activo" id="activo">
-                                    <label class="form-check-label" for="activo">Activo</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="cancelar">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">{{ $registroId ? 'Actualizar' : 'Crear' }}</button>
-                    </div>
-                </form>
+                <x-ui.field label="Cédula profesional" for="docente-cedula" :error="$errors->first('cedula_profesional')">
+                    <x-ui.input id="docente-cedula" wire:model="cedula_profesional" maxlength="50"
+                        placeholder="Número de cédula" />
+                </x-ui.field>
             </div>
-        </div>
-    </div>
 
-    <!-- Confirmación Eliminar -->
-    @if(session('eliminarDocenteId'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (confirm('¿Eliminar el docente "{{ session('eliminarDocenteNombre') }}"? Esta acción no se puede deshacer.')) {
-                    @this.call('eliminar', {{ session('eliminarDocenteId') }})
-                }
-            });
-        </script>
-    @endif
+            <label class="inline-flex cursor-pointer items-center gap-2.5">
+                <input type="checkbox" id="docente-activo" wire:model="activo"
+                    class="h-4 w-4 rounded border-brand-line accent-brand-primary" />
+                <span class="text-sm font-medium text-brand-text">Activo</span>
+            </label>
+
+            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-brand-line pt-4">
+                <x-ui.button variant="secondary" wire:click="cancelar">Cancelar</x-ui.button>
+                <x-ui.button type="submit" wire:loading.attr="disabled" wire:target="guardar">
+                    <span wire:loading.remove wire:target="guardar">Guardar</span>
+                    <span wire:loading wire:target="guardar"><x-ui.loading label="Guardando…" /></span>
+                </x-ui.button>
+            </div>
+        </form>
+    </x-ui.modal>
 </div>

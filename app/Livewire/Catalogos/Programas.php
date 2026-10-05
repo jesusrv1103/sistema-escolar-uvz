@@ -52,7 +52,8 @@ class Programas extends CatalogoAdmin
     public function render()
     {
         return view('livewire.catalogos.programas', [
-            'programas' => Programa::orderBy('nombre')->get(),
+            'programas' => Programa::when($this->busqueda, fn ($q) => $q->where('nombre', 'like', "%{$this->busqueda}%")
+                ->orWhere('clave', 'like', "%{$this->busqueda}%"))->orderBy('nombre')->get(),
         ]);
     }
 }

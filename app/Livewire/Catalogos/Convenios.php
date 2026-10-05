@@ -84,7 +84,8 @@ class Convenios extends CatalogoAdmin
     public function render()
     {
         return view('livewire.catalogos.convenios', [
-            'convenios' => Convenio::orderBy('nombre')->get(),
+            'convenios' => Convenio::when($this->busqueda, fn ($q) => $q->where('nombre', 'like', "%{$this->busqueda}%")
+                ->orWhere('clave', 'like', "%{$this->busqueda}%"))->orderBy('nombre')->get(),
         ]);
     }
 }

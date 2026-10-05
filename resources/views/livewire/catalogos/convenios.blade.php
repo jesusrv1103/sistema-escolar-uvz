@@ -1,142 +1,170 @@
 <div>
-    <div class="mb-4 flex items-center justify-between gap-3">
-        <div>
-            <h1 class="text-lg font-semibold text-brand-text">Convenios</h1>
-            <p class="text-sm text-brand-muted">Catálogo de descuentos · la aprobación vive en cada inscripción, no aquí.</p>
-        </div>
-        <div class="flex items-center gap-2">
-            <a href="{{ route('dashboard') }}" class="text-sm font-medium text-brand-primary hover:text-brand-secondary">Dashboard</a>
-            <button type="button" wire:click="crear"
-                class="rounded-md bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-secondary">
-                Nuevo convenio
-            </button>
-        </div>
-    </div>
+    <x-ui.page-header title="Convenios"
+        description="Catálogo de descuentos · la aprobación vive en cada inscripción, no aquí.">
+        <x-slot:actions>
+            <x-ui.button wire:click="crear" icon="plus">Nuevo convenio</x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
     @if (session('catalogo'))
-        <div class="mb-4 rounded-md border border-brand-line bg-brand-surface px-4 py-3 text-sm text-brand-text">
-            {{ session('catalogo') }}
-        </div>
+        <div class="mt-4"><x-ui.alert tone="success">{{ session('catalogo') }}</x-ui.alert></div>
     @endif
 
-    @if ($formulario)
-        <div class="mb-6 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
-            <h2 class="text-sm font-semibold text-brand-text">{{ $registroId ? 'Editar convenio' : 'Nuevo convenio' }}</h2>
+    <div class="mt-5">
+        <x-ui.filters>
+            <x-slot:actions>
+                <x-ui.button variant="ghost" size="sm" wire:click="limpiarFiltros">Limpiar filtros</x-ui.button>
+            </x-slot:actions>
+            <div class="grid gap-3 sm:grid-cols-3">
+                <x-ui.field label="Buscar">
+                    <x-ui.input type="search" wire:model.debounce.300ms="busqueda"
+                        placeholder="Nombre o clave…" aria-label="Buscar convenios" />
+                </x-ui.field>
+            </div>
+        </x-ui.filters>
+    </div>
 
-            <form wire:submit="guardar" class="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                    <label for="clave" class="block text-sm font-medium text-brand-text">Clave</label>
-                    <input id="clave" type="text" wire:model="clave" maxlength="20"
-                        class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                    @error('clave') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+    <div class="mt-4">
+        <x-ui.card :flush="$convenios->isNotEmpty()">
+            @if ($convenios->isEmpty())
+                <x-ui.empty-state icon="percent" title="No hay convenios"
+                    message="Registra el primer convenio para poder ofrecer descuentos en las inscripciones.">
+                    <x-slot:action>
+                        <x-ui.button wire:click="crear" icon="plus">Nuevo convenio</x-ui.button>
+                    </x-slot:action>
+                </x-ui.empty-state>
+            @else
+                <div class="ui-table-wrap">
+                    <table class="ui-table">
+                        <caption class="sr-only">Catálogo de convenios y descuentos</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Clave</th>
+                                <th scope="col">Nombre</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Valor</th>
+                                <th scope="col">Vigencia</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col" class="text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($convenios as $convenio)
+                                <tr wire:key="convenio-{{ $convenio->id }}">
+                                    <td class="font-medium text-brand-primary">{{ $convenio->clave }}</td>
+                                    <td>
+                                        <span class="block font-medium text-brand-text">{{ $convenio->nombre }}</span>
+                                        @if ($convenio->notas)
+                                            <span class="block max-w-xs truncate text-xs text-brand-muted">
+                                                {{ $convenio->notas }}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <x-ui.badge tone="info">{{ $convenio->tipo->label() }}</x-ui.badge>
+                                    </td>
+                                    <td class="font-medium text-brand-text">
+                                        {{ $convenio->tipo === \App\Enums\TipoConvenio::PORCENTAJE
+                                            ? $convenio->valor . ' %'
+                                            : '$' . $convenio->valor }}
+                                    </td>
+                                    <td class="text-xs text-brand-muted">
+                                        {{ $convenio->fecha_inicio?->format('d/m/Y') ?? '—' }}
+                                        → {{ $convenio->fecha_fin?->format('d/m/Y') ?? '—' }}
+                                    </td>
+                                    <td>
+                                        <x-ui.badge :tone="$convenio->activo ? 'success' : 'neutral'">
+                                            {{ $convenio->activo ? 'Activo' : 'Inactivo' }}
+                                        </x-ui.badge>
+                                    </td>
+                                    <td>
+                                        <div class="ui-row-actions">
+                                            <x-ui.icon-button label="Editar {{ $convenio->nombre }}" icon="cog"
+                                                wire:click="editar({{ $convenio->id }})" />
+                                            <x-ui.icon-button
+                                                :label="$convenio->activo ? 'Desactivar' : 'Activar'"
+                                                :icon="$convenio->activo ? 'no-symbol' : 'check-circle'"
+                                                :variant="$convenio->activo ? 'secondary' : 'primary'"
+                                                wire:click="alternarActivo({{ $convenio->id }})" />
+                                            <x-ui.icon-button label="Eliminar {{ $convenio->nombre }}" icon="x-mark"
+                                                variant="danger" wire:click="eliminar({{ $convenio->id }})"
+                                                wire:confirm="¿Eliminar este convenio? (borrado lógico)" />
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
+            @endif
+        </x-ui.card>
+    </div>
 
-                <div>
-                    <label for="nombre" class="block text-sm font-medium text-brand-text">Nombre</label>
-                    <input id="nombre" type="text" wire:model="nombre" maxlength="150"
-                        class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                    @error('nombre') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
+    <x-ui.modal id="modal-convenio"
+        :title="$registroId ? 'Editar convenio' : 'Nuevo convenio'"
+        :open="$formulario" close="cancelar">
+        <form wire:submit="guardar" class="space-y-4">
+            @if ($errors->any())
+                <x-ui.alert tone="danger">
+                    <ul class="list-inside list-disc space-y-0.5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-ui.alert>
+            @endif
 
-                <div>
-                    <label for="tipo" class="block text-sm font-medium text-brand-text">Tipo</label>
-                    <select id="tipo" wire:model.live="tipo"
-                        class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <x-ui.field label="Clave" for="convenio-clave" required :error="$errors->first('clave')">
+                    <x-ui.input id="convenio-clave" wire:model="clave" maxlength="20" placeholder="Ej. BECA10" />
+                </x-ui.field>
+
+                <x-ui.field label="Nombre" for="convenio-nombre" required :error="$errors->first('nombre')">
+                    <x-ui.input id="convenio-nombre" wire:model="nombre" maxlength="150"
+                        placeholder="Nombre del convenio" />
+                </x-ui.field>
+
+                <x-ui.field label="Tipo" for="convenio-tipo" required :error="$errors->first('tipo')">
+                    <x-ui.select id="convenio-tipo" wire:model.live="tipo">
                         <option value="PORCENTAJE">Porcentaje (%)</option>
                         <option value="MONTO">Monto (MXN)</option>
-                    </select>
-                    @error('tipo') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
+                    </x-ui.select>
+                </x-ui.field>
 
-                <div>
-                    <label for="valor" class="block text-sm font-medium text-brand-text">
-                        {{ $tipo === 'MONTO' ? 'Monto (MXN)' : 'Porcentaje (%)' }}
-                    </label>
-                    <input id="valor" type="number" step="0.01" min="0" wire:model="valor"
-                        class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                    @error('valor') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
+                <x-ui.field :label="$tipo === 'MONTO' ? 'Monto (MXN)' : 'Porcentaje (%)'" for="convenio-valor"
+                    required :error="$errors->first('valor')">
+                    <x-ui.input id="convenio-valor" type="number" step="0.01" min="0" wire:model="valor"
+                        placeholder="Ej. 10" />
+                </x-ui.field>
 
-                <div>
-                    <label for="fecha_inicio" class="block text-sm font-medium text-brand-text">Vigente desde</label>
-                    <input id="fecha_inicio" type="date" wire:model="fecha_inicio"
-                        class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                    @error('fecha_inicio') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
+                <x-ui.field label="Vigente desde" for="convenio-desde" :error="$errors->first('fecha_inicio')">
+                    <x-ui.input id="convenio-desde" type="date" wire:model="fecha_inicio" />
+                </x-ui.field>
 
-                <div>
-                    <label for="fecha_fin" class="block text-sm font-medium text-brand-text">Vigente hasta</label>
-                    <input id="fecha_fin" type="date" wire:model="fecha_fin"
-                        class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                    @error('fecha_fin') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
+                <x-ui.field label="Vigente hasta" for="convenio-hasta" :error="$errors->first('fecha_fin')">
+                    <x-ui.input id="convenio-hasta" type="date" wire:model="fecha_fin" />
+                </x-ui.field>
 
                 <div class="sm:col-span-2">
-                    <label for="notas" class="block text-sm font-medium text-brand-text">Notas</label>
-                    <textarea id="notas" wire:model="notas" rows="2" maxlength="2000"
-                        class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"></textarea>
-                    @error('notas') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    <x-ui.field label="Notas" for="convenio-notas" :error="$errors->first('notas')">
+                        <x-ui.textarea id="convenio-notas" wire:model="notas" :rows="2" maxlength="2000" />
+                    </x-ui.field>
                 </div>
+            </div>
 
-                <div class="flex items-end gap-4 pb-1">
-                    <label class="flex items-center gap-2 text-sm text-brand-text">
-                        <input type="checkbox" wire:model="activo" value="1"> Activo
-                    </label>
-                </div>
+            <label class="inline-flex cursor-pointer items-center gap-2.5">
+                <input type="checkbox" id="convenio-activo" wire:model="activo"
+                    class="h-4 w-4 rounded border-brand-line accent-brand-primary" />
+                <span class="text-sm font-medium text-brand-text">Activo</span>
+            </label>
 
-                <div class="flex gap-2 sm:col-span-2">
-                    <button type="submit"
-                        class="rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-secondary">Guardar</button>
-                    <button type="button" wire:click="cancelar"
-                        class="rounded-md border border-brand-line px-4 py-2 text-sm font-medium text-brand-text hover:bg-brand-surface">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    @endif
-
-    <div class="overflow-x-auto rounded-2xl border border-brand-line bg-white shadow-sm">
-        <table class="min-w-full text-sm">
-            <thead class="border-b border-brand-line bg-brand-surface text-left text-xs uppercase text-brand-muted">
-                <tr>
-                    <th class="px-4 py-3">Clave</th>
-                    <th class="px-4 py-3">Nombre</th>
-                    <th class="px-4 py-3">Tipo</th>
-                    <th class="px-4 py-3">Valor</th>
-                    <th class="px-4 py-3">Vigencia</th>
-                    <th class="px-4 py-3">Estatus</th>
-                    <th class="px-4 py-3 text-right">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-brand-line">
-                @forelse ($convenios as $convenio)
-                    <tr>
-                        <td class="px-4 py-3 font-semibold text-brand-primary">{{ $convenio->clave }}</td>
-                        <td class="px-4 py-3">{{ $convenio->nombre }}</td>
-                        <td class="px-4 py-3">{{ $convenio->tipo->label() }}</td>
-                        <td class="px-4 py-3">
-                            {{ $convenio->tipo === \App\Enums\TipoConvenio::PORCENTAJE ? $convenio->valor.' %' : '$'.$convenio->valor }}
-                        </td>
-                        <td class="px-4 py-3 text-xs text-brand-muted">
-                            {{ $convenio->fecha_inicio?->format('d/m/Y') ?? '—' }} → {{ $convenio->fecha_fin?->format('d/m/Y') ?? '—' }}
-                        </td>
-                        <td class="px-4 py-3">
-                            <span class="rounded-full px-2 py-0.5 text-xs {{ $convenio->activo ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600' }}">
-                                {{ $convenio->activo ? 'Activo' : 'Inactivo' }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-right">
-                            <button wire:click="editar({{ $convenio->id }})" class="font-medium text-brand-primary hover:underline">Editar</button>
-                            <button wire:click="alternarActivo({{ $convenio->id }})" class="ml-3 font-medium text-brand-highlight hover:underline">
-                                {{ $convenio->activo ? 'Desactivar' : 'Activar' }}
-                            </button>
-                            <button wire:click="eliminar({{ $convenio->id }})" wire:confirm="¿Eliminar este convenio? (borrado lógico)"
-                                class="ml-3 font-medium text-red-600 hover:underline">Eliminar</button>
-                        </td>
-                    </tr>
-                @empty
-                    <tr><td colspan="7" class="px-4 py-6 text-center text-brand-muted">Sin convenios registrados.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-brand-line pt-4">
+                <x-ui.button variant="secondary" wire:click="cancelar">Cancelar</x-ui.button>
+                <x-ui.button type="submit" wire:loading.attr="disabled" wire:target="guardar">
+                    <span wire:loading.remove wire:target="guardar">Guardar</span>
+                    <span wire:loading wire:target="guardar"><x-ui.loading label="Guardando…" /></span>
+                </x-ui.button>
+            </div>
+        </form>
+    </x-ui.modal>
 </div>

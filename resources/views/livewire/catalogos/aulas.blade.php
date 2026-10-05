@@ -1,79 +1,85 @@
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0">Aulas</h1>
-        <button type="button" class="btn btn-primary" wire:click="crear">
-            <i class="bi bi-plus-lg me-1"></i> Nueva Aula
-        </button>
-    </div>
+<div>
+    <x-ui.page-header title="Aulas"
+        description="Espacios físicos disponibles para grupos, horarios y carga académica.">
+        <x-slot:actions>
+            <x-ui.button wire:click="crear" icon="plus">Nueva aula</x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <!-- Filtros -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Buscar</label>
-                    <input type="text" class="form-control" wire:model.debounce.300ms="busqueda" placeholder="Nombre, clave o edificio...">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Estado</label>
-                    <select class="form-select" wire:model="filtroActivo">
-                        <option value="">Todos</option>
+    @if (session('catalogo'))
+        <div class="mt-4"><x-ui.alert tone="success">{{ session('catalogo') }}</x-ui.alert></div>
+    @endif
+
+    <div class="mt-5">
+        <x-ui.filters>
+            <x-slot:actions>
+                <x-ui.button variant="ghost" size="sm" wire:click="limpiarFiltros">Limpiar filtros</x-ui.button>
+            </x-slot:actions>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <x-ui.field label="Buscar" class="lg:col-span-2">
+                    <x-ui.input type="search" wire:model.debounce.300ms="busqueda"
+                        placeholder="Nombre, clave o edificio…" aria-label="Buscar aulas" />
+                </x-ui.field>
+                <x-ui.field label="Estado">
+                    <x-ui.select wire:model.live="filtroActivo" aria-label="Filtrar por estado">
+                        <option value="">Todas</option>
                         <option value="1">Activas</option>
                         <option value="0">Inactivas</option>
-                    </select>
-                </div>
+                    </x-ui.select>
+                </x-ui.field>
             </div>
-        </div>
+        </x-ui.filters>
     </div>
 
-    <!-- Tabla -->
-    <div class="card">
-        <div class="card-body p-0">
-            @if($aulas->isEmpty())
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-building display-4"></i>
-                    <p class="mt-2">No hay aulas registradas.</p>
-                </div>
+    <div class="mt-4">
+        <x-ui.card :flush="$aulas->isNotEmpty()">
+            @if ($aulas->isEmpty())
+                <x-ui.empty-state icon="squares" title="No hay aulas"
+                    message="Registra el primer aula para poder asignar grupos y horarios.">
+                    <x-slot:action>
+                        <x-ui.button wire:click="crear" icon="plus">Nueva aula</x-ui.button>
+                    </x-slot:action>
+                </x-ui.empty-state>
             @else
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <div class="ui-table-wrap">
+                    <table class="ui-table">
+                        <caption class="sr-only">Catálogo de aulas</caption>
+                        <thead>
                             <tr>
-                                <th>Clave</th>
-                                <th>Nombre</th>
-                                <th>Edificio</th>
-                                <th>Capacidad</th>
-                                <th>Tipo</th>
-                                <th>Estado</th>
-                                <th class="text-end">Acciones</th>
+                                <th scope="col">Clave</th>
+                                <th scope="col">Nombre</th>
+                                <th scope="col">Edificio</th>
+                                <th scope="col">Capacidad</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col" class="text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($aulas as $a)
-                                <tr>
-                                    <td>{{ $a->clave }}</td>
-                                    <td>{{ $a->nombre }}</td>
-                                    <td>{{ $a->edificio }}</td>
-                                    <td>{{ $a->capacidad }}</td>
+                            @foreach ($aulas as $a)
+                                <tr wire:key="aula-{{ $a->id }}">
+                                    <td class="font-medium text-brand-primary">{{ $a->clave }}</td>
+                                    <td class="font-medium text-brand-text">{{ $a->nombre }}</td>
+                                    <td class="text-brand-muted">{{ $a->edificio }}</td>
+                                    <td class="text-brand-muted">{{ $a->capacidad }}</td>
+                                    <td><x-ui.badge tone="info">{{ $a->tipo?->label() ?? $a->tipo }}</x-ui.badge></td>
                                     <td>
-                                        <span class="badge bg-info text-dark">{{ $a->tipo?->label() ?? $a->tipo }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge {{ $a->activo ? 'bg-success' : 'bg-secondary' }}">
+                                        <x-ui.badge :tone="$a->activo ? 'success' : 'neutral'">
                                             {{ $a->activo ? 'Activa' : 'Inactiva' }}
-                                        </span>
+                                        </x-ui.badge>
                                     </td>
-                                    <td class="text-end">
-                                        <div class="btn-group btn-group-sm">
-                                            <button type="button" class="btn btn-outline-primary" wire:click="editar({{ $a->id }})" title="Editar">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button type="button" class="btn {{ $a->activo ? 'btn-outline-secondary' : 'btn-outline-success' }}" wire:click="alternarActivo({{ $a->id }})" title="{{ $a->activo ? 'Desactivar' : 'Activar' }}">
-                                                <i class="bi {{ $a->activo ? 'bi-pause' : 'bi-play' }}"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger" wire:click="confirmarEliminacion({{ $a->id }})" title="Eliminar">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                    <td>
+                                        <div class="ui-row-actions">
+                                            <x-ui.icon-button label="Editar {{ $a->nombre }}" icon="cog"
+                                                wire:click="editar({{ $a->id }})" />
+                                            <x-ui.icon-button
+                                                :label="$a->activo ? 'Desactivar' : 'Activar'"
+                                                :icon="$a->activo ? 'no-symbol' : 'check-circle'"
+                                                :variant="$a->activo ? 'secondary' : 'primary'"
+                                                wire:click="alternarActivo({{ $a->id }})" />
+                                            <x-ui.icon-button label="Eliminar {{ $a->nombre }}" icon="x-mark"
+                                                variant="danger" wire:click="eliminar({{ $a->id }})"
+                                                wire:confirm="¿Eliminar el aula {{ $a->nombre }}? (borrado lógico)" />
                                         </div>
                                     </td>
                                 </tr>
@@ -81,93 +87,71 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="card-footer">
+
+                <div class="border-t border-brand-line px-5 py-3">
                     {{ $aulas->links() }}
                 </div>
             @endif
-        </div>
+        </x-ui.card>
     </div>
 
-    <!-- Modal Crear/Editar -->
-    <div class="modal fade" tabindex="-1" wire:model="formulario">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ $registroId ? 'Editar Aula' : 'Nueva Aula' }}</h5>
-                    <button type="button" class="btn-close" wire:click="cancelar"></button>
+    <x-ui.modal id="modal-aula"
+        :title="$registroId ? 'Editar aula' : 'Nueva aula'"
+        :open="$formulario" close="cancelar">
+        <form wire:submit="guardar" class="space-y-4">
+            @if ($errors->any())
+                <x-ui.alert tone="danger">
+                    <ul class="list-inside list-disc space-y-0.5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-ui.alert>
+            @endif
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <x-ui.field label="Clave" for="aula-clave" required
+                    hint="Solo mayúsculas, números, guión y guion bajo." :error="$errors->first('clave')">
+                    <x-ui.input id="aula-clave" wire:model="clave" maxlength="20" placeholder="Ej. A-101" />
+                </x-ui.field>
+
+                <x-ui.field label="Nombre" for="aula-nombre" required :error="$errors->first('nombre')">
+                    <x-ui.input id="aula-nombre" wire:model="nombre" maxlength="100" />
+                </x-ui.field>
+
+                <x-ui.field label="Edificio" for="aula-edificio" required :error="$errors->first('edificio')">
+                    <x-ui.input id="aula-edificio" wire:model="edificio" maxlength="100" />
+                </x-ui.field>
+
+                <x-ui.field label="Capacidad" for="aula-capacidad" required :error="$errors->first('capacidad')">
+                    <x-ui.input id="aula-capacidad" type="number" min="1" max="500" wire:model="capacidad" />
+                </x-ui.field>
+
+                <x-ui.field label="Tipo" for="aula-tipo" required :error="$errors->first('tipo')">
+                    <x-ui.select id="aula-tipo" wire:model="tipo">
+                        <option value="TEORICA">Teórica</option>
+                        <option value="PRACTICA">Práctica</option>
+                        <option value="MIXTA">Mixta</option>
+                        <option value="LABORATORIO">Laboratorio</option>
+                    </x-ui.select>
+                </x-ui.field>
+
+                <div class="flex items-end pb-1">
+                    <label class="inline-flex cursor-pointer items-center gap-2.5">
+                        <input type="checkbox" id="aula-activo" wire:model="activo"
+                            class="h-4 w-4 rounded border-brand-line accent-brand-primary" />
+                        <span class="text-sm font-medium text-brand-text">Activa</span>
+                    </label>
                 </div>
-                <form wire:submit="guardar">
-                    <div class="modal-body">
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                @foreach ($errors->all() as $error)
-                                    <div>{{ $error }}</div>
-                                @endforeach
-                            </div>
-                        @endif
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label required">Clave *</label>
-                                <input type="text" class="form-control" wire:model="clave" maxlength="20" placeholder="Ej. A-101" pattern="[A-Z0-9_-]+" required>
-                                @error('clave') <div class="text-danger small">{{ $message }}</div> @enderror
-                                <div class="form-text">Solo mayúsculas, números, guión y guion bajo.</div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label required">Nombre *</label>
-                                <input type="text" class="form-control" wire:model="nombre" maxlength="100" required>
-                                @error('nombre') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label required">Edificio *</label>
-                                <input type="text" class="form-control" wire:model="edificio" maxlength="100" required>
-                                @error('edificio') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label required">Capacidad *</label>
-                                <input type="number" class="form-control" wire:model="capacidad" min="1" max="500" required>
-                                @error('capacidad') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label required">Tipo *</label>
-                                <select class="form-select" wire:model="tipo" required>
-                                    <option value="TEORICA">Teórica</option>
-                                    <option value="PRACTICA">Práctica</option>
-                                    <option value="MIXTA">Mixta</option>
-                                    <option value="LABORATORIO">Laboratorio</option>
-                                </select>
-                                @error('tipo') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-check form-switch">
-                                    <input type="checkbox" class="form-check-input" wire:model="activo" id="activo">
-                                    <label class="form-check-label" for="activo">Activa</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="cancelar">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">{{ $registroId ? 'Actualizar' : 'Crear' }}</button>
-                    </div>
-                </form>
             </div>
-        </div>
-    </div>
 
-    <!-- Confirmación Eliminar -->
-    @if(session('eliminarAulaId'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (confirm('¿Eliminar el aula "{{ session('eliminarAulaNombre') }}"? Esta acción no se puede deshacer.')) {
-                    @this.call('eliminar', {{ session('eliminarAulaId') }})
-                }
-            });
-        </script>
-    @endif
+            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-brand-line pt-4">
+                <x-ui.button variant="secondary" wire:click="cancelar">Cancelar</x-ui.button>
+                <x-ui.button type="submit" wire:loading.attr="disabled" wire:target="guardar">
+                    <span wire:loading.remove wire:target="guardar">Guardar</span>
+                    <span wire:loading wire:target="guardar"><x-ui.loading label="Guardando…" /></span>
+                </x-ui.button>
+            </div>
+        </form>
+    </x-ui.modal>
 </div>

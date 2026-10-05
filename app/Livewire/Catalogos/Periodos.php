@@ -72,7 +72,8 @@ class Periodos extends CatalogoAdmin
     public function render()
     {
         return view('livewire.catalogos.periodos', [
-            'periodos' => Periodo::orderByDesc('fecha_inicio')->get(),
+            'periodos' => Periodo::when($this->busqueda, fn ($q) => $q->where('nombre', 'like', "%{$this->busqueda}%")
+                ->orWhere('clave', 'like', "%{$this->busqueda}%"))->orderByDesc('fecha_inicio')->get(),
         ]);
     }
 }
