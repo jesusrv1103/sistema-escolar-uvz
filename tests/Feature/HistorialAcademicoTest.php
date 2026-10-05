@@ -19,6 +19,29 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class)->group('historial-academico');
 
+beforeEach(function () {
+    foreach ([
+        \Database\Factories\ProgramaFactory::class,
+        \Database\Factories\PlanEstudioFactory::class,
+        \Database\Factories\PlanVersionFactory::class,
+        \Database\Factories\MateriaFactory::class,
+        \Database\Factories\GrupoFactory::class,
+        \Database\Factories\GrupoHorarioFactory::class,
+        \Database\Factories\EvaluacionFactory::class,
+        \Database\Factories\BecaFactory::class,
+        \Database\Factories\ConvenioFactory::class,
+        \Database\Factories\DocenteFactory::class,
+        \Database\Factories\AulaFactory::class,
+        \Database\Factories\TipoDocumentoFactory::class,
+    ] as $factory) {
+        if (method_exists($factory, 'resetCounter')) {
+            $factory::resetCounter();
+        } else if (property_exists($factory, 'i')) {
+            $factory::$i = 0;
+        }
+    }
+});
+
 test('historial académico vacío para alumno sin inscripciones', function () {
     $alumno = Alumno::factory()->create();
     $service = app(HistorialAcademicoService::class);
