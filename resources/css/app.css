@@ -67,3 +67,44 @@
     --color-brand-muted: var(--brand-muted);
     --color-brand-line: var(--brand-line);
 }
+
+/*
+ * App shell — modo "sidebar colapsado" (solo escritorio).
+ * El estado se expone como data-sidebar en #app-shell y lo alterna el JS
+ * embebido en resources/views/components/layouts/app-shell.blade.php.
+ */
+@media (min-width: 1024px) {
+    #app-shell[data-sidebar='collapsed'] .sidebar-label,
+    #app-shell[data-sidebar='collapsed'] .sidebar-chevron {
+        display: none;
+    }
+
+    #app-shell[data-sidebar='collapsed'] .nav-children {
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+        padding-left: 0;
+    }
+
+    #app-shell[data-sidebar='collapsed'] .nav-child {
+        justify-content: center;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    #app-shell[data-sidebar='collapsed'] nav > ul > li > a,
+    #app-shell[data-sidebar='collapsed'] nav > ul > li > details > summary {
+        justify-content: center;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    /* En modo iconos todos los submenús quedan visibles. */
+    #app-shell[data-sidebar='collapsed'] details:not([open]) > .nav-children {
+        display: block;
+    }
+}
+
+/* Chevron del submenú girado cuando el grupo está abierto. */
+#app-sidebar details[open] > summary .sidebar-chevron {
+    transform: rotate(180deg);
+}
