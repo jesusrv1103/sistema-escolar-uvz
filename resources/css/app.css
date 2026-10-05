@@ -213,6 +213,11 @@
         line-height: 1.4;
     }
 
+    /* Color de texto para mensajes/encabezados de error (semántica, no marca). */
+    .text-danger-ink {
+        color: #b91c1c;
+    }
+
     .ui-input,
     .ui-select,
     .ui-textarea {
@@ -329,6 +334,15 @@
 
     .ui-btn-danger:hover:not(:disabled) {
         background: #991b1b;
+    }
+
+    .ui-btn-success {
+        background: #047857;
+        color: #fff;
+    }
+
+    .ui-btn-success:hover:not(:disabled) {
+        background: #065f46;
     }
 
     .ui-btn-sm {

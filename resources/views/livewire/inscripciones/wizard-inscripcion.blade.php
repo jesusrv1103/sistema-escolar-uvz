@@ -1,426 +1,478 @@
 <div>
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="text-lg font-semibold text-brand-text">
-                {{ $inscripcion === null ? 'Nueva inscripción' : 'Inscripción #'.$inscripcion->id }}
-            </h1>
-            <p class="text-sm text-brand-muted">Asistente de 6 pasos · el avance queda guardado en la base de datos</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2 text-sm">
+    <x-ui.page-header
+        :title="$inscripcion === null ? 'Nueva inscripción' : 'Inscripción #' . $inscripcion->id"
+        description="Asistente de 6 pasos · el avance queda guardado en la base de datos">
+        <x-slot:meta>
             @if ($inscripcion !== null)
-                <span class="rounded-full border border-brand-line bg-brand-surface px-3 py-1 text-xs font-semibold text-brand-primary">
-                    {{ $inscripcion->estatus->label() }}
-                </span>
+                <x-ui.badge tone="primary">{{ $inscripcion->estatus->label() }}</x-ui.badge>
             @endif
-            <a href="{{ route('inscripciones.lista') }}" class="font-medium text-brand-primary hover:text-brand-secondary">Inscripciones</a>
-            <a href="{{ route('dashboard') }}" class="text-brand-muted hover:text-brand-secondary">Dashboard</a>
-        </div>
-    </div>
+        </x-slot:meta>
+        <x-slot:actions>
+            <x-ui.button variant="secondary" icon="arrow-left" href="{{ route('inscripciones.lista') }}">
+                Inscripciones
+            </x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
     @if (session('wizard'))
-        <div class="mb-4 rounded-md border border-brand-line bg-brand-surface px-4 py-3 text-sm text-brand-text">
-            {{ session('wizard') }}
-        </div>
+        <div class="mt-4"><x-ui.alert tone="success">{{ session('wizard') }}</x-ui.alert></div>
     @endif
 
     @error('paso')
-        <div class="mb-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {{ $message }}
-        </div>
+        <div class="mt-4"><x-ui.alert tone="danger">{{ $message }}</x-ui.alert></div>
     @enderror
 
     @if (! $puedeEditar && $inscripcion !== null)
-        <div class="mb-4 rounded-md border border-brand-line bg-brand-surface px-4 py-3 text-xs text-brand-muted">
-            Modo solo lectura: la inscripción no es borrador o el periodo está cerrado (RB-13).
+        <div class="mt-4">
+            <x-ui.alert tone="neutral">
+                Modo solo lectura: la inscripción no es borrador o el periodo está cerrado (RB-13).
+            </x-ui.alert>
         </div>
     @endif
 
     {{-- Detalle operativo (Fase 14): estado general, convenio, pagos,
          documentos e historial de auditoría — solo lectura, sin rutas nuevas. --}}
     @if ($inscripcion !== null)
-        <livewire:inscripciones.detalle-inscripcion
-            :inscripcion="$inscripcion"
-            wire:key="detalle-{{ $inscripcion->id }}" />
+        <div class="mt-5">
+            <livewire:inscripciones.detalle-inscripcion
+                :inscripcion="$inscripcion"
+                wire:key="detalle-{{ $inscripcion->id }}" />
+        </div>
     @endif
 
     {{-- Indicador de pasos --}}
-    <ol class="mb-6 grid gap-2 sm:grid-cols-6">
-        @php
-            $etiquetas = [
-                1 => 'Selección y montos',
-                2 => 'Datos personales',
-                3 => 'Contacto (tutor)',
-                4 => 'Contacto de emergencia',
-                5 => 'Información médica',
-                6 => 'Revisión final',
-            ];
-        @endphp
-        @foreach ($etiquetas as $numero => $etiqueta)
-            @php
-                $bloqueado = $numero > $pasoMaximo;
-                $actual = $numero === $paso;
-            @endphp
-            <li>
-                <button type="button" wire:click="irAPaso({{ $numero }})" @disabled($bloqueado)
-                    @class([
-                        'w-full rounded-md border px-2 py-2 text-xs font-medium text-left transition',
-                        'border-brand-primary bg-brand-primary text-white' => $actual,
-                        'border-brand-line bg-white text-brand-primary hover:bg-brand-surface' => ! $actual && ! $bloqueado,
-                        'border-brand-line bg-white text-brand-muted opacity-60 cursor-not-allowed' => $bloqueado,
-                    ])>
-                    @if ($numero < $pasoMaximo && ! $actual)
-                        <span aria-hidden="true">✓</span>
-                    @endif
-                    {{ $numero }}. {{ $etiqueta }}
-                </button>
-            </li>
-        @endforeach
-    </ol>
+    @php
+        $etiquetas = [
+            1 => 'Selección y montos',
+            2 => 'Datos personales',
+            3 => 'Contacto (tutor)',
+            4 => 'Contacto de emergencia',
+            5 => 'Información médica',
+            6 => 'Revisión final',
+        ];
+    @endphp
+    <nav class="mt-6" aria-label="Pasos del asistente">
+        <ol class="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            @foreach ($etiquetas as $numero => $etiqueta)
+                @php
+                    $bloqueado = $numero > $pasoMaximo;
+                    $actual = $numero === $paso;
+                @endphp
+                <li>
+                    <button type="button" wire:click="irAPaso({{ $numero }})" @disabled($bloqueado)
+                        @class([
+                            'flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-medium transition',
+                            'border-brand-primary bg-brand-primary text-white' => $actual,
+                            'border-brand-line bg-white text-brand-primary hover:border-brand-muted/60' => ! $actual && ! $bloqueado,
+                            'border-brand-line bg-brand-surface text-brand-muted opacity-60 cursor-not-allowed' => $bloqueado,
+                        ])>
+                        @if ($numero < $pasoMaximo && ! $actual)
+                            <x-ui.icon name="check" :size="14" />
+                        @endif
+                        <span class="min-w-0 truncate">
+                            <span class="font-semibold">{{ $numero }}.</span> {{ $etiqueta }}
+                        </span>
+                    </button>
+                </li>
+            @endforeach
+        </ol>
+    </nav>
 
     {{-- Contenido por paso --}}
-    <div class="rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
-        @if ($paso === 1)
-            @if ($puedeEditar)
-                <h2 class="text-sm font-semibold text-brand-text">Paso 1 — Selección y montos</h2>
-                <p class="mt-1 text-xs text-brand-muted">
-                    Al continuar se crea el borrador de la inscripción. Los montos quedan guardados como
-                    <em>snapshots</em> de la inscripción.
-                </p>
-
-                <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label for="busqueda" class="block text-sm font-medium text-brand-text">Buscar alumno</label>
-                        <input id="busqueda" type="search" wire:model.live.debounce.300ms="busquedaAlumno"
-                            placeholder="Nombre, apellidos o CURP"
-                            class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                        <select id="alumnoId" wire:model="alumnoId"
-                            class="mt-2 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                            <option value="">— Selecciona un alumno —</option>
-                            @foreach ($candidatos as $candidato)
-                                <option value="{{ $candidato->id }}">
-                                    {{ $candidato->apellidos }}, {{ $candidato->nombre }} · CURP {{ $candidato->curp }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('alumnoId') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        <p class="mt-1 text-xs text-brand-muted">
-                            No se duplican alumnos: la CURP sigue siendo única. Solo alumnos existentes y no eliminados.
-                            @can('alumno.create')
-                                <a href="{{ route('alumnos.nuevo') }}" class="font-medium text-brand-primary hover:underline">
-                                    ¿No está? Regístralo en el expediente</a>.
-                            @endcan
-                        </p>
-                    </div>
-
-                    <div>
-                        <label for="programaId" class="block text-sm font-medium text-brand-text">Programa</label>
-                        <select id="programaId" wire:model="programaId"
-                            class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                            <option value="">— Selecciona un programa —</option>
-                            @foreach ($programas as $programa)
-                                <option value="{{ $programa->id }}">{{ $programa->clave }} — {{ $programa->nombre }}</option>
-                            @endforeach
-                        </select>
-                        @error('programaId') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        <p class="mt-1 text-xs text-brand-muted">Solo programas activos y no eliminados.</p>
-                    </div>
-
-                    <div>
-                        <label for="periodoId" class="block text-sm font-medium text-brand-text">Periodo</label>
-                        <select id="periodoId" wire:model="periodoId"
-                            class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                            <option value="">— Selecciona un periodo —</option>
-                            @foreach ($periodos as $periodo)
-                                <option value="{{ $periodo->id }}">{{ $periodo->clave }} — {{ $periodo->nombre }}</option>
-                            @endforeach
-                        </select>
-                        @error('periodoId') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        <p class="mt-1 text-xs text-brand-muted">Solo periodos activos y sin cerrar (RB-13).</p>
-                    </div>
-
-                    <div>
-                        <label for="monto_inscripcion" class="block text-sm font-medium text-brand-text">Monto de inscripción (MXN)</label>
-                        <input id="monto_inscripcion" type="number" step="0.01" min="0" wire:model="monto_inscripcion"
-                            placeholder="1500.00"
-                            class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                        @error('monto_inscripcion') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <label for="monto_mensualidad" class="block text-sm font-medium text-brand-text">Monto de mensualidad (MXN)</label>
-                        <input id="monto_mensualidad" type="number" step="0.01" min="0" wire:model="monto_mensualidad"
-                            placeholder="1200.00"
-                            class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                        @error('monto_mensualidad') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                    </div>
-                </div>
-            @else
-                <h2 class="text-sm font-semibold text-brand-text">Paso 1 — Selección y montos</h2>
-                <dl class="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                    <div><dt class="text-brand-muted">Alumno</dt>
-                        <dd>{{ $alumno ? $alumno->apellidos.', '.$alumno->nombre : '—' }}</dd></div>
-                    <div><dt class="text-brand-muted">Periodo</dt>
-                        <dd>{{ $inscripcion?->periodo?->nombre ?? '—' }}</dd></div>
-                    <div><dt class="text-brand-muted">Programa</dt>
-                        <dd>{{ $inscripcion?->programa?->nombre ?? '—' }}</dd></div>
-                    <div><dt class="text-brand-muted">Montos</dt>
-                        <dd>${{ number_format((float) ($inscripcion?->monto_inscripcion ?? 0), 2) }} / ${{ number_format((float) ($inscripcion?->monto_mensualidad ?? 0), 2) }}</dd></div>
-                </dl>
-            @endif
-
-        @elseif ($paso === 2)
-            <h2 class="text-sm font-semibold text-brand-text">Paso 2 — Datos personales</h2>
-            @if ($alumno !== null)
-                <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-                    <div><dt class="text-xs text-brand-muted">Nombre</dt><dd>{{ $alumno->apellidos }}, {{ $alumno->nombre }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">CURP</dt><dd class="font-mono">{{ $alumno->curp }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Fecha de nacimiento</dt><dd>{{ $alumno->fecha_nacimiento?->format('d/m/Y') }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Sexo</dt><dd>{{ $alumno->sexo?->label() }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Correo</dt><dd>{{ $alumno->correo ?? '—' }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Teléfono</dt><dd>{{ $alumno->telefono ?? '—' }}</dd></div>
-                </dl>
-                <div class="mt-4 flex items-center gap-3 text-xs">
-                    @if ($pasoMaximo >= 3)
-                        <span class="font-semibold text-brand-primary">✓ Completo</span>
-                    @else
-                        <span class="font-semibold text-brand-muted">Pendiente</span>
+    <div class="mt-4">
+        <x-ui.card>
+            <x-slot:header>
+                <p class="text-sm font-semibold text-brand-text">
+                    @if ($paso === 1) Paso 1 — Selección y montos
+                    @elseif ($paso === 2) Paso 2 — Datos personales
+                    @elseif ($paso === 3) Paso 3 — Datos de contacto (tutor)
+                    @elseif ($paso === 4) Paso 4 — Contacto de emergencia
+                    @elseif ($paso === 5) Paso 5 — Información médica
+                    @else Paso 6 — Revisión final
                     @endif
-                    @can('update', $alumno)
-                        <a href="{{ route('alumnos.ver', $alumno) }}" class="font-medium text-brand-primary hover:underline">Editar en el expediente</a>
-                    @else
-                        <a href="{{ route('alumnos.ver', $alumno) }}" class="font-medium text-brand-primary hover:underline">Ver en el expediente</a>
-                    @endcan
-                </div>
-            @else
-                <p class="mt-2 text-sm text-brand-muted">No hay alumno seleccionado. Completa el paso 1.</p>
-            @endif
+                </p>
+            </x-slot:header>
 
-        @elseif ($paso === 3)
-            <h2 class="text-sm font-semibold text-brand-text">Paso 3 — Datos de contacto (tutor)</h2>
-            @if ($contactoTutor !== null)
-                <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-                    <div><dt class="text-xs text-brand-muted">Nombre</dt><dd>{{ $contactoTutor->nombre }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Parentesco</dt><dd>{{ $contactoTutor->parentesco ?? '—' }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Teléfono</dt><dd>{{ $contactoTutor->telefono ?? '—' }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Correo</dt><dd>{{ $contactoTutor->correo ?? '—' }}</dd></div>
-                </dl>
-                <p class="mt-3 text-xs font-semibold text-brand-primary">✓ Contacto de tutor registrado</p>
-            @else
-                <p class="mt-2 text-sm text-brand-muted">Falta el contacto de tutor (debe existir exactamente uno).</p>
-            @endif
-            @if ($alumno !== null)
-                <a href="{{ route('alumnos.contactos', $alumno) }}" class="mt-3 inline-block text-xs font-medium text-brand-primary hover:underline">
-                    {{ $contactoTutor !== null ? 'Editar contactos' : 'Registrar contacto de tutor' }}</a>
-            @endif
-
-        @elseif ($paso === 4)
-            <h2 class="text-sm font-semibold text-brand-text">Paso 4 — Contacto de emergencia</h2>
-            @if ($contactoEmergencia !== null)
-                <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-                    <div><dt class="text-xs text-brand-muted">Nombre</dt><dd>{{ $contactoEmergencia->nombre }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Parentesco</dt><dd>{{ $contactoEmergencia->parentesco ?? '—' }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Teléfono</dt><dd>{{ $contactoEmergencia->telefono ?? '—' }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Correo</dt><dd>{{ $contactoEmergencia->correo ?? '—' }}</dd></div>
-                </dl>
-                <p class="mt-3 text-xs font-semibold text-brand-primary">✓ Contacto de emergencia registrado</p>
-            @else
-                <p class="mt-2 text-sm text-brand-muted">Falta el contacto de emergencia (debe existir exactamente uno).</p>
-            @endif
-            @if ($alumno !== null)
-                <a href="{{ route('alumnos.contactos', $alumno) }}" class="mt-3 inline-block text-xs font-medium text-brand-primary hover:underline">
-                    {{ $contactoEmergencia !== null ? 'Editar contactos' : 'Registrar contacto de emergencia' }}</a>
-            @endif
-
-        @elseif ($paso === 5)
-            <h2 class="text-sm font-semibold text-brand-text">Paso 5 — Información médica</h2>
-            <p class="mt-2 text-sm text-brand-text">
-                @if ($infoMedicaCompleta)
-                    <span class="font-semibold text-brand-primary">✓ Información médica registrada</span>
-                @else
-                    <span class="font-semibold text-brand-muted">Pendiente: falta la información médica básica del alumno.</span>
-                @endif
-            </p>
-            <p class="mt-1 text-xs text-brand-muted">
-                El contenido médico no se muestra en este asistente ni en los listados (RB-18); solo se verifica que
-                exista el registro.
-            </p>
-            @can('informacionMedica.edit')
-                @if ($alumno !== null)
-                    <a href="{{ route('alumnos.info-medica', $alumno) }}" class="mt-3 inline-block text-xs font-medium text-brand-primary hover:underline">
-                        {{ $infoMedicaCompleta ? 'Editar información médica' : 'Registrar información médica' }}</a>
-                @endif
-            @endcan
-
-        @else
-            <h2 class="text-sm font-semibold text-brand-text">Paso 6 — Revisión final</h2>
-            @if ($inscripcion !== null)
-                <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-                    <div><dt class="text-xs text-brand-muted">Alumno</dt>
-                        <dd>{{ $alumno ? $alumno->apellidos.', '.$alumno->nombre : '—' }}
-                            <span class="font-mono text-xs text-brand-muted">{{ $alumno?->curp }}</span></dd></div>
-                    <div><dt class="text-xs text-brand-muted">Estatus actual</dt>
-                        <dd class="font-semibold">{{ $inscripcion->estatus->label() }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Programa</dt>
-                        <dd>{{ $inscripcion->programa?->nombre ?? '—' }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Periodo</dt>
-                        <dd>{{ $inscripcion->periodo?->nombre ?? '—' }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Monto de inscripción</dt>
-                        <dd>${{ number_format((float) $inscripcion->monto_inscripcion, 2) }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Monto de mensualidad</dt>
-                        <dd>${{ number_format((float) $inscripcion->monto_mensualidad, 2) }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Contacto de tutor</dt>
-                        <dd>{{ $contactoTutor?->nombre ?? 'Falta' }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Contacto de emergencia</dt>
-                        <dd>{{ $contactoEmergencia?->nombre ?? 'Falta' }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Información médica</dt>
-                        <dd>{{ $infoMedicaCompleta ? 'Registrada' : 'Falta' }}</dd></div>
-                    <div><dt class="text-xs text-brand-muted">Número de control</dt>
-                        <dd>{{ $alumno?->numero_control ?? 'Se asigna en la revisión final' }}</dd></div>
-                </dl>
-
+            @if ($paso === 1)
                 @if ($puedeEditar)
-                    <div class="mt-5 flex flex-wrap gap-3">
-                        <button type="button" wire:click="completar" wire:loading.attr="disabled"
-                            class="rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-secondary">
-                            <span wire:loading.remove wire:target="completar">Completar datos (→ {{ \App\Enums\InscripcionEstatus::DATA_COMPLETE->label() }})</span>
-                            <span wire:loading wire:target="completar">Guardando…</span>
-                        </button>
-                        <span class="self-center text-xs text-brand-muted">
-                            Registra <code>datos_completados_at</code> y auditoría; los pagos llegan en la siguiente fase.
-                        </span>
-                    </div>
-                @elseif ($inscripcion->estatus !== \App\Enums\InscripcionEstatus::DRAFT)
-                    <p class="mt-4 text-xs font-semibold text-brand-primary">
-                        Datos completos ({{ $inscripcion->estatus->label() }}).
+                    <p class="text-xs text-brand-muted">
+                        Al continuar se crea el borrador de la inscripción. Los montos quedan guardados como
+                        <em>snapshots</em> de la inscripción.
                     </p>
+
+                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                        <div class="sm:col-span-2">
+                            <x-ui.field label="Buscar alumno" for="busqueda" :error="$errors->first('alumnoId')"
+                                hint="No se duplican alumnos: la CURP sigue siendo única. Solo alumnos existentes y no eliminados.">
+                                <div class="grid gap-2 sm:grid-cols-2">
+                                    <x-ui.input id="busqueda" type="search"
+                                        wire:model.live.debounce.300ms="busquedaAlumno"
+                                        placeholder="Nombre, apellidos o CURP" aria-label="Buscar alumno" />
+                                    <x-ui.select id="alumnoId" wire:model="alumnoId" aria-label="Alumno">
+                                        <option value="">— Selecciona un alumno —</option>
+                                        @foreach ($candidatos as $candidato)
+                                            <option value="{{ $candidato->id }}">
+                                                {{ $candidato->apellidos }}, {{ $candidato->nombre }} · CURP {{ $candidato->curp }}
+                                            </option>
+                                        @endforeach
+                                    </x-ui.select>
+                                </div>
+                            </x-ui.field>
+                            @can('alumno.create')
+                                <p class="mt-1 text-xs text-brand-muted">
+                                    <a href="{{ route('alumnos.nuevo') }}" class="font-medium text-brand-primary hover:underline">
+                                        ¿No está? Regístralo en el expediente</a>.
+                                </p>
+                            @endcan
+                        </div>
+
+                        <x-ui.field label="Programa" for="programaId" required :error="$errors->first('programaId')"
+                            hint="Solo programas activos y no eliminados.">
+                            <x-ui.select id="programaId" wire:model="programaId">
+                                <option value="">— Selecciona un programa —</option>
+                                @foreach ($programas as $programa)
+                                    <option value="{{ $programa->id }}">{{ $programa->clave }} — {{ $programa->nombre }}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </x-ui.field>
+
+                        <x-ui.field label="Periodo" for="periodoId" required :error="$errors->first('periodoId')"
+                            hint="Solo periodos activos y sin cerrar (RB-13).">
+                            <x-ui.select id="periodoId" wire:model="periodoId">
+                                <option value="">— Selecciona un periodo —</option>
+                                @foreach ($periodos as $periodo)
+                                    <option value="{{ $periodo->id }}">{{ $periodo->clave }} — {{ $periodo->nombre }}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </x-ui.field>
+
+                        <x-ui.field label="Monto de inscripción (MXN)" for="monto_inscripcion"
+                            :error="$errors->first('monto_inscripcion')">
+                            <x-ui.input id="monto_inscripcion" type="number" step="0.01" min="0"
+                                wire:model="monto_inscripcion" placeholder="1500.00" />
+                        </x-ui.field>
+
+                        <x-ui.field label="Monto de mensualidad (MXN)" for="monto_mensualidad"
+                            :error="$errors->first('monto_mensualidad')">
+                            <x-ui.input id="monto_mensualidad" type="number" step="0.01" min="0"
+                                wire:model="monto_mensualidad" placeholder="1200.00" />
+                        </x-ui.field>
+                    </div>
+                @else
+                    <dl class="mt-2 grid gap-3 text-sm sm:grid-cols-2">
+                        <div><dt class="text-xs text-brand-muted">Alumno</dt>
+                            <dd class="font-medium text-brand-text">{{ $alumno ? $alumno->apellidos.', '.$alumno->nombre : '—' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Periodo</dt>
+                            <dd class="font-medium text-brand-text">{{ $inscripcion?->periodo?->nombre ?? '—' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Programa</dt>
+                            <dd class="font-medium text-brand-text">{{ $inscripcion?->programa?->nombre ?? '—' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Montos</dt>
+                            <dd class="font-medium text-brand-text">
+                                ${{ number_format((float) ($inscripcion?->monto_inscripcion ?? 0), 2) }} /
+                                ${{ number_format((float) ($inscripcion?->monto_mensualidad ?? 0), 2) }}
+                            </dd></div>
+                    </dl>
                 @endif
+
+            @elseif ($paso === 2)
+                @if ($alumno !== null)
+                    <dl class="mt-1 grid gap-3 text-sm sm:grid-cols-2">
+                        <div><dt class="text-xs text-brand-muted">Nombre</dt>
+                            <dd class="font-medium text-brand-text">{{ $alumno->apellidos }}, {{ $alumno->nombre }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">CURP</dt><dd class="font-mono">{{ $alumno->curp }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Fecha de nacimiento</dt>
+                            <dd>{{ $alumno->fecha_nacimiento?->format('d/m/Y') }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Sexo</dt><dd>{{ $alumno->sexo?->label() }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Correo</dt><dd>{{ $alumno->correo ?? '—' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Teléfono</dt><dd>{{ $alumno->telefono ?? '—' }}</dd></div>
+                    </dl>
+                    <div class="mt-4 flex flex-wrap items-center gap-3 text-xs">
+                        @if ($pasoMaximo >= 3)
+                            <x-ui.badge tone="success">Completo</x-ui.badge>
+                        @else
+                            <x-ui.badge tone="warning">Pendiente</x-ui.badge>
+                        @endif
+                        <a href="{{ route('alumnos.ver', $alumno) }}" class="font-medium text-brand-primary hover:underline">
+                            @can('update', $alumno)
+                                Editar en el expediente
+                            @else
+                                Ver en el expediente
+                            @endcan
+                        </a>
+                    </div>
+                @else
+                    <x-ui.empty-state icon="user" title="Sin alumno seleccionado"
+                        message="Completa el paso 1 para continuar." />
+                @endif
+
+            @elseif ($paso === 3)
+                @if ($contactoTutor !== null)
+                    <dl class="mt-1 grid gap-3 text-sm sm:grid-cols-2">
+                        <div><dt class="text-xs text-brand-muted">Nombre</dt>
+                            <dd class="font-medium text-brand-text">{{ $contactoTutor->nombre }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Parentesco</dt><dd>{{ $contactoTutor->parentesco ?? '—' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Teléfono</dt><dd>{{ $contactoTutor->telefono ?? '—' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Correo</dt><dd>{{ $contactoTutor->correo ?? '—' }}</dd></div>
+                    </dl>
+                    <p class="mt-3"><x-ui.badge tone="success">Contacto de tutor registrado</x-ui.badge></p>
+                @else
+                    <x-ui.empty-state icon="user" title="Falta el contacto de tutor"
+                        message="Debe existir exactamente uno para poder avanzar." />
+                @endif
+                @if ($alumno !== null)
+                    <div class="mt-3">
+                        <x-ui.button size="sm" variant="secondary" icon="pencil" href="{{ route('alumnos.contactos', $alumno) }}">
+                            {{ $contactoTutor !== null ? 'Editar contactos' : 'Registrar contacto de tutor' }}
+                        </x-ui.button>
+                    </div>
+                @endif
+
+            @elseif ($paso === 4)
+                @if ($contactoEmergencia !== null)
+                    <dl class="mt-1 grid gap-3 text-sm sm:grid-cols-2">
+                        <div><dt class="text-xs text-brand-muted">Nombre</dt>
+                            <dd class="font-medium text-brand-text">{{ $contactoEmergencia->nombre }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Parentesco</dt><dd>{{ $contactoEmergencia->parentesco ?? '—' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Teléfono</dt><dd>{{ $contactoEmergencia->telefono ?? '—' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Correo</dt><dd>{{ $contactoEmergencia->correo ?? '—' }}</dd></div>
+                    </dl>
+                    <p class="mt-3"><x-ui.badge tone="success">Contacto de emergencia registrado</x-ui.badge></p>
+                @else
+                    <x-ui.empty-state icon="user" title="Falta el contacto de emergencia"
+                        message="Debe existir exactamente uno para poder avanzar." />
+                @endif
+                @if ($alumno !== null)
+                    <div class="mt-3">
+                        <x-ui.button size="sm" variant="secondary" icon="pencil" href="{{ route('alumnos.contactos', $alumno) }}">
+                            {{ $contactoEmergencia !== null ? 'Editar contactos' : 'Registrar contacto de emergencia' }}
+                        </x-ui.button>
+                    </div>
+                @endif
+
+            @elseif ($paso === 5)
+                <p class="mt-1 text-sm text-brand-text">
+                    @if ($infoMedicaCompleta)
+                        <x-ui.badge tone="success">Información médica registrada</x-ui.badge>
+                    @else
+                        <x-ui.badge tone="warning">Pendiente: falta la información médica básica del alumno</x-ui.badge>
+                    @endif
+                </p>
+                <p class="mt-2 text-xs text-brand-muted">
+                    El contenido médico no se muestra en este asistente ni en los listados (RB-18); solo se verifica que
+                    exista el registro.
+                </p>
+                @can('informacionMedica.edit')
+                    @if ($alumno !== null)
+                        <div class="mt-3">
+                            <x-ui.button size="sm" variant="secondary" icon="pencil"
+                                href="{{ route('alumnos.info-medica', $alumno) }}">
+                                {{ $infoMedicaCompleta ? 'Editar información médica' : 'Registrar información médica' }}
+                            </x-ui.button>
+                        </div>
+                    @endif
+                @endcan
+
             @else
-                <p class="mt-2 text-sm text-brand-muted">Completa el paso 1 para crear el borrador.</p>
+                @if ($inscripcion !== null)
+                    <dl class="mt-1 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                        <div><dt class="text-xs text-brand-muted">Alumno</dt>
+                            <dd class="font-medium text-brand-text">
+                                {{ $alumno ? $alumno->apellidos.', '.$alumno->nombre : '—' }}
+                                <span class="block font-mono text-xs text-brand-muted">{{ $alumno?->curp }}</span>
+                            </dd></div>
+                        <div><dt class="text-xs text-brand-muted">Estatus actual</dt>
+                            <dd><x-ui.badge tone="primary">{{ $inscripcion->estatus->label() }}</x-ui.badge></dd></div>
+                        <div><dt class="text-xs text-brand-muted">Programa</dt>
+                            <dd>{{ $inscripcion->programa?->nombre ?? '—' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Periodo</dt>
+                            <dd>{{ $inscripcion->periodo?->nombre ?? '—' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Monto de inscripción</dt>
+                            <dd class="font-medium text-brand-text">${{ number_format((float) $inscripcion->monto_inscripcion, 2) }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Monto de mensualidad</dt>
+                            <dd class="font-medium text-brand-text">${{ number_format((float) $inscripcion->monto_mensualidad, 2) }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Contacto de tutor</dt>
+                            <dd>{{ $contactoTutor?->nombre ?? 'Falta' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Contacto de emergencia</dt>
+                            <dd>{{ $contactoEmergencia?->nombre ?? 'Falta' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Información médica</dt>
+                            <dd>{{ $infoMedicaCompleta ? 'Registrada' : 'Falta' }}</dd></div>
+                        <div><dt class="text-xs text-brand-muted">Número de control</dt>
+                            <dd>{{ $alumno?->numero_control ?? 'Se asigna en la revisión final' }}</dd></div>
+                    </dl>
+
+                    @if ($puedeEditar)
+                        <div class="mt-5 flex flex-wrap items-center gap-3 border-t border-brand-line pt-4">
+                            <x-ui.button icon="check" wire:click="completar"
+                                wire:loading.attr="disabled" wire:target="completar">
+                                <span wire:loading.remove wire:target="completar">
+                                    Completar datos (→ {{ \App\Enums\InscripcionEstatus::DATA_COMPLETE->label() }})
+                                </span>
+                                <span wire:loading wire:target="completar"><x-ui.loading label="Guardando…" /></span>
+                            </x-ui.button>
+                            <span class="text-xs text-brand-muted">
+                                Registra la marca de tiempo <code>datos_completados_at</code> y auditoría;
+                                los pagos llegan en la siguiente fase.
+                            </span>
+                        </div>
+                    @elseif ($inscripcion->estatus !== \App\Enums\InscripcionEstatus::DRAFT)
+                        <p class="mt-4">
+                            <x-ui.badge tone="success">Datos completos ({{ $inscripcion->estatus->label() }})</x-ui.badge>
+                        </p>
+                    @endif
+                @else
+                    <x-ui.empty-state icon="clipboard" title="Completa el paso 1"
+                        message="Al crear el borrador aparecerá aquí el resumen de la inscripción." />
+                @endif
             @endif
-        @endif
+        </x-ui.card>
     </div>
 
-    {{-- Convenio y cargos (Fase 7) — la lógica vive en ConvenioService --}}
     @if ($inscripcion !== null)
-        <livewire:inscripciones.modal-aplicar-convenio
-            :inscripcion="$inscripcion"
-            wire:key="convenio-{{ $inscripcion->id }}" />
+        {{-- Accesos rápidos (Fases 7–13) --}}
+        <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <x-ui.card>
+                <x-slot:header><p class="text-sm font-semibold text-brand-text">Documentos</p></x-slot:header>
+                <p class="text-xs text-brand-muted">
+                    Recepción y validación de los documentos obligatorios del expediente.
+                </p>
+                <div class="mt-3">
+                    <x-ui.button size="sm" variant="secondary" icon="document-text"
+                        href="{{ route('inscripciones.documentos', $inscripcion) }}">
+                        Abrir panel
+                    </x-ui.button>
+                </div>
+            </x-ui.card>
 
-        {{-- Pagos (Fase 8): captura y revisión four-eyes sobre los cargos --}}
-        <livewire:pagos.modal-registrar-pago
-            :inscripcion="$inscripcion"
-            wire:key="pago-registrar-{{ $inscripcion->id }}" />
-        <livewire:pagos.modal-validar-pago
-            :inscripcion="$inscripcion"
-            wire:key="pago-validar-{{ $inscripcion->id }}" />
+            <x-ui.card>
+                <x-slot:header><p class="text-sm font-semibold text-brand-text">Observaciones</p></x-slot:header>
+                <p class="text-xs text-brand-muted">
+                    Notas y faltantes del expediente: se registran y se resuelven con responsable y fecha.
+                </p>
+                <div class="mt-3">
+                    <x-ui.button size="sm" variant="secondary" icon="clipboard"
+                        href="{{ route('inscripciones.observaciones', $inscripcion) }}">
+                        Abrir observaciones
+                    </x-ui.button>
+                </div>
+            </x-ui.card>
 
-        {{-- Documentos (Fase 10): recepción, reemplazo y validación del expediente --}}
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
-            <div>
-                <h2 class="text-sm font-semibold text-brand-text">Documentos</h2>
-                <p class="mt-1 text-xs text-brand-muted">Recepción y validación de los documentos obligatorios del expediente.</p>
-            </div>
-            <a href="{{ route('inscripciones.documentos', $inscripcion) }}"
-                class="rounded-md border border-brand-line px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-surface">
-                Abrir panel de documentos
-            </a>
+            <x-ui.card>
+                <x-slot:header><p class="text-sm font-semibold text-brand-text">Revisión final</p></x-slot:header>
+                <p class="text-xs text-brand-muted">
+                    Verifica los requisitos de cierre y asigna el número de control del alumno.
+                </p>
+                <div class="mt-3">
+                    <x-ui.button size="sm" icon="check-circle"
+                        href="{{ route('inscripciones.revision-final', $inscripcion) }}">
+                        Abrir revisión
+                    </x-ui.button>
+                </div>
+            </x-ui.card>
         </div>
 
-        {{-- Observaciones (Fase 11): registrar faltantes y resolverlos (append-only) --}}
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
-            <div>
-                <h2 class="text-sm font-semibold text-brand-text">Observaciones</h2>
-                <p class="mt-1 text-xs text-brand-muted">Notas y faltantes del expediente: se registran y se resuelven con responsable y fecha.</p>
-            </div>
-            <a href="{{ route('inscripciones.observaciones', $inscripcion) }}"
-                class="rounded-md border border-brand-line px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-surface">
-                Abrir observaciones
-            </a>
+        {{-- Convenio, pagos y cancelación (Fases 7, 8 y 13) --}}
+        <div class="mt-4">
+            <livewire:inscripciones.modal-aplicar-convenio
+                :inscripcion="$inscripcion"
+                wire:key="convenio-{{ $inscripcion->id }}" />
+
+            <livewire:pagos.modal-registrar-pago
+                :inscripcion="$inscripcion"
+                wire:key="pago-registrar-{{ $inscripcion->id }}" />
+            <livewire:pagos.modal-validar-pago
+                :inscripcion="$inscripcion"
+                wire:key="pago-validar-{{ $inscripcion->id }}" />
+
+            <livewire:inscripciones.modal-cancelar-inscripcion
+                :inscripcion="$inscripcion"
+                wire:key="cancelar-{{ $inscripcion->id }}" />
         </div>
 
-        {{-- Revisión final (Fase 12): guardas RB-8 y cierre con número de control --}}
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
-            <div>
-                <h2 class="text-sm font-semibold text-brand-text">Revisión final</h2>
-                <p class="mt-1 text-xs text-brand-muted">Verifica los requisitos de cierre y asigna el número de control del alumno.</p>
-            </div>
-            <a href="{{ route('inscripciones.revision-final', $inscripcion) }}"
-                class="rounded-md border border-brand-line px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-surface">
-                Abrir revisión final
-            </a>
-        </div>
+        {{-- Cargos (Fase 7) — la lógica vive en ConvenioService --}}
+        <div class="mt-4">
+            <x-ui.card>
+                <x-slot:header>
+                    <p class="text-sm font-semibold text-brand-text">Cargos</p>
+                </x-slot:header>
 
-        {{-- Cancelación (Fase 13): solo ADMIN, estados no terminales, motivo obligatorio --}}
-        <livewire:inscripciones.modal-cancelar-inscripcion
-            :inscripcion="$inscripcion"
-            wire:key="cancelar-{{ $inscripcion->id }}" />
+                @error('cargos')
+                    <p class="ui-error">{{ $message }}</p>
+                @enderror
 
-        <div class="mt-4 rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
-            <h2 class="text-sm font-semibold text-brand-text">Cargos</h2>
-
-            @error('cargos')
-                <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
-            @enderror
-
-            @if ($conceptosPago->isEmpty())
-                @if ($inscripcion->estatus === \App\Enums\InscripcionEstatus::DATA_COMPLETE)
-                    @can('generarCargos', $inscripcion)
-                        <p class="mt-1 text-xs text-brand-muted">
-                            Aún no hay cargos. Al generarlos se crearán 1 concepto de inscripción y 4 mensualidades
-                            (cuatrimestre UVZ) y la inscripción pasará a <strong>{{ \App\Enums\InscripcionEstatus::PENDING_PAYMENT->label() }}</strong>.
+                @if ($conceptosPago->isEmpty())
+                    @if ($inscripcion->estatus === \App\Enums\InscripcionEstatus::DATA_COMPLETE)
+                        @can('generarCargos', $inscripcion)
+                            <p class="text-xs text-brand-muted">
+                                Aún no hay cargos. Al generarlos se crearán 1 concepto de inscripción y 4 mensualidades
+                                (cuatrimestre UVZ) y la inscripción pasará a
+                                <strong>{{ \App\Enums\InscripcionEstatus::PENDING_PAYMENT->label() }}</strong>.
+                            </p>
+                            <div class="mt-3">
+                                <x-ui.button icon="banknotes" wire:click="generarCargos"
+                                    wire:loading.attr="disabled" wire:target="generarCargos">
+                                    <span wire:loading.remove wire:target="generarCargos">
+                                        Generar cargos (→ {{ \App\Enums\InscripcionEstatus::PENDING_PAYMENT->label() }})
+                                    </span>
+                                    <span wire:loading wire:target="generarCargos"><x-ui.loading label="Generando…" /></span>
+                                </x-ui.button>
+                            </div>
+                        @endcan
+                    @else
+                        <p class="text-xs text-brand-muted">
+                            Sin cargos todavía: se generan cuando los datos están completos
+                            ({{ \App\Enums\InscripcionEstatus::DATA_COMPLETE->label() }}).
                         </p>
-                        <button type="button" wire:click="generarCargos" wire:loading.attr="disabled"
-                            class="mt-3 rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-secondary">
-                            <span wire:loading.remove wire:target="generarCargos">Generar cargos (→ {{ \App\Enums\InscripcionEstatus::PENDING_PAYMENT->label() }})</span>
-                            <span wire:loading wire:target="generarCargos">Generando…</span>
-                        </button>
-                    @endcan
+                    @endif
                 @else
-                    <p class="mt-2 text-xs text-brand-muted">Sin cargos todavía: se generan cuando los datos están completos ({{ \App\Enums\InscripcionEstatus::DATA_COMPLETE->label() }}).</p>
+                    <ul class="divide-y divide-brand-line text-sm">
+                        @foreach ($conceptosPago as $concepto)
+                            <li class="flex flex-wrap items-center justify-between gap-3 py-2">
+                                <div class="min-w-0">
+                                    <span class="font-medium text-brand-text">{{ $concepto->concepto }}</span>
+                                    <span class="text-xs text-brand-muted">
+                                        · {{ $concepto->tipo->label() }}{{ $concepto->numero !== null ? ' · #'.$concepto->numero : '' }}
+                                        · vence {{ $concepto->fecha_vencimiento->format('d/m/Y') }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs">
+                                    <span class="text-brand-muted">
+                                        ${{ number_format((float) $concepto->monto, 2) }}
+                                        @if ((float) $concepto->descuento > 0)
+                                            − descuento ${{ number_format((float) $concepto->descuento, 2) }}
+                                        @endif
+                                    </span>
+                                    <span class="font-semibold text-brand-text">
+                                        ${{ number_format((float) $concepto->monto_total, 2) }}
+                                    </span>
+                                    <x-ui.badge :tone="match ($concepto->estatus->value) {
+                                        'PAGADO' => 'success',
+                                        'RECHAZADO' => 'danger',
+                                        'PENDIENTE' => 'warning',
+                                        default => 'neutral',
+                                    }">
+                                        {{ $concepto->estatus->label() }}
+                                    </x-ui.badge>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
                 @endif
-            @else
-                <ul class="mt-3 divide-y divide-brand-line text-sm">
-                    @foreach ($conceptosPago as $concepto)
-                        <li class="flex flex-wrap items-center justify-between gap-3 py-2">
-                            <div>
-                                <span class="font-medium text-brand-text">{{ $concepto->concepto }}</span>
-                                <span class="text-xs text-brand-muted">
-                                    · {{ $concepto->tipo->label() }}{{ $concepto->numero !== null ? ' · #'.$concepto->numero : '' }}
-                                    · vence {{ $concepto->fecha_vencimiento->format('d/m/Y') }}
-                                </span>
-                            </div>
-                            <div class="text-xs">
-                                <span class="text-brand-muted">
-                                    ${{ number_format((float) $concepto->monto, 2) }}
-                                    @if ((float) $concepto->descuento > 0)
-                                        − descuento ${{ number_format((float) $concepto->descuento, 2) }}
-                                    @endif
-                                </span>
-                                <span class="ml-2 font-semibold text-brand-text">${{ number_format((float) $concepto->monto_total, 2) }}</span>
-                                <span class="ml-2 rounded-full border border-brand-line bg-brand-surface px-2 py-0.5 text-[11px] font-semibold">
-                                    {{ $concepto->estatus->label() }}
-                                </span>
-                            </div>
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
+            </x-ui.card>
         </div>
     @endif
 
     {{-- Navegación --}}
-    <div class="mt-4 flex items-center justify-between">
-        <button type="button" wire:click="atras" @disabled($paso === 1)
-            class="rounded-md border border-brand-line px-4 py-2 text-sm font-medium text-brand-text hover:bg-brand-surface disabled:opacity-50">
-            ← Atrás
-        </button>
+    <div class="mt-5 flex items-center justify-between border-t border-brand-line pt-4">
+        <x-ui.button variant="secondary" icon="chevron-left" wire:click="atras" :disabled="$paso === 1">
+            Atrás
+        </x-ui.button>
 
         @if ($paso < 6)
-            <button type="button" wire:click="avanzar" wire:loading.attr="disabled"
-                class="rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-secondary disabled:opacity-50">
-                <span wire:loading.remove wire:target="avanzar">Continuar →</span>
-                <span wire:loading wire:target="avanzar">Validando…</span>
-            </button>
+            <x-ui.button icon="chevron-right" wire:click="avanzar"
+                wire:loading.attr="disabled" wire:target="avanzar">
+                <span wire:loading.remove wire:target="avanzar">Continuar</span>
+                <span wire:loading wire:target="avanzar"><x-ui.loading label="Validando…" /></span>
+            </x-ui.button>
         @endif
     </div>
 </div>

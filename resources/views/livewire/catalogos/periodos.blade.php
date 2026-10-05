@@ -66,7 +66,7 @@
                                     </td>
                                     <td>
                                         <div class="ui-row-actions">
-                                            <x-ui.icon-button label="Editar {{ $periodo->nombre }}" icon="cog"
+                                            <x-ui.icon-button label="Editar {{ $periodo->nombre }}" icon="pencil"
                                                 wire:click="editar({{ $periodo->id }})" />
                                             @if ($periodo->cerrado_at)
                                                 <x-ui.icon-button label="Reabrir {{ $periodo->nombre }}" icon="check-circle"

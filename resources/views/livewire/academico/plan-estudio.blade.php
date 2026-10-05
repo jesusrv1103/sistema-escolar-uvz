@@ -91,7 +91,7 @@
                                     </td>
                                     <td>
                                         <div class="ui-row-actions">
-                                            <x-ui.icon-button label="Editar plan {{ $plan->clave }}" icon="cog"
+                                            <x-ui.icon-button label="Editar plan {{ $plan->clave }}" icon="pencil"
                                                 wire:click="abrirModalEditar({{ $plan->id }})" />
                                             <x-ui.icon-button label="{{ $plan->activo ? 'Desactivar' : 'Activar' }} plan {{ $plan->clave }}"
                                                 :icon="$plan->activo ? 'no-symbol' : 'check-circle'"

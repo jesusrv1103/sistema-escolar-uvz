@@ -72,7 +72,7 @@
                                     </td>
                                     <td>
                                         <div class="ui-row-actions">
-                                            <x-ui.icon-button label="Editar {{ $d->nombreCompleto() }}" icon="cog"
+                                            <x-ui.icon-button label="Editar {{ $d->nombreCompleto() }}" icon="pencil"
                                                 wire:click="editar({{ $d->id }})" />
                                             <x-ui.icon-button
                                                 :label="$d->activo ? 'Desactivar' : 'Activar'"

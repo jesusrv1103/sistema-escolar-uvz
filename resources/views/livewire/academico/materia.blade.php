@@ -117,7 +117,7 @@
                                     <td>
                                         <div class="ui-row-actions">
                                             @if ($version?->esPropuesta())
-                                                <x-ui.icon-button label="Editar {{ $m->nombre }}" icon="cog"
+                                                <x-ui.icon-button label="Editar {{ $m->nombre }}" icon="pencil"
                                                     wire:click="abrirModalEditar({{ $m->id }})" />
                                                 <x-ui.icon-button label="Prerrequisitos de {{ $m->nombre }}"
                                                     icon="folder" variant="secondary"

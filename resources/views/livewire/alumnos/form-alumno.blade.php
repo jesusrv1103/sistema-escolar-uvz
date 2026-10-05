@@ -1,162 +1,146 @@
 <div>
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="text-lg font-semibold text-brand-text">
-                {{ $alumno ? 'Expediente: '.$alumno->apellidos.', '.$alumno->nombre : 'Nuevo alumno' }}
-            </h1>
-            <p class="text-sm text-brand-muted">
-                Datos personales
-                @if ($alumno && $alumno->numero_control)
-                    · Núm. control <span class="font-semibold text-brand-primary">{{ $alumno->numero_control }}</span>
-                @elseif($alumno)
-                    · Núm. control: pendiente (se asigna al finalizar la primera inscripción)
-                @endif
-            </p>
-        </div>
-        <div class="flex items-center gap-2">
-            <a href="{{ route('alumnos.lista') }}" class="text-sm font-medium text-brand-primary hover:text-brand-secondary">Volver a alumnos</a>
-        </div>
-    </div>
+    <x-ui.page-header
+        :title="$alumno ? 'Expediente: ' . $alumno->apellidos . ', ' . $alumno->nombre : 'Nuevo alumno'"
+        description="Datos personales y domicilio del expediente permanente.">
+        <x-slot:meta>
+            @if ($alumno && $alumno->numero_control)
+                <x-ui.badge tone="primary">Núm. control {{ $alumno->numero_control }}</x-ui.badge>
+            @elseif ($alumno)
+                <x-ui.badge tone="neutral">Núm. control pendiente (se asigna al finalizar la primera inscripción)</x-ui.badge>
+            @endif
+        </x-slot:meta>
+        <x-slot:actions>
+            <x-ui.button variant="secondary" icon="arrow-left" href="{{ route('alumnos.lista') }}">
+                Volver a alumnos
+            </x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
     @if (session('expediente'))
-        <div class="mb-4 rounded-md border border-brand-line bg-brand-surface px-4 py-3 text-sm text-brand-text">
-            {{ session('expediente') }}
-        </div>
+        <div class="mt-4"><x-ui.alert tone="success">{{ session('expediente') }}</x-ui.alert></div>
     @endif
 
     @if ($alumno)
-        <div class="mb-6 flex flex-wrap gap-2 text-sm">
-            <a href="{{ route('alumnos.contactos', $alumno) }}"
-                class="rounded-md border border-brand-line px-3 py-1.5 font-medium text-brand-primary hover:bg-brand-surface">Contactos</a>
+        <nav class="mt-4 flex flex-wrap gap-2" aria-label="Secciones del expediente">
+            <x-ui.button size="sm" variant="secondary" href="{{ route('alumnos.contactos', $alumno) }}">
+                Contactos
+            </x-ui.button>
             @can('informacionMedica.edit')
-                <a href="{{ route('alumnos.info-medica', $alumno) }}"
-                    class="rounded-md border border-brand-line px-3 py-1.5 font-medium text-brand-primary hover:bg-brand-surface">Información médica</a>
+                <x-ui.button size="sm" variant="secondary" href="{{ route('alumnos.info-medica', $alumno) }}">
+                    Información médica
+                </x-ui.button>
             @endcan
-        </div>
+        </nav>
     @endif
 
-    <div class="rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
-        <h2 class="text-sm font-semibold text-brand-text">Datos personales</h2>
-        @if (! $puedeEditar)
-            <p class="mt-1 text-xs text-brand-muted">Solo lectura: tu rol no puede modificar el expediente.</p>
-        @endif
-
-        <form wire:submit="guardar" class="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-                <label for="nombre" class="block text-sm font-medium text-brand-text">Nombre(s)</label>
-                <input id="nombre" type="text" wire:model="nombre" maxlength="100" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('nombre') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="apellidos" class="block text-sm font-medium text-brand-text">Apellidos</label>
-                <input id="apellidos" type="text" wire:model="apellidos" maxlength="100" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('apellidos') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="curp" class="block text-sm font-medium text-brand-text">CURP</label>
-                <input id="curp" type="text" wire:model.blur="curp" maxlength="18" placeholder="18 caracteres"
-                    @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 font-mono text-sm uppercase focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                <p class="mt-1 text-xs text-brand-muted">Validación sintáctica local (sin consulta RENAPO).</p>
-                @error('curp') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="fecha_nacimiento" class="block text-sm font-medium text-brand-text">Fecha de nacimiento</label>
-                <input id="fecha_nacimiento" type="date" wire:model="fecha_nacimiento" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('fecha_nacimiento') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="sexo" class="block text-sm font-medium text-brand-text">Sexo</label>
-                <select id="sexo" wire:model="sexo" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                    <option value="">Selecciona…</option>
-                    @foreach ($sexos as $valor => $etiqueta)
-                        <option value="{{ $valor }}">{{ $etiqueta }}</option>
-                    @endforeach
-                </select>
-                @error('sexo') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="nacionalidad" class="block text-sm font-medium text-brand-text">Nacionalidad</label>
-                <input id="nacionalidad" type="text" wire:model="nacionalidad" maxlength="60" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('nacionalidad') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="correo" class="block text-sm font-medium text-brand-text">Correo electrónico</label>
-                <input id="correo" type="email" wire:model.blur="correo" maxlength="150" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('correo') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="telefono" class="block text-sm font-medium text-brand-text">Teléfono</label>
-                <input id="telefono" type="text" wire:model="telefono" maxlength="20" placeholder="5512345678" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('telefono') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div class="sm:col-span-2 border-t border-brand-line pt-4">
-                <h3 class="text-xs font-semibold uppercase text-brand-muted">Domicilio</h3>
-            </div>
-
-            <div>
-                <label for="calle" class="block text-sm font-medium text-brand-text">Calle</label>
-                <input id="calle" type="text" wire:model="calle" maxlength="150" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('calle') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="colonia" class="block text-sm font-medium text-brand-text">Colonia</label>
-                <input id="colonia" type="text" wire:model="colonia" maxlength="120" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('colonia') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="cp" class="block text-sm font-medium text-brand-text">Código postal</label>
-                <input id="cp" type="text" wire:model="cp" maxlength="10" placeholder="98000" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('cp') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="municipio" class="block text-sm font-medium text-brand-text">Municipio</label>
-                <input id="municipio" type="text" wire:model="municipio" maxlength="120" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('municipio') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="estado" class="block text-sm font-medium text-brand-text">Estado</label>
-                <input id="estado" type="text" wire:model="estado" maxlength="120" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('estado') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="pais" class="block text-sm font-medium text-brand-text">País</label>
-                <input id="pais" type="text" wire:model="pais" maxlength="80" @disabled(! $puedeEditar)
-                    class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                @error('pais') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            @if ($puedeEditar)
-                <div class="flex gap-2 sm:col-span-2">
-                    <button type="submit"
-                        class="rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-secondary">Guardar</button>
+    <div class="mt-5">
+        <x-ui.card>
+            <x-slot:header>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-brand-text">Datos personales</p>
+                    @unless ($puedeEditar)
+                        <p class="mt-0.5 text-xs text-brand-muted">
+                            Solo lectura: tu rol no puede modificar el expediente.
+                        </p>
+                    @endunless
                 </div>
-            @endif
-        </form>
+            </x-slot:header>
+
+            <form wire:submit="guardar" class="space-y-6">
+                {{-- Identificación --}}
+                <fieldset class="grid gap-4 sm:grid-cols-2">
+                    <legend class="ui-section-title mb-2 w-full">Identificación</legend>
+
+                    <x-ui.field label="Nombre(s)" for="nombre" required :error="$errors->first('nombre')">
+                        <x-ui.input id="nombre" wire:model="nombre" maxlength="100"
+                            :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="Apellidos" for="apellidos" required :error="$errors->first('apellidos')">
+                        <x-ui.input id="apellidos" wire:model="apellidos" maxlength="100"
+                            :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="CURP" for="curp" required
+                        hint="Validación sintáctica local (sin consulta RENAPO)."
+                        :error="$errors->first('curp')">
+                        <x-ui.input id="curp" wire:model.blur="curp" maxlength="18" placeholder="18 caracteres"
+                            class="font-mono uppercase" :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="Fecha de nacimiento" for="fecha_nacimiento" required
+                        :error="$errors->first('fecha_nacimiento')">
+                        <x-ui.input id="fecha_nacimiento" type="date" wire:model="fecha_nacimiento"
+                            :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="Sexo" for="sexo" required :error="$errors->first('sexo')">
+                        <x-ui.select id="sexo" wire:model="sexo" :disabled="! $puedeEditar">
+                            <option value="">Selecciona…</option>
+                            @foreach ($sexos as $valor => $etiqueta)
+                                <option value="{{ $valor }}">{{ $etiqueta }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
+
+                    <x-ui.field label="Nacionalidad" for="nacionalidad" :error="$errors->first('nacionalidad')">
+                        <x-ui.input id="nacionalidad" wire:model="nacionalidad" maxlength="60"
+                            :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="Correo electrónico" for="correo" :error="$errors->first('correo')">
+                        <x-ui.input id="correo" type="email" wire:model.blur="correo" maxlength="150"
+                            :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="Teléfono" for="telefono" :error="$errors->first('telefono')">
+                        <x-ui.input id="telefono" wire:model="telefono" maxlength="20" placeholder="5512345678"
+                            :disabled="! $puedeEditar" />
+                    </x-ui.field>
+                </fieldset>
+
+                {{-- Domicilio --}}
+                <fieldset class="grid gap-4 border-t border-brand-line pt-5 sm:grid-cols-2">
+                    <legend class="ui-section-title mb-2 w-full">Domicilio</legend>
+
+                    <x-ui.field label="Calle" for="calle" class="sm:col-span-2" :error="$errors->first('calle')">
+                        <x-ui.input id="calle" wire:model="calle" maxlength="150" :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="Colonia" for="colonia" :error="$errors->first('colonia')">
+                        <x-ui.input id="colonia" wire:model="colonia" maxlength="120" :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="Código postal" for="cp" placeholder="98000"
+                        :error="$errors->first('cp')">
+                        <x-ui.input id="cp" wire:model="cp" maxlength="10" placeholder="98000"
+                            :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="Municipio" for="municipio" :error="$errors->first('municipio')">
+                        <x-ui.input id="municipio" wire:model="municipio" maxlength="120"
+                            :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="Estado" for="estado" :error="$errors->first('estado')">
+                        <x-ui.input id="estado" wire:model="estado" maxlength="120" :disabled="! $puedeEditar" />
+                    </x-ui.field>
+
+                    <x-ui.field label="País" for="pais" :error="$errors->first('pais')">
+                        <x-ui.input id="pais" wire:model="pais" maxlength="80" :disabled="! $puedeEditar" />
+                    </x-ui.field>
+                </fieldset>
+
+                @if ($puedeEditar)
+                    <div class="flex flex-wrap items-center justify-end gap-2 border-t border-brand-line pt-4">
+                        <x-ui.button variant="secondary" href="{{ route('alumnos.lista') }}">Cancelar</x-ui.button>
+                        <x-ui.button type="submit" wire:loading.attr="disabled" wire:target="guardar">
+                            <span wire:loading.remove wire:target="guardar">Guardar</span>
+                            <span wire:loading wire:target="guardar"><x-ui.loading label="Guardando…" /></span>
+                        </x-ui.button>
+                    </div>
+                @endif
+            </form>
+        </x-ui.card>
     </div>
 </div>

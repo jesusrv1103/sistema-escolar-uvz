@@ -1,68 +1,61 @@
 <div>
     @if ($puedeCancelar)
-        <div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <h3 class="text-sm font-semibold text-red-800">Cancelar inscripción</h3>
-                    <p class="mt-1 text-xs text-red-700">
-                        La cancelación es <strong>definitiva en el MVP</strong> (no se puede reabrir),
-                        <strong>no implica reembolso</strong> y los <strong>pagos ya validados permanecen
-                        registrados</strong> como historial.
-                    </p>
-                </div>
-
-                @if ($cancelable)
-                    <button type="button" wire:click="abrir"
-                        class="rounded-md border border-red-400 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">
-                        Cancelar inscripción
-                    </button>
-                @else
-                    <span class="rounded-full border border-brand-line bg-white px-3 py-1 text-xs font-semibold text-brand-muted">
-                        No cancelable ({{ $inscripcion->estatus->label() }})
-                    </span>
-                @endif
-            </div>
-        </div>
-    @endif
-
-    {{-- Modal: confirmación con motivo obligatorio (solo ADMIN) --}}
-    @if ($abierto)
-        <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-            <div class="w-full max-w-lg rounded-2xl border border-brand-line bg-white p-6 shadow-lg">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <h3 class="text-base font-semibold text-brand-text">Cancelar inscripción</h3>
-                        <p class="mt-1 text-xs text-brand-muted">
-                            Acción <strong>definitiva</strong>: la inscripción pasa a <strong>{{ \App\Enums\InscripcionEstatus::CANCELLED->label() }}</strong> y no se
-                            puede reabrir. <strong>No se realizan reembolsos</strong> y los pagos validados permanecen
-                            registrados (folio, montos y comprobantes intactos).
-                        </p>
+        <div class="mt-4">
+            <x-ui.card>
+                <x-slot:header>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <p class="text-sm font-semibold text-danger-ink">Cancelar inscripción</p>
+                        @if ($cancelable)
+                            <x-ui.button variant="danger" icon="no-symbol" wire:click="abrir">
+                                Cancelar inscripción
+                            </x-ui.button>
+                        @endif
                     </div>
-                    <button type="button" wire:click="cerrar" class="text-brand-muted hover:text-brand-text"
-                        aria-label="Cerrar">✕</button>
-                </div>
+                </x-slot:header>
 
-                <div class="mt-4">
-                    <label for="motivo-cancelacion" class="block text-xs font-medium text-brand-text">
-                        Motivo de la cancelación (obligatorio)
-                    </label>
-                    <textarea id="motivo-cancelacion" wire:model="motivo" rows="3" maxlength="2000"
-                        placeholder="Describe el motivo de la cancelación"
-                        class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"></textarea>
-                    @error('motivo')
-                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                    @enderror
-                    @error('cancelacion')
-                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                    @enderror
+                <p class="text-sm text-brand-muted">
+                    La cancelación es <strong class="text-brand-text">definitiva en el MVP</strong>
+                    (no se puede reabrir), <strong class="text-brand-text">no implica reembolso</strong> y los
+                    <strong class="text-brand-text">pagos ya validados permanecen registrados</strong>
+                    como historial.
+                </p>
 
-                    <button type="button" wire:click="cancelar" wire:loading.attr="disabled"
-                        class="mt-3 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
-                        <span wire:loading.remove wire:target="cancelar">Confirmar cancelación</span>
-                        <span wire:loading wire:target="cancelar">Cancelando…</span>
-                    </button>
-                </div>
-            </div>
+                @unless ($cancelable)
+                    <p class="mt-3">
+                        <x-ui.badge tone="neutral">No cancelable ({{ $inscripcion->estatus->label() }})</x-ui.badge>
+                    </p>
+                @endunless
+            </x-ui.card>
         </div>
+
+        {{-- Modal: confirmación con motivo obligatorio (solo ADMIN) --}}
+        @if ($cancelable)
+            <x-ui.modal id="modal-cancelar-inscripcion" size="lg" title="Cancelar inscripción"
+                :open="$abierto" close="cerrar">
+                <div class="space-y-4">
+                    <x-ui.alert tone="danger">
+                        Acción <strong>definitiva</strong>: la inscripción pasa a
+                        <strong>{{ \App\Enums\InscripcionEstatus::CANCELLED->label() }}</strong> y no se puede reabrir.
+                        <strong>No se realizan reembolsos</strong> y los pagos validados permanecen registrados
+                        (folio, montos y comprobantes intactos).
+                    </x-ui.alert>
+
+                    <x-ui.field label="Motivo de la cancelación (obligatorio)" for="motivo-cancelacion"
+                        :error="$errors->first('motivo') ?: $errors->first('cancelacion')">
+                        <textarea id="motivo-cancelacion" wire:model="motivo" rows="3" maxlength="2000"
+                            class="ui-textarea" placeholder="Describe el motivo de la cancelación"></textarea>
+                    </x-ui.field>
+                </div>
+
+                <x-slot:footer>
+                    <x-ui.button variant="secondary" wire:click="cerrar">Cerrar</x-ui.button>
+                    <x-ui.button variant="danger" icon="no-symbol" wire:click="cancelar"
+                        wire:loading.attr="disabled" wire:target="cancelar">
+                        <span wire:loading.remove wire:target="cancelar">Confirmar cancelación</span>
+                        <span wire:loading wire:target="cancelar"><x-ui.loading label="Cancelando…" /></span>
+                    </x-ui.button>
+                </x-slot:footer>
+            </x-ui.modal>
+        @endif
     @endif
 </div>

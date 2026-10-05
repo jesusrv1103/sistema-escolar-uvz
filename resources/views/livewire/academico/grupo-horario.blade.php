@@ -93,7 +93,7 @@
                                     @endunless
                                     <td>
                                         <div class="ui-row-actions">
-                                            <x-ui.icon-button label="Editar horario" icon="cog"
+                                            <x-ui.icon-button label="Editar horario" icon="pencil"
                                                 wire:click="abrirModalEditar({{ $h->id }})" />
                                             <x-ui.icon-button label="Eliminar horario" icon="x-mark" variant="danger"
                                                 wire:click="eliminar({{ $h->id }})"

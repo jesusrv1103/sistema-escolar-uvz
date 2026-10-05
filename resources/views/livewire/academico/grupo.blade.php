@@ -130,7 +130,7 @@
                                     <td>
                                         <div class="ui-row-actions">
                                             @if ($g->esCreado())
-                                                <x-ui.icon-button label="Editar grupo {{ $g->clave }}" icon="cog"
+                                                <x-ui.icon-button label="Editar grupo {{ $g->clave }}" icon="pencil"
                                                     wire:click="abrirModalEditar({{ $g->id }})" />
                                                 <x-ui.icon-button label="Horarios de {{ $g->clave }}" icon="calendar"
                                                     variant="secondary"

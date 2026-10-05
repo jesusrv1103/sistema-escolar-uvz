@@ -80,7 +80,7 @@
                                     <td>
                                         <div class="ui-row-actions">
                                             @if ($v->esPropuesta())
-                                                <x-ui.icon-button label="Editar versión {{ $v->version }}" icon="cog"
+                                                <x-ui.icon-button label="Editar versión {{ $v->version }}" icon="pencil"
                                                     wire:click="abrirModalEditar({{ $v->id }})" />
                                                 <x-ui.icon-button label="Aprobar versión {{ $v->version }}" icon="check-circle"
                                                     variant="primary" wire:click="abrirModalAprobar({{ $v->id }})" />

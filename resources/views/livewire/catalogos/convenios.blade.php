@@ -79,7 +79,7 @@
                                     </td>
                                     <td>
                                         <div class="ui-row-actions">
-                                            <x-ui.icon-button label="Editar {{ $convenio->nombre }}" icon="cog"
+                                            <x-ui.icon-button label="Editar {{ $convenio->nombre }}" icon="pencil"
                                                 wire:click="editar({{ $convenio->id }})" />
                                             <x-ui.icon-button
                                                 :label="$convenio->activo ? 'Desactivar' : 'Activar'"

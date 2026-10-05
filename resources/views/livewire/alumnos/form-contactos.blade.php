@@ -1,89 +1,82 @@
 <div>
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="text-lg font-semibold text-brand-text">Contactos — {{ $alumno->apellidos }}, {{ $alumno->nombre }}</h1>
-            <p class="text-sm text-brand-muted">Tutor y contacto de emergencia pueden ser personas distintas.</p>
-        </div>
-        <a href="{{ route('alumnos.ver', $alumno) }}" class="text-sm font-medium text-brand-primary hover:text-brand-secondary">Volver al expediente</a>
-    </div>
+    <x-ui.page-header :title="'Contactos — ' . $alumno->apellidos . ', ' . $alumno->nombre"
+        description="Tutor y contacto de emergencia pueden ser personas distintas.">
+        <x-slot:actions>
+            <x-ui.button variant="secondary" icon="arrow-left" href="{{ route('alumnos.ver', $alumno) }}">
+                Volver al expediente
+            </x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
     @if (session('expediente'))
-        <div class="mb-4 rounded-md border border-brand-line bg-brand-surface px-4 py-3 text-sm text-brand-text">
-            {{ session('expediente') }}
-        </div>
+        <div class="mt-4"><x-ui.alert tone="success">{{ session('expediente') }}</x-ui.alert></div>
     @endif
 
-    @if (! $puedeEditar)
-        <div class="mb-4 rounded-md border border-brand-line bg-brand-surface px-4 py-3 text-sm text-brand-muted">
-            Solo lectura: tu rol no puede modificar los contactos.
+    @unless ($puedeEditar)
+        <div class="mt-4">
+            <x-ui.alert tone="neutral">Solo lectura: tu rol no puede modificar los contactos.</x-ui.alert>
         </div>
-    @endif
+    @endunless
 
-    <div class="grid gap-6 lg:grid-cols-2">
+    <div class="mt-5 grid gap-6 lg:grid-cols-2">
         @foreach (['tutor' => 'Contacto de tutor', 'emergencia' => 'Contacto de emergencia'] as $propiedad => $titulo)
-            <div class="rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
-                <h2 class="text-sm font-semibold text-brand-text">{{ $titulo }}</h2>
+            <x-ui.card>
+                <x-slot:header>
+                    <p class="text-sm font-semibold text-brand-text">{{ $titulo }}</p>
+                </x-slot:header>
 
-                <form wire:submit="guardar{{ $propiedad === 'tutor' ? 'Tutor' : 'Emergencia' }}" class="mt-4 space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-brand-text">Nombre completo</label>
-                        <input type="text" wire:model="{{ $propiedad }}.nombre" maxlength="150" @disabled(! $puedeEditar)
-                            class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                        @error($propiedad.'.nombre') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                    </div>
+                <form wire:submit="guardar{{ $propiedad === 'tutor' ? 'Tutor' : 'Emergencia' }}" class="space-y-4">
+                    <x-ui.field :label="'Nombre completo'" :error="$errors->first($propiedad . '.nombre')">
+                        <x-ui.input wire:model="{{ $propiedad }}.nombre" maxlength="150"
+                            :disabled="! $puedeEditar" />
+                    </x-ui.field>
 
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <div>
-                            <label class="block text-sm font-medium text-brand-text">Parentesco</label>
-                            <input type="text" wire:model="{{ $propiedad }}.parentesco" maxlength="60" placeholder="Madre, Padre…"
-                                @disabled(! $puedeEditar)
-                                class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                            @error($propiedad.'.parentesco') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-brand-text">Teléfono</label>
-                            <input type="text" wire:model="{{ $propiedad }}.telefono" maxlength="20" placeholder="5512345678"
-                                @disabled(! $puedeEditar)
-                                class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                            @error($propiedad.'.telefono') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <x-ui.field label="Parentesco" :error="$errors->first($propiedad . '.parentesco')">
+                            <x-ui.input wire:model="{{ $propiedad }}.parentesco" maxlength="60"
+                                placeholder="Madre, Padre…" :disabled="! $puedeEditar" />
+                        </x-ui.field>
 
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <div>
-                            <label class="block text-sm font-medium text-brand-text">Teléfono alterno</label>
-                            <input type="text" wire:model="{{ $propiedad }}.telefono_alt" maxlength="20" @disabled(! $puedeEditar)
-                                class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                            @error($propiedad.'.telefono_alt') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-brand-text">Correo</label>
-                            <input type="email" wire:model.blur="{{ $propiedad }}.correo" maxlength="150" @disabled(! $puedeEditar)
-                                class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                            @error($propiedad.'.correo') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
+                        <x-ui.field label="Teléfono" :error="$errors->first($propiedad . '.telefono')">
+                            <x-ui.input wire:model="{{ $propiedad }}.telefono" maxlength="20"
+                                placeholder="5512345678" :disabled="! $puedeEditar" />
+                        </x-ui.field>
 
-                    <div>
-                        <label class="block text-sm font-medium text-brand-text">Notas</label>
-                        <textarea wire:model="{{ $propiedad }}.notas" rows="2" @disabled(! $puedeEditar)
-                            class="mt-1 w-full rounded-md border border-brand-line px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"></textarea>
-                        @error($propiedad.'.notas') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        <x-ui.field label="Teléfono alterno" :error="$errors->first($propiedad . '.telefono_alt')">
+                            <x-ui.input wire:model="{{ $propiedad }}.telefono_alt" maxlength="20"
+                                :disabled="! $puedeEditar" />
+                        </x-ui.field>
+
+                        <x-ui.field label="Correo" :error="$errors->first($propiedad . '.correo')">
+                            <x-ui.input type="email" wire:model.blur="{{ $propiedad }}.correo" maxlength="150"
+                                :disabled="! $puedeEditar" />
+                        </x-ui.field>
+
+                        <div class="sm:col-span-2">
+                            <x-ui.field label="Notas" :error="$errors->first($propiedad . '.notas')">
+                                <x-ui.textarea wire:model="{{ $propiedad }}.notas" :rows="2"
+                                    :disabled="! $puedeEditar" />
+                            </x-ui.field>
+                        </div>
                     </div>
 
                     @if ($puedeEditar)
-                        <div class="flex gap-2 pt-1">
-                            <button type="submit"
-                                class="rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-secondary">Guardar</button>
+                        <div class="flex flex-wrap items-center gap-2 border-t border-brand-line pt-4">
+                            <x-ui.button type="submit" wire:loading.attr="disabled">
+                                <span wire:loading.remove>Guardar</span>
+                                <span wire:loading><x-ui.loading label="Guardando…" /></span>
+                            </x-ui.button>
                             @if ($ids[$propiedad] ?? null)
-                                <button type="button" wire:click="eliminar({{ $ids[$propiedad] }})"
-                                    wire:confirm="¿Eliminar este contacto?"
-                                    class="rounded-md border border-brand-line px-4 py-2 text-sm font-medium text-red-600 hover:bg-brand-surface">Eliminar</button>
+                                <x-ui.button variant="danger" icon="x-mark"
+                                    wire:click="eliminar({{ $ids[$propiedad] }})"
+                                    wire:confirm="¿Eliminar este contacto?">
+                                    Eliminar
+                                </x-ui.button>
                             @endif
                         </div>
                     @endif
                 </form>
-            </div>
+            </x-ui.card>
         @endforeach
     </div>
 </div>
