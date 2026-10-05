@@ -47,7 +47,7 @@
 | `periodos` | Definir cierres **por módulo** (R2): `cerrado_at` sigue bloqueando solo inscripciones; cada módulo nuevo define su cierre | Semántica ya documentada |
 | `consecutivos` / `TipoConsecutivo` | Nuevos tipos de folio (acta, constancia, kardex…) — tipos exactos diferidos (**D-N7**) | Enum aditivo, sin tocar el algoritmo |
 | Navegación del layout | Hoy **sin menú de módulos** (Fase 1.1): se requiere un menú por módulos | Extensión prevista desde Fase 1.1 |
-| `TipoConcepto` / cargos | Concepto de reinscripción, recargos, becas/ajustes | Diseño diferido (**D-N3**) |
+| `TipoConcepto` / cargos | Concepto de reinscripción, recargos, becas/ajustes | Diseño resuelto (**D-N3 — 2.0-12**) |
 | `Alumno` | Vínculo opcional a `users` (portal docente/alumno) y expediente académico (servicio social, prácticas, titulación) | Tablas nuevas, sin tocar `alumnos` salvo FKs |
 | Listados y dashboard | Enlaces y contadores académicos adicionales | Aditivo |
 
@@ -90,7 +90,7 @@
 | 14 | `asistencias` | `inscripcion_materia_id` FK, `fecha`, `presente` boolean, `registrado_por` | Diaria por alumno de grupo |
 | 15 | `bajas` | `alumno_id` o `inscripcion_materia_id`, `tipo` (`TEMPORAL`/`DEFINITIVA`/`MATERIA`), `motivo`, `fecha`, `reingreso_at` nullable, `registrada_por` | Historial; la baja de materia actualiza `inscripciones_materias.estatus` |
 | 16 | `equivalencias` | `alumno_id` FK, `materia_id` FK nullable, `origen` (texto), `creditos`, `dictamen`, `autorizada_por` | Revalidaciones internas |
-| 17 | `becas` (catálogo) | `nombre`, `tipo` (`PORCENTAJE`/`MONTO`), `valor`, `activo` | Reglas detalladas diferidas (**D-N3**) |
+| 17 | `becas` (catálogo) | `nombre`, `tipo` (`PORCENTAJE`/`MONTO`), `valor`, `activo` | Reglas detalladas resueltas (**D-N3 — 2.0-12**) |
 | 18 | `becas_alumnos` (asignación) | `alumno_id`, `beca_id`, `vigencia`, aprobación (ADMINISTRACION), responsables | Diseño definitivo en 2.0-12 (**D-N3**) |
 | 19 | `servicio_social` | `alumno_id`, actividad, dependencia, fechas, avance %, estatus, validación | Cierre de egreso |
 | 20 | `practicas_profesionales` | `alumno_id`, empresa, fechas, asesor, calificación, estatus | Cierre de egreso |
