@@ -77,6 +77,15 @@ class GrupoHorarioAdmin extends Component
         $this->resetErrorBag();
     }
 
+    /** UX (2.0-12): limpia los filtros del listado y vuelve a la primera página. */
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
+        $this->filtroDia = '';
+        $this->filtroGrupo = '';
+        $this->resetPage();
+    }
+
     public function guardar(): void
     {
         $this->validate([

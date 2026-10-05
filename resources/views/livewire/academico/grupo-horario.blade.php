@@ -1,99 +1,103 @@
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0">
-            Horarios de Grupos
-            @if($grupo)
-                <span class="text-muted fw-normal fs-6"> — {{ $grupo->clave }} ({{ $grupo->materia?->clave ?? '—' }})</span>
-            @endif
-        </h1>
-        <button type="button" class="btn btn-primary" wire:click="abrirModalCrear"
-            @if(!$grupo) disabled @endif>
-            <i class="bi bi-plus-lg me-1"></i> Nuevo Horario
-        </button>
-    </div>
+<div>
+    <x-ui.page-header title="Horarios de grupo"
+        :description="$grupo
+            ? $grupo->clave . ' · ' . $grupo->materia?->clave . ' · asignación semanal de días y horas.'
+            : 'Selecciona un grupo desde el listado principal para gestionar sus horarios.'">
+        <x-slot:actions>
+            <x-ui.button wire:click="abrirModalCrear" icon="plus" :disabled="!$grupo">Nuevo horario</x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    @if(!$grupo)
-        <div class="alert alert-warning">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            Seleccione un grupo desde el listado principal para gestionar sus horarios.
+    @if (! $grupo)
+        <div class="mt-4">
+            <x-ui.alert tone="warning">
+                Selecciona un grupo desde el listado principal para gestionar sus horarios.
+            </x-ui.alert>
         </div>
     @endif
 
-    <!-- Filtros -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Buscar</label>
-                    <input type="text" class="form-control" wire:model.debounce.300ms="busqueda" placeholder="Día...">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Día</label>
-                    <select class="form-select" wire:model="filtroDia">
+    @if (session('success'))
+        <div class="mt-4"><x-ui.alert tone="success">{{ session('success') }}</x-ui.alert></div>
+    @endif
+
+    <div class="mt-5">
+        <x-ui.filters>
+            <x-slot:actions>
+                <x-ui.button variant="ghost" size="sm" wire:click="limpiarFiltros">Limpiar filtros</x-ui.button>
+            </x-slot:actions>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <x-ui.field label="Buscar día">
+                    <x-ui.input type="search" wire:model.debounce.300ms="busqueda"
+                        placeholder="Día…" aria-label="Buscar horarios" />
+                </x-ui.field>
+
+                <x-ui.field label="Día">
+                    <x-ui.select wire:model.live="filtroDia" aria-label="Filtrar por día">
                         <option value="">Todos</option>
-                        @foreach(\App\Enums\DiaSemana::cases() as $d)
+                        @foreach ($dias as $d)
                             <option value="{{ $d->value }}">{{ $d->label() }}</option>
                         @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Grupo</label>
-                    <select class="form-select" wire:model="filtroGrupo">
-                        <option value="">Todos</option>
-                        @if($grupos)
-                            @foreach($grupos as $g)
-                                <option value="{{ $g->id }}">{{ $g->clave }} - {{ $g->materia->clave }}</option>
+                    </x-ui.select>
+                </x-ui.field>
+
+                @unless ($grupo)
+                    <x-ui.field label="Grupo">
+                        <x-ui.select wire:model.live="filtroGrupo" aria-label="Filtrar por grupo">
+                            <option value="">Todos</option>
+                            @foreach ($grupos as $g)
+                                <option value="{{ $g->id }}">{{ $g->clave }} — {{ $g->materia?->clave }}</option>
                             @endforeach
-                        @endif
-                    </select>
-                </div>
+                        </x-ui.select>
+                    </x-ui.field>
+                @endunless
             </div>
-        </div>
+        </x-ui.filters>
     </div>
 
-    <!-- Tabla -->
-    <div class="card">
-        <div class="card-body p-0">
-            @if($horarios->isEmpty())
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-calendar3 display-4"></i>
-                    <p class="mt-2">No hay horarios registrados{{ $grupo ? ' para este grupo' : '' }}.</p>
-                </div>
+    <div class="mt-4">
+        <x-ui.card :flush="$horarios->isNotEmpty()">
+            @if ($horarios->isEmpty())
+                <x-ui.empty-state icon="calendar"
+                    :title="$grupo ? 'No hay horarios para este grupo' : 'No hay horarios registrados'"
+                    message="Define el primer bloque de horario para que el grupo tenga disponibilidad de aula.">
+                    <x-slot:action>
+                        <x-ui.button wire:click="abrirModalCrear" icon="plus" :disabled="!$grupo">Nuevo horario
+                        </x-ui.button>
+                    </x-slot:action>
+                </x-ui.empty-state>
             @else
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <div class="ui-table-wrap">
+                    <table class="ui-table">
+                        <caption class="sr-only">Horarios registrados</caption>
+                        <thead>
                             <tr>
-                                <th>Grupo</th>
-                                <th>Materia</th>
-                                <th>Día</th>
-                                <th>Hora Inicio</th>
-                                <th>Hora Fin</th>
-                                <th>Aula</th>
-                                <th>Docente</th>
-                                <th class="text-end">Acciones</th>
+                                <th scope="col">Día</th>
+                                <th scope="col">Hora inicio</th>
+                                <th scope="col">Hora fin</th>
+                                @unless ($grupo)
+                                    <th scope="col">Grupo</th>
+                                @endunless
+                                <th scope="col" class="text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($horarios as $h)
-                                <tr>
-                                    <td>{{ $h->grupo->clave }}</td>
-                                    <td>{{ $h->grupo->materia->clave }} - {{ $h->grupo->materia->nombre }}</td>
+                            @foreach ($horarios as $h)
+                                <tr wire:key="horario-{{ $h->id }}">
+                                    <td class="font-medium text-brand-text">{{ $h->dia->label() }}</td>
+                                    <td class="font-medium text-brand-primary">{{ $h->hora_inicio->format('H:i') }}</td>
+                                    <td class="font-medium text-brand-primary">{{ $h->hora_fin->format('H:i') }}</td>
+                                    @unless ($grupo)
+                                        <td class="text-brand-muted">
+                                            {{ $h->grupo?->clave ?? '—' }} — {{ $h->grupo?->materia?->clave ?? '—' }}
+                                        </td>
+                                    @endunless
                                     <td>
-                                        <span class="badge bg-info text-dark">{{ $h->dia->label() }}</span>
-                                    </td>
-                                    <td>{{ $h->hora_inicio->format('H:i') }}</td>
-                                    <td>{{ $h->hora_fin->format('H:i') }}</td>
-                                    <td>{{ $h->grupo->aula->nombre ?? '—' }}</td>
-                                    <td>{{ $h->grupo->docente->nombreCompleto() ?? '—' }}</td>
-                                    <td class="text-end">
-                                        <div class="btn-group btn-group-sm">
-                                            <button type="button" class="btn btn-outline-primary" wire:click="abrirModalEditar({{ $h->id }})" title="Editar">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger" wire:click="confirmarEliminacion({{ $h->id }})" title="Eliminar">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                        <div class="ui-row-actions">
+                                            <x-ui.icon-button label="Editar horario" icon="cog"
+                                                wire:click="abrirModalEditar({{ $h->id }})" />
+                                            <x-ui.icon-button label="Eliminar horario" icon="x-mark" variant="danger"
+                                                wire:click="eliminar({{ $h->id }})"
+                                                wire:confirm="¿Eliminar el horario del {{ $h->dia->label() }} ({{ $h->hora_inicio->format('H:i') }}–{{ $h->hora_fin->format('H:i') }})?" />
                                         </div>
                                     </td>
                                 </tr>
@@ -101,84 +105,65 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="card-footer">
+
+                <div class="border-t border-brand-line px-5 py-3">
                     {{ $horarios->links() }}
                 </div>
             @endif
-        </div>
+        </x-ui.card>
     </div>
 
-    <!-- Modal Crear/Editar -->
-    <div class="modal fade" tabindex="-1" wire:model="modalAbierto">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ $horarioEnEdicion ? 'Editar Horario' : 'Nuevo Horario' }}</h5>
-                    <button type="button" class="btn-close" wire:click="cerrarModal"></button>
-                </div>
-                <form wire:submit="guardar">
-                    <div class="modal-body">
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                @foreach ($errors->all() as $error)
-                                    <div>{{ $error }}</div>
-                                @endforeach
-                            </div>
-                        @endif
+    {{-- ======================= MODAL CREAR / EDITAR ======================= --}}
+    <x-ui.modal id="modal-horario" size="sm"
+        :title="$horarioEnEdicion ? 'Editar horario' : 'Nuevo horario'"
+        :open="$modalAbierto" close="cerrarModal">
+        <form wire:submit="guardar" class="space-y-4">
+            @if ($errors->any())
+                <x-ui.alert tone="danger">
+                    <ul class="list-inside list-disc space-y-0.5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-ui.alert>
+            @endif
 
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label required">Grupo *</label>
-                                <select class="form-select" wire:model="grupoId" required>
-                                    <option value="">Seleccione un grupo</option>
-                                    @foreach($grupos as $g)
-                                        <option value="{{ $g->id }}">{{ $g->clave }} - {{ $g->materia->clave }} ({{ $g->periodo->clave }})</option>
-                                    @endforeach
-                                </select>
-                                @error('grupoId') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+            @if ($grupo)
+                <p class="text-sm text-brand-muted">
+                    Grupo <strong class="text-brand-text">{{ $grupo->clave }}</strong> —
+                    {{ $grupo->materia?->clave }} · {{ $grupo->periodo?->clave }}
+                </p>
+            @endif
 
-                            <div class="col-md-6">
-                                <label class="form-label required">Día *</label>
-                                <select class="form-select" wire:model="dia" required>
-                                    <option value="">Seleccione un día</option>
-                                    @foreach(\App\Enums\DiaSemana::cases() as $d)
-                                        <option value="{{ $d->value }}">{{ $d->label() }}</option>
-                                    @endforeach
-                                </select>
-                                @error('dia') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <x-ui.field label="Día" for="horario-dia" required class="sm:col-span-2"
+                    :error="$errors->first('dia')">
+                    <x-ui.select id="horario-dia" wire:model="dia">
+                        <option value="">Seleccione un día</option>
+                        @foreach ($dias as $d)
+                            <option value="{{ $d->value }}">{{ $d->label() }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label required">Hora Inicio *</label>
-                                <input type="time" class="form-control" wire:model="horaInicio" required>
-                                @error('horaInicio') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Hora inicio" for="horario-inicio" required :error="$errors->first('horaInicio')">
+                    <x-ui.input id="horario-inicio" type="time" wire:model="horaInicio" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label required">Hora Fin *</label>
-                                <input type="time" class="form-control" wire:model="horaFin" required>
-                                @error('horaFin') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="cerrarModal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">{{ $horarioEnEdicion ? 'Actualizar' : 'Crear' }}</button>
-                    </div>
-                </form>
+                <x-ui.field label="Hora fin" for="horario-fin" required :error="$errors->first('horaFin')">
+                    <x-ui.input id="horario-fin" type="time" wire:model="horaFin" />
+                </x-ui.field>
             </div>
-        </div>
-    </div>
 
-    <!-- Confirmación Eliminar -->
-    @if(session('eliminarHorarioId'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (confirm('¿Eliminar el horario? Esta acción no se puede deshacer.')) {
-                    @this.call('eliminar', {{ session('eliminarHorarioId') }})
-                }
-            });
-        </script>
-    @endif
+            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-brand-line pt-4">
+                <x-ui.button variant="secondary" wire:click="cerrarModal">Cancelar</x-ui.button>
+                <x-ui.button type="submit" wire:loading.attr="disabled" wire:target="guardar">
+                    <span wire:loading.remove wire:target="guardar">
+                        {{ $horarioEnEdicion ? 'Guardar cambios' : 'Crear horario' }}
+                    </span>
+                    <span wire:loading wire:target="guardar"><x-ui.loading label="Guardando…" /></span>
+                </x-ui.button>
+            </div>
+        </form>
+    </x-ui.modal>
 </div>

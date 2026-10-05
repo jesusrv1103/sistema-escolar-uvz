@@ -184,6 +184,18 @@ class GrupoAdmin extends Component
         // TODO: Implementar modal de horarios
     }
 
+    /** UX (2.0-12): limpia los filtros del listado y vuelve a la primera página. */
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
+        $this->filtroPeriodo = '';
+        $this->filtroMateria = '';
+        $this->filtroDocente = '';
+        $this->filtroEstatus = '';
+        $this->filtroActivo = '';
+        $this->resetPage();
+    }
+
     public function render()
     {
         $query = Grupo::with(['materia', 'periodo', 'docente', 'aula'])

@@ -8,12 +8,12 @@
 
 <div {{ $attributes->merge(['class' => 'ui-drawer', 'id' => $id]) }} {{ $open ? '' : 'hidden' }} role="dialog"
     aria-modal="true" aria-labelledby="{{ $id }}-title">
-    <div class="ui-drawer-backdrop" data-drawer-close @if ($close) wire:click="{{ $close }}" @endif></div>
+    <div class="ui-drawer-backdrop" data-drawer-close @if ($close) wire:click="{!! $close !!}" @endif></div>
     <div class="ui-drawer-panel">
         <div class="ui-modal-header">
             <h2 id="{{ $id }}-title" class="text-base font-semibold text-brand-text">{{ $title }}</h2>
             <button type="button" class="ui-btn ui-btn-icon ui-btn-ghost" data-drawer-close
-                @if ($close) wire:click="{{ $close }}" @endif aria-label="Cerrar panel">
+                @if ($close) wire:click="{!! $close !!}" @endif aria-label="Cerrar panel">
                 <x-ui.icon name="x-mark" :size="18" />
             </button>
         </div>

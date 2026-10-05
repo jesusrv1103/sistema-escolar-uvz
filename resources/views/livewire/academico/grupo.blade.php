@@ -1,123 +1,148 @@
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0">Grupos Académicos</h1>
-        <button type="button" class="btn btn-primary" wire:click="abrirModalCrear">
-            <i class="bi bi-plus-lg me-1"></i> Nuevo Grupo
-        </button>
-    </div>
+<div>
+    <x-ui.page-header title="Grupos académicos"
+        description="Agrupaciones por materia y periodo: cupo, docente, aula y estatus operativo.">
+        <x-slot:actions>
+            <x-ui.button wire:click="abrirModalCrear" icon="plus">Nuevo grupo</x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <!-- Filtros -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Buscar</label>
-                    <input type="text" class="form-control" wire:model.debounce.300ms="busqueda" placeholder="Nombre, clave, materia...">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Periodo</label>
-                    <select class="form-select" wire:model="filtroPeriodo">
+    @if (session('success'))
+        <div class="mt-4"><x-ui.alert tone="success">{{ session('success') }}</x-ui.alert></div>
+    @endif
+
+    @php
+        $tonos = [
+            'CREADO' => 'neutral',
+            'ABIERTO' => 'info',
+            'EN_CURSO' => 'primary',
+            'CERRADO' => 'warning',
+            'CANCELADO' => 'danger',
+        ];
+    @endphp
+
+    <div class="mt-5">
+        <x-ui.filters>
+            <x-slot:actions>
+                <x-ui.button variant="ghost" size="sm" wire:click="limpiarFiltros">Limpiar filtros</x-ui.button>
+            </x-slot:actions>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <x-ui.field label="Buscar" class="lg:col-span-2">
+                    <x-ui.input type="search" wire:model.debounce.300ms="busqueda"
+                        placeholder="Nombre, clave o materia…" aria-label="Buscar grupos" />
+                </x-ui.field>
+
+                <x-ui.field label="Periodo">
+                    <x-ui.select wire:model.live="filtroPeriodo" aria-label="Filtrar por periodo">
                         <option value="">Todos</option>
-                        @foreach($periodos as $p)
-                            <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
+                        @foreach ($periodos as $p)
+                            <option value="{{ $p->id }}">{{ $p->clave }} — {{ $p->nombre }}</option>
                         @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Materia</label>
-                    <select class="form-select" wire:model="filtroMateria">
+                    </x-ui.select>
+                </x-ui.field>
+
+                <x-ui.field label="Materia">
+                    <x-ui.select wire:model.live="filtroMateria" aria-label="Filtrar por materia">
                         <option value="">Todas</option>
-                        @foreach($materias as $m)
-                            <option value="{{ $m->id }}">{{ $m->clave }} - {{ $m->nombre }}</option>
+                        @foreach ($materias as $m)
+                            <option value="{{ $m->id }}">{{ $m->clave }} — {{ $m->nombre }}</option>
                         @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Docente</label>
-                    <select class="form-select" wire:model="filtroDocente">
+                    </x-ui.select>
+                </x-ui.field>
+
+                <x-ui.field label="Docente">
+                    <x-ui.select wire:model.live="filtroDocente" aria-label="Filtrar por docente">
                         <option value="">Todos</option>
-                        @foreach($docentes as $d)
+                        @foreach ($docentes as $d)
                             <option value="{{ $d->id }}">{{ $d->nombreCompleto() }} ({{ $d->clave }})</option>
                         @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Estatus</label>
-                    <select class="form-select" wire:model="filtroEstatus">
+                    </x-ui.select>
+                </x-ui.field>
+
+                <x-ui.field label="Estatus">
+                    <x-ui.select wire:model.live="filtroEstatus" aria-label="Filtrar por estatus">
                         <option value="">Todos</option>
-                        @foreach(\App\Enums\EstatusGrupo::cases() as $e)
+                        @foreach (\App\Enums\EstatusGrupo::cases() as $e)
                             <option value="{{ $e->value }}">{{ $e->label() }}</option>
                         @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Estado</label>
-                    <select class="form-select" wire:model="filtroActivo">
+                    </x-ui.select>
+                </x-ui.field>
+
+                <x-ui.field label="Estado">
+                    <x-ui.select wire:model.live="filtroActivo" aria-label="Filtrar por estado">
                         <option value="">Todos</option>
                         <option value="1">Activos</option>
                         <option value="0">Inactivos</option>
-                    </select>
-                </div>
+                    </x-ui.select>
+                </x-ui.field>
             </div>
-        </div>
+        </x-ui.filters>
     </div>
 
-    <!-- Tabla -->
-    <div class="card">
-        <div class="card-body p-0">
-            @if($grupos->isEmpty())
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-people display-4"></i>
-                    <p class="mt-2">No hay grupos registrados.</p>
-                </div>
+    <div class="mt-4">
+        <x-ui.card :flush="$grupos->isNotEmpty()">
+            @if ($grupos->isEmpty())
+                <x-ui.empty-state icon="users" title="No hay grupos registrados"
+                    message="Crea el primer grupo para poder abrir inscripciones y asignar horarios.">
+                    <x-slot:action>
+                        <x-ui.button wire:click="abrirModalCrear" icon="plus">Nuevo grupo</x-ui.button>
+                    </x-slot:action>
+                </x-ui.empty-state>
             @else
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <div class="ui-table-wrap">
+                    <table class="ui-table">
+                        <caption class="sr-only">Listado de grupos académicos</caption>
+                        <thead>
                             <tr>
-                                <th>Clave</th>
-                                <th>Materia</th>
-                                <th>Periodo</th>
-                                <th>Docente</th>
-                                <th>Aula</th>
-                                <th>Cupo</th>
-                                <th>Turno</th>
-                                <th>Estatus</th>
-                                <th class="text-end">Acciones</th>
+                                <th scope="col">Clave</th>
+                                <th scope="col">Materia</th>
+                                <th scope="col">Periodo</th>
+                                <th scope="col">Docente</th>
+                                <th scope="col">Aula</th>
+                                <th scope="col">Cupo</th>
+                                <th scope="col">Turno</th>
+                                <th scope="col">Estatus</th>
+                                <th scope="col" class="text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($grupos as $g)
-                                <tr>
-                                    <td>{{ $g->clave }}</td>
-                                    <td>{{ $g->materia->clave }} - {{ $g->materia->nombre }}</td>
-                                    <td>{{ $g->periodo->clave }}</td>
-                                    <td>{{ $g->docente->nombreCompleto() ?? '—' }}</td>
-                                    <td>{{ $g->aula->nombre ?? '—' }}</td>
-                                    <td>{{ $g->cupo }}</td>
-                                    <td>{{ $g->turno->label() ?? $g->turno }}</td>
+                            @foreach ($grupos as $g)
+                                <tr wire:key="grupo-{{ $g->id }}">
+                                    <td class="font-medium text-brand-primary">{{ $g->clave }}</td>
                                     <td>
-                                        <span class="badge {{ $g->estatus->labelClass() }}">
-                                            {{ $g->estatus->label() }}
+                                        <span class="block font-medium text-brand-text">{{ $g->materia->nombre }}</span>
+                                        <span class="block text-xs text-brand-muted">{{ $g->materia->clave }}</span>
+                                    </td>
+                                    <td class="text-brand-muted">{{ $g->periodo->clave }}</td>
+                                    <td class="text-brand-muted">{{ $g->docente?->nombreCompleto() ?? '—' }}</td>
+                                    <td class="text-brand-muted">{{ $g->aula?->nombre ?? '—' }}</td>
+                                    <td class="font-medium text-brand-text">{{ $g->cupo }}</td>
+                                    <td class="text-brand-muted">{{ $g->turno->label() ?? $g->turno }}</td>
+                                    <td>
+                                        <span class="inline-flex flex-wrap gap-1">
+                                            <x-ui.badge :tone="$tonos[$g->estatus->value] ?? 'neutral'">
+                                                {{ $g->estatus->label() }}
+                                            </x-ui.badge>
+                                            @unless ($g->activo)
+                                                <x-ui.badge tone="neutral">Inactivo</x-ui.badge>
+                                            @endunless
                                         </span>
                                     </td>
-                                    <td class="text-end">
-                                        <div class="btn-group btn-group-sm">
-                                            @if($g->esCreado())
-                                                <button type="button" class="btn btn-outline-primary" wire:click="abrirModalEditar({{ $g->id }})" title="Editar">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-info" wire:click="abrirModalHorarios({{ $g->id }})" title="Horarios">
-                                                    <i class="bi bi-calendar3"></i>
-                                                </button>
-                                                <button type="button" class="btn {{ $g->activo ? 'btn-outline-secondary' : 'btn-outline-success' }}" wire:click="alternarActivo({{ $g->id }})" title="{{ $g->activo ? 'Desactivar' : 'Activar' }}">
-                                                    <i class="bi {{ $g->activo ? 'bi-pause' : 'bi-play' }}"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-danger" wire:click="confirmarEliminacion({{ $g->id }})" title="Eliminar">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
+                                    <td>
+                                        <div class="ui-row-actions">
+                                            @if ($g->esCreado())
+                                                <x-ui.icon-button label="Editar grupo {{ $g->clave }}" icon="cog"
+                                                    wire:click="abrirModalEditar({{ $g->id }})" />
+                                                <x-ui.icon-button label="Horarios de {{ $g->clave }}" icon="calendar"
+                                                    variant="secondary"
+                                                    :href="route('admin.grupos.horarios', $g)" />
+                                                <x-ui.icon-button
+                                                    :label="$g->activo ? 'Desactivar' : 'Activar'"
+                                                    :icon="$g->activo ? 'no-symbol' : 'check-circle'"
+                                                    :variant="$g->activo ? 'secondary' : 'primary'"
+                                                    wire:click="alternarActivo({{ $g->id }})" />
                                             @else
-                                                <span class="text-muted">—</span>
+                                                <span class="text-sm text-brand-muted"
+                                                    aria-label="Sin acciones disponibles">—</span>
                                             @endif
                                         </div>
                                     </td>
@@ -126,256 +151,112 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="card-footer">
+
+                <div class="border-t border-brand-line px-5 py-3">
                     {{ $grupos->links() }}
                 </div>
             @endif
-        </div>
+        </x-ui.card>
     </div>
 
-    <!-- Modal Crear/Editar -->
-    <div class="modal fade" tabindex="-1" wire:model="modalAbierto">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ $grupoEnEdicion ? 'Editar Grupo' : 'Nuevo Grupo' }}</h5>
-                    <button type="button" class="btn-close" wire:click="cerrarModal"></button>
-                </div>
-                <form wire:submit="guardar">
-                    <div class="modal-body">
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                @foreach ($errors->all() as $error)
-                                    <div>{{ $error }}</div>
-                                @endforeach
-                            </div>
-                        @endif
+    {{-- ======================= MODAL CREAR / EDITAR ======================= --}}
+    <x-ui.modal id="modal-grupo" size="lg"
+        :title="$grupoEnEdicion ? 'Editar grupo' : 'Nuevo grupo'"
+        :open="$modalAbierto" close="cerrarModal">
+        <form wire:submit="guardar" class="space-y-4">
+            @if ($errors->any())
+                <x-ui.alert tone="danger">
+                    <ul class="list-inside list-disc space-y-0.5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-ui.alert>
+            @endif
 
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label required">Clave *</label>
-                                <input type="text" class="form-control" wire:model="clave" maxlength="20" placeholder="Ej. GRP-001" pattern="[A-Z0-9_-]+" required>
-                                @error('clave') <div class="text-danger small">{{ $message }}</div> @enderror
-                                <div class="form-text">Solo mayúsculas, números, guión y guion bajo.</div>
-                            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <x-ui.field label="Clave" for="grupo-clave" required
+                    hint="Solo mayúsculas, números, guión y guion bajo." :error="$errors->first('clave')">
+                    <x-ui.input id="grupo-clave" wire:model="clave" maxlength="20" placeholder="Ej. GRP-001" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label required">Materia *</label>
-                                <select class="form-select" wire:model="materiaId" required>
-                                    <option value="">Seleccione una materia</option>
-                                    @foreach($materias as $m)
-                                        <option value="{{ $m->id }}">{{ $m->clave }} - {{ $m->nombre }} (v{{ $m->planVersion->version }})</option>
-                                    @endforeach
-                                </select>
-                                @error('materiaId') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Materia" for="grupo-materia" required :error="$errors->first('materiaId')">
+                    <x-ui.select id="grupo-materia" wire:model="materiaId">
+                        <option value="">Seleccione una materia</option>
+                        @foreach ($materias as $m)
+                            <option value="{{ $m->id }}">
+                                {{ $m->clave }} — {{ $m->nombre }} (v{{ $m->planVersion->version }})
+                            </option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label required">Periodo *</label>
-                                <select class="form-select" wire:model="periodoId" required>
-                                    <option value="">Seleccione un periodo</option>
-                                    @foreach($periodos as $p)
-                                        <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
-                                    @endforeach
-                                </select>
-                                @error('periodoId') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Periodo" for="grupo-periodo" required :error="$errors->first('periodoId')">
+                    <x-ui.select id="grupo-periodo" wire:model="periodoId">
+                        <option value="">Seleccione un periodo</option>
+                        @foreach ($periodos as $p)
+                            <option value="{{ $p->id }}">{{ $p->clave }} — {{ $p->nombre }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label required">Cupo *</label>
-                                <input type="number" class="form-control" wire:model="cupo" min="1" max="500" required>
-                                @error('cupo') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Cupo" for="grupo-cupo" required :error="$errors->first('cupo')">
+                    <x-ui.input id="grupo-cupo" type="number" min="1" max="500" wire:model="cupo" />
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label required">Turno *</label>
-                                <select class="form-select" wire:model="turno" required>
-                                    @foreach(\App\Enums\TurnoGrupo::cases() as $t)
-                                        <option value="{{ $t->value }}">{{ $t->label() }}</option>
-                                    @endforeach
-                                </select>
-                                @error('turno') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Turno" for="grupo-turno" required :error="$errors->first('turno')">
+                    <x-ui.select id="grupo-turno" wire:model="turno">
+                        @foreach (\App\Enums\TurnoGrupo::cases() as $t)
+                            <option value="{{ $t->value }}">{{ $t->label() }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Docente</label>
-                                <select class="form-select" wire:model="docenteId">
-                                    <option value="">Sin docente asignado</option>
-                                    @foreach($docentes as $d)
-                                        <option value="{{ $d->id }}">{{ $d->nombreCompleto() }} ({{ $d->clave }})</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                <x-ui.field label="Estatus" for="grupo-estatus" required :error="$errors->first('estatus')">
+                    <x-ui.select id="grupo-estatus" wire:model="estatus">
+                        @foreach (\App\Enums\EstatusGrupo::cases() as $e)
+                            <option value="{{ $e->value }}">{{ $e->label() }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Aula</label>
-                                <select class="form-select" wire:model="aulaId">
-                                    <option value="">Sin aula asignada</option>
-                                    @foreach($aulas as $a)
-                                        <option value="{{ $a->id }}">{{ $a->clave }} - {{ $a->nombre }} ({{ $a->edificio }}, cap. {{ $a->capacidad }})</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                <x-ui.field label="Docente" for="grupo-docente" hint="Opcional mientras se asigna la plantilla.">
+                    <x-ui.select id="grupo-docente" wire:model="docenteId">
+                        <option value="">Sin docente asignado</option>
+                        @foreach ($docentes as $d)
+                            <option value="{{ $d->id }}">{{ $d->nombreCompleto() }} ({{ $d->clave }})</option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
 
-                            <div class="col-md-6">
-                                <label class="form-label required">Estatus *</label>
-                                <select class="form-select" wire:model="estatus" required>
-                                    @foreach(\App\Enums\EstatusGrupo::cases() as $e)
-                                        <option value="{{ $e->value }}">{{ $e->label() }}</option>
-                                    @endforeach
-                                </select>
-                                @error('estatus') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
+                <x-ui.field label="Aula" for="grupo-aula" hint="Opcional: se puede asignar después.">
+                    <x-ui.select id="grupo-aula" wire:model="aulaId">
+                        <option value="">Sin aula asignada</option>
+                        @foreach ($aulas as $a)
+                            <option value="{{ $a->id }}">
+                                {{ $a->clave }} — {{ $a->nombre }} ({{ $a->edificio }}, cap. {{ $a->capacidad }})
+                            </option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
 
-                            <div class="col-12">
-                                <label class="form-label">Nombre del grupo</label>
-                                <input type="text" class="form-control" wire:model="nombre" maxlength="150" placeholder="Se genera automáticamente si se deja vacío">
-                                @error('nombre') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="cerrarModal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">{{ $grupoEnEdicion ? 'Actualizar' : 'Crear' }}</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Horarios -->
-    <div class="modal fade" tabindex="-1" wire:model="modalHorariosAbierto">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        Horarios de <strong>{{ $grupoHorarios->clave ?? '' }}</strong>
-                        <span class="badge bg-info text-dark ms-2">{{ $grupoHorarios->materia->clave }}</span>
-                    </h5>
-                    <button type="button" class="btn-close" wire:click="cerrarModalHorarios"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="d-flex justify-content-between mb-3">
-                        <h6>Horarios registrados</h6>
-                        <button type="button" class="btn btn-sm btn-primary" wire:click="abrirModalHorarioCrear">
-                            <i class="bi bi-plus-lg me-1"></i> Agregar Horario
-                        </button>
-                    </div>
-
-                    @if($grupoHorarios->horarios->isEmpty())
-                        <div class="text-center py-4 text-muted">
-                            <i class="bi bi-calendar3 display-4"></i>
-                            <p class="mt-2">No hay horarios registrados para este grupo.</p>
-                        </div>
-                    @else
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Día</th>
-                                        <th>Hora Inicio</th>
-                                        <th>Hora Fin</th>
-                                        <th class="text-end">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($grupoHorarios->horarios as $h)
-                                        <tr>
-                                            <td>{{ $h->dia->label() }}</td>
-                                            <td>{{ $h->hora_inicio->format('H:i') }}</td>
-                                            <td>{{ $h->hora_fin->format('H:i') }}</td>
-                                            <td class="text-end">
-                                                <div class="btn-group btn-group-sm">
-                                                    <button type="button" class="btn btn-outline-primary" wire:click="abrirModalEditarHorario({{ $h->id }})" title="Editar">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-danger" wire:click="confirmarEliminacionHorario({{ $h->id }})" title="Eliminar">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
+                <div class="sm:col-span-2">
+                    <x-ui.field label="Nombre del grupo" for="grupo-nombre"
+                        hint="Se genera automáticamente si se deja vacío." :error="$errors->first('nombre')">
+                        <x-ui.input id="grupo-nombre" wire:model="nombre" maxlength="150" />
+                    </x-ui.field>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Modal Horario Crear/Editar -->
-    <div class="modal fade" tabindex="-1" wire:model="modalHorarioAbierto">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ $horarioEnEdicion ? 'Editar Horario' : 'Nuevo Horario' }}</h5>
-                    <button type="button" class="btn-close" wire:click="cerrarModalHorario"></button>
-                </div>
-                <form wire:submit="guardarHorario">
-                    <div class="modal-body">
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                @foreach ($errors->all() as $error)
-                                    <div>{{ $error }}</div>
-                                @endforeach
-                            </div>
-                        @endif
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label required">Día *</label>
-                                <select class="form-select" wire:model="horarioDia" required>
-                                    <option value="">Seleccione un día</option>
-                                    @foreach(\App\Enums\DiaSemana::cases() as $d)
-                                        <option value="{{ $d->value }}">{{ $d->label() }}</option>
-                                    @endforeach
-                                </select>
-                                @error('horarioDia') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label required">Hora Inicio *</label>
-                                <input type="time" class="form-control" wire:model="horarioHoraInicio" required>
-                                @error('horarioHoraInicio') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label required">Hora Fin *</label>
-                                <input type="time" class="form-control" wire:model="horarioHoraFin" required>
-                                @error('horarioHoraFin') <div class="text-danger small">{{ $message }}</div> @enderror
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="cerrarModalHorario">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">{{ $horarioEnEdicion ? 'Actualizar' : 'Crear' }}</button>
-                    </div>
-                </form>
+            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-brand-line pt-4">
+                <x-ui.button variant="secondary" wire:click="cerrarModal">Cancelar</x-ui.button>
+                <x-ui.button type="submit" wire:loading.attr="disabled" wire:target="guardar">
+                    <span wire:loading.remove wire:target="guardar">
+                        {{ $grupoEnEdicion ? 'Guardar cambios' : 'Crear grupo' }}
+                    </span>
+                    <span wire:loading wire:target="guardar"><x-ui.loading label="Guardando…" /></span>
+                </x-ui.button>
             </div>
-        </div>
-    </div>
-
-    <!-- Confirmación Eliminar Grupo -->
-    @if(session('eliminarGrupoId'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (confirm('¿Eliminar el grupo "{{ session('eliminarGrupoNombre') }}"? Esta acción no se puede deshacer.')) {
-                    @this.call('eliminar', {{ session('eliminarGrupoId') }})
-                }
-            });
-        </script>
-    @endif
-
-    <!-- Confirmación Eliminar Horario -->
-    @if(session('eliminarHorarioId'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (confirm('¿Eliminar el horario "{{ session('eliminarHorarioDia') }}"? Esta acción no se puede deshacer.')) {
-                    @this.call('eliminarHorario', {{ session('eliminarHorarioId') }})
-                }
-            });
-        </script>
-    @endif
+        </form>
+    </x-ui.modal>
 </div>
