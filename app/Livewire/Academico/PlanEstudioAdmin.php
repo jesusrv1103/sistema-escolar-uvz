@@ -62,6 +62,15 @@ class PlanEstudioAdmin extends Component
         $this->resetFormulario();
     }
 
+    /** UX (2.0-12): limpia los filtros del listado y vuelve a la primera página. */
+    public function limpiarFiltros(): void
+    {
+        $this->busqueda = '';
+        $this->filtroPrograma = '';
+        $this->filtroActivo = '';
+        $this->resetPage();
+    }
+
     private function resetFormulario(): void
     {
         $this->planEnEdicion = null;

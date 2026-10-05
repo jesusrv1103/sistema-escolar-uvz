@@ -1,10 +1,14 @@
 /**
  * UI shell (WAVE UI/UX 2.0-12) — solo presentación.
  *
- * - Modal y slide-over accesibles: apertura, cierre con Escape/click en el
- *   fondo, trampa de foco simple y devolución del foco al disparador.
- * - Sin dependencias externas; delegación de eventos en `document` para que
- *   siga funcionando tras un render parcial de Livewire.
+ * Modal y slide-over accesibles:
+ *  - apertura por data-modal-open / data-drawer-open (páginas Blade) o por
+ *    re-render de Livewire (componente con `open` controlado por la propiedad);
+ *  - cierre con Escape, clic en el fondo o el botón X;
+ *  - trampa de foco simple y devolución del foco al disparador.
+ *
+ * Sin dependencias externas. Delegación de eventos en `document` y un
+ * MutationObserver para que siga funcionando tras un render parcial de Livewire.
  */
 
 const FOCUSABLE = [
@@ -16,47 +20,61 @@ const FOCUSABLE = [
     '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-const state = {
-    open: null,
-    trigger: null,
-};
+const DIALOG_SELECTOR = '.ui-modal, .ui-drawer';
 
-function panelOf(overlay) {
-    return overlay.querySelector('.ui-modal-panel, .ui-drawer-panel');
+let activeDialog = null;
+let returnFocusTo = null;
+
+function visibleDialog() {
+    return Array.from(document.querySelectorAll(DIALOG_SELECTOR)).find((el) => !el.hidden) || null;
+}
+
+function focusFirst(dialog) {
+    const panel = dialog.querySelector('.ui-modal-panel, .ui-drawer-panel') || dialog;
+    const target = panel.querySelector(FOCUSABLE);
+    if (target) {
+        target.focus();
+        return;
+    }
+    panel.setAttribute('tabindex', '-1');
+    panel.focus();
+}
+
+function sync() {
+    const dialog = visibleDialog();
+
+    if (dialog === activeDialog) return;
+
+    if (!dialog) {
+        activeDialog = null;
+        document.body.style.overflow = '';
+        if (returnFocusTo && document.contains(returnFocusTo)) returnFocusTo.focus();
+        returnFocusTo = null;
+        return;
+    }
+
+    if (!activeDialog) {
+        returnFocusTo = document.activeElement;
+        document.body.style.overflow = 'hidden';
+    }
+
+    activeDialog = dialog;
+
+    const panel = dialog.querySelector('.ui-modal-panel, .ui-drawer-panel') || dialog;
+    if (!panel.contains(document.activeElement)) focusFirst(dialog);
 }
 
 function openOverlay(id) {
     const overlay = document.getElementById(id);
     if (!overlay) return;
-
-    closeOverlay();
-
     overlay.hidden = false;
-    state.open = overlay;
-    state.trigger = document.activeElement;
-
-    const panel = panelOf(overlay);
-    const first = panel && panel.querySelector(FOCUSABLE);
-    if (first) first.focus();
-    else if (panel) {
-        panel.setAttribute('tabindex', '-1');
-        panel.focus();
-    }
-
-    document.body.style.overflow = 'hidden';
+    sync();
 }
 
 function closeOverlay() {
-    if (!state.open) return;
-
-    state.open.hidden = true;
-    state.open = null;
-    document.body.style.overflow = '';
-
-    if (state.trigger && document.contains(state.trigger)) {
-        state.trigger.focus();
-    }
-    state.trigger = null;
+    if (!activeDialog) return;
+    activeDialog.hidden = true;
+    sync();
 }
 
 document.addEventListener('click', (event) => {
@@ -73,21 +91,26 @@ document.addEventListener('click', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
-    if (!state.open) return;
+    if (!activeDialog) return;
 
     if (event.key === 'Escape') {
         event.preventDefault();
-        closeOverlay();
+        // Prioriza el control de cierre declarado en la vista: si lleva
+        // wire:click, Livewire también recibe el cierre y la propiedad de
+        // estado vuelve a false (no queda desincronizado).
+        const closer = activeDialog.querySelector(
+            'button[data-modal-close], button[data-drawer-close], [data-modal-close], [data-drawer-close]'
+        );
+        if (closer) closer.click();
+        else closeOverlay();
         return;
     }
 
     if (event.key !== 'Tab') return;
 
-    const panel = panelOf(state.open);
-    if (!panel) return;
-
+    const panel = activeDialog.querySelector('.ui-modal-panel, .ui-drawer-panel') || activeDialog;
     const focusable = Array.from(panel.querySelectorAll(FOCUSABLE)).filter(
-        (el) => el.offsetParent !== null
+        (el) => el.offsetParent !== null || el === document.activeElement
     );
     if (focusable.length === 0) return;
 
@@ -102,3 +125,24 @@ document.addEventListener('keydown', (event) => {
         first.focus();
     }
 });
+
+// Livewire puede abrir o cerrar un diálogo re-renderizando: el observer mantiene
+// el estado del shell (foco, scroll) alineado con el DOM real.
+if (typeof MutationObserver !== 'undefined') {
+    let queued = false;
+    const observer = new MutationObserver(() => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(() => {
+            queued = false;
+            sync();
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['hidden'],
+    });
+}

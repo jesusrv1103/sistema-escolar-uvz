@@ -1,15 +1,16 @@
 {{--
-  Modal accesible. Abrir: data-modal-open="id-modal". Cerrar: data-modal-close.
+  Modal accesible.
 
-  <x-ui.button data-modal-open="modal-crear">Nuevo plan</x-ui.button>
-  <x-ui.modal id="modal-crear" title="Nuevo plan">
-      …formulario…
-      <x-slot:footer>…botones…</x-slot:footer>
-  </x-ui.modal>
+  Apertura: data-modal-open="id-modal" (páginas Blade) o wire:click a la acción
+  que ponga $open=true (componentes Livewire). Cierre: data-modal-close.
+
+  Props:
+    - open:  bool → controla el atributo hidden (fuente de verdad Livewire/Blade)
+    - close: nombre de la acción Livewire a invocar al cerrar (X, fondo y Escape)
 
   El JS (resources/js/ui.js) gestiona foco, Escape y devolución del foco.
 --}}
-@props(['id', 'title', 'size' => 'md'])
+@props(['id', 'title', 'size' => 'md', 'open' => false, 'close' => null])
 
 @php
     $sizeClass = match ($size) {
@@ -19,13 +20,14 @@
     };
 @endphp
 
-<div {{ $attributes->merge(['class' => 'ui-modal', 'id' => $id]) }} hidden role="dialog" aria-modal="true"
-    aria-labelledby="{{ $id }}-title">
-    <div class="ui-modal-backdrop" data-modal-close></div>
+<div {{ $attributes->merge(['class' => 'ui-modal', 'id' => $id]) }} {{ $open ? '' : 'hidden' }} role="dialog"
+    aria-modal="true" aria-labelledby="{{ $id }}-title">
+    <div class="ui-modal-backdrop" data-modal-close @if ($close) wire:click="{{ $close }}" @endif></div>
     <div class="ui-modal-panel {{ $sizeClass }}">
         <div class="ui-modal-header">
             <h2 id="{{ $id }}-title" class="text-base font-semibold text-brand-text">{{ $title }}</h2>
-            <button type="button" class="ui-btn ui-btn-icon ui-btn-ghost" data-modal-close aria-label="Cerrar ventana">
+            <button type="button" class="ui-btn ui-btn-icon ui-btn-ghost" data-modal-close
+                @if ($close) wire:click="{{ $close }}" @endif aria-label="Cerrar ventana">
                 <x-ui.icon name="x-mark" :size="18" />
             </button>
         </div>
