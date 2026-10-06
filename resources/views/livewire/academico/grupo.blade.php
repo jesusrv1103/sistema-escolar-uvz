@@ -116,7 +116,7 @@
                                     <td class="text-brand-muted">{{ $g->docente?->nombreCompleto() ?? '—' }}</td>
                                     <td class="text-brand-muted">{{ $g->aula?->nombre ?? '—' }}</td>
                                     <td class="font-medium text-brand-text">{{ $g->cupo }}</td>
-                                    <td class="text-brand-muted">{{ \App\Enums\TurnoGrupo::tryFrom($g->turno)?->label() ?? $g->turno }}</td>
+                                    <td class="text-brand-muted">{{ $g->turno?->label() ?? '—' }}</td>
                                     <td>
                                         <span class="inline-flex flex-wrap gap-1">
                                             <x-ui.badge :tone="$tonos[$g->estatus->value] ?? 'neutral'">

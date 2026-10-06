@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasAudit;
 use App\Enums\EstatusGrupo;
+use App\Enums\TurnoGrupo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +37,10 @@ class Grupo extends Model
     {
         return [
             'cupo' => 'integer',
+            // Contrato del turno: el BackedEnum aprobado `TurnoGrupo`. Antes la
+            // columna llegaba como string y `FormatoService` (HORARIO, LISTA_GRUPO
+            // y ACTA) hacía `$grupo->turno?->label()` → 500 sobre un string.
+            'turno' => TurnoGrupo::class,
             'estatus' => EstatusGrupo::class,
         ];
     }

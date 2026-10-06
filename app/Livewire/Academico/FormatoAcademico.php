@@ -37,7 +37,14 @@ class FormatoAcademico extends Component
 
     public function generarFormato(string $tipo, ?Alumno $alumno = null, ?Acta $acta = null): void
     {
-        Gate::authorize('documento_generado.crear');
+        // Dos reglas, ambas FUERA del `try` para que el rechazo sea un 403 real
+        // (el `catch (\Throwable)` de abajo convertiría una AuthorizationException
+        // en un simple mensaje de error):
+        //  1. la misma capacidad que autoriza entrar a la pantalla (matriz §8.2);
+        //  2. la misma policy que exige `FormatoService::autorizar()` para crear
+        //     el documento (la UI oculta el botón con exactamente esta regla).
+        Gate::authorize('formato_academico.generar');
+        Gate::authorize('create', DocumentoGenerado::class);
 
         $this->tipo = $tipo;
         $this->alumno = $alumno;

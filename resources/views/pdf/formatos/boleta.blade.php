@@ -79,6 +79,7 @@
             </tbody>
         </table>
     </div>
+</div>
 @else
     <p class="text-center">No hay calificaciones registradas para este periodo.</p>
 @endif

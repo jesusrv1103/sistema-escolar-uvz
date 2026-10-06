@@ -77,6 +77,11 @@ class AsistenciaAdmin extends Component
             return;
         }
 
+        // El DOCENTE puede alterar la propiedad `grupo` en el payload de
+        // Livewire (hidratación por id, sin pasar por `seleccionarGrupo`):
+        // se vuelve a autorizar antes de listar los alumnos.
+        $this->autorizarGrupoSiDocente($this->grupo);
+
         $this->asistencias = [];
 
         $inscripciones = InscripcionMateria::where('grupo_id', $this->grupo->id)
@@ -117,12 +122,38 @@ class AsistenciaAdmin extends Component
             return;
         }
 
+        // El DOCENTE sólo guarda en grupos propios: la propiedad `grupo`
+        // puede llegar alterada en el payload, así que se autoriza otra vez.
+        $this->autorizarGrupoSiDocente($this->grupo);
+
+        if ($this->asistencias === []) {
+            $this->addError('guardar', 'Carga la lista del grupo antes de guardar.');
+            return;
+        }
+
+        // `fecha` llega como texto desde `wire:model`; el servicio exige un
+        // DateTimeInterface. Se valida el formato antes de convertir para que
+        // un payload manipulado no provoque un error no capturado.
+        $fecha = \DateTimeImmutable::createFromFormat('!Y-m-d', $this->fecha);
+
+        if ($fecha === false || $fecha->format('Y-m-d') !== $this->fecha) {
+            $this->addError('fecha', 'La fecha no es válida.');
+            return;
+        }
+
         try {
+            // Contrato de `AsistenciaService::registrarMasivo()`:
+            // `fecha` es un DateTimeInterface y `asistencias` es
+            // [inscripcion_materia_id => presente booleano]. La propiedad
+            // pública mantiene la forma que necesita la vista
+            // (fila con el modelo de la inscripción) y aquí se adapta.
             $service = app(AsistenciaService::class);
             $service->registrarMasivo(
                 grupo: $this->grupo,
-                fecha: $this->fecha,
-                asistencias: $this->asistencias,
+                fecha: $fecha,
+                asistencias: collect($this->asistencias)
+                    ->map(fn (mixed $fila): bool => (bool) (is_array($fila) ? ($fila['presente'] ?? false) : $fila))
+                    ->all(),
                 usuario: auth()->user(),
             );
 

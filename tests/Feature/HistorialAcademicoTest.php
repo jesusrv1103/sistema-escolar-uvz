@@ -2,6 +2,7 @@
 
 use App\Models\Alumno;
 use App\Models\Calificacion;
+use App\Models\Equivalencia;
 use App\Models\Evaluacion;
 use App\Models\Grupo;
 use App\Models\InscripcionMateria;
@@ -13,6 +14,7 @@ use App\Models\Programa;
 use App\Models\PlanEstudio;
 use App\Models\User;
 use App\Services\HistorialAcademicoService;
+use App\Enums\EstatusEquivalencia;
 use App\Enums\EstatusInscripcionMateria;
 use App\Enums\RolUsuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -213,4 +215,101 @@ test('el listado de historial abre la ficha del alumno seleccionado', function (
         ->set('busqueda', 'ZZZZ')
         ->call('limpiarFiltros')
         ->assertSet('busqueda', '');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Regresión pre-2.0-17 — BUG-03: `tiraMaterias()` sin `es_reprobada`
+|--------------------------------------------------------------------------
+|
+| `pdf/formatos/tira.blade.php` lee `$t['es_reprobada']` y el service no la
+| entregaba → "Undefined array key" (HTTP 500) al emitir la TIRA con una
+| matrícula que sí tiene versión de plan. El test previo no lo veía porque su
+| matrícula de fábrica no tenía `plan_version_id` y la tira salía vacía.
+|
+| El contrato queda fijado completo para cada fila del plan:
+| aprobada, reprobada, cursando, baja, extraordinario, equivalencia y
+| pendiente.
+|
+*/
+
+test('BUG-03: la tira entrega es_reprobada y todos los estados del plan', function () {
+    $alumno = Alumno::factory()->create();
+    $periodo = Periodo::factory()->create(['activo' => true]);
+    $programa = Programa::factory()->create(['activo' => true]);
+    $plan = PlanEstudio::factory()->paraPrograma($programa)->create();
+    $version = PlanVersion::factory()->forPlanEstudio($plan)->vigente()->create();
+
+    // Sin EXTRAORDINARIO: la columna `inscripciones_materias.estatus` es un
+    // ENUM de MySQL que sólo admite CURSANDO/APROBADA/REPROBADA/BAJA/VALIDADA,
+    // así que ese estado no puede existir en la BD (observación registrada en
+    // docs/auditoria-pdfs-pre-2.0-17.md; se requiere migración para habilitarlo).
+    $claves = ['APR', 'REP', 'CUR', 'BAJ', 'EQU', 'PEN'];
+    $materias = [];
+    foreach ($claves as $clave) {
+        $materias[$clave] = Materia::factory()->paraPlanVersion($version)
+            ->create(['activo' => true, 'clave' => $clave, 'creditos' => 4]);
+    }
+
+    $matricula = MatriculaPeriodo::factory()->activa()
+        ->paraAlumno($alumno)->paraPeriodo($periodo)->paraPrograma($programa)
+        ->create(['plan_version_id' => $version->id]);
+
+    $grupos = [];
+    foreach ($claves as $clave) {
+        $grupos[$clave] = Grupo::factory()->paraMateria($materias[$clave])
+            ->paraPeriodo($periodo)->abierto()
+            ->create(['activo' => true, 'cupo' => 40]);
+    }
+
+    $inscribir = fn (string $clave, EstatusInscripcionMateria $estatus, ?float $calificacion) => InscripcionMateria::factory()
+        ->paraMatricula($matricula)->paraGrupo($grupos[$clave])
+        ->create([
+            'estatus' => $estatus,
+            'calificacion_final' => $calificacion,
+        ]);
+
+    $inscribir('APR', EstatusInscripcionMateria::APROBADA, 92.00);
+    $inscribir('REP', EstatusInscripcionMateria::REPROBADA, 45.00);
+    $inscribir('CUR', EstatusInscripcionMateria::CURSANDO, null);
+    $inscribir('BAJ', EstatusInscripcionMateria::BAJA, null);
+
+    Equivalencia::create([
+        'alumno_id' => $alumno->id,
+        'materia_id' => $materias['EQU']->id,
+        'origen' => 'Universidad sintética (DEMO-PRESENTACION-2026)',
+        'creditos' => 4,
+        'estatus' => EstatusEquivalencia::APROBADA,
+        'autorizada_por' => User::factory()->deRol(RolUsuario::CONTROL_ESCOLAR)->create()->id,
+        'fecha_dictamen' => now()->format('Y-m-d'),
+    ]);
+
+    $tira = app(HistorialAcademicoService::class)
+        ->tiraMaterias(Alumno::findOrFail($alumno->id))
+        ->keyBy('materia.clave');
+
+    expect($tira->keys()->all())->toEqualCanonicalizing($claves);
+
+    $contrato = [
+        'materia', 'estatus', 'calificacion_final', 'es_aprobada', 'es_reprobada',
+        'es_cursando', 'es_extraordinario', 'es_equivalencia', 'es_baja',
+    ];
+    foreach ($tira as $claveFila => $fila) {
+        expect($fila)->toHaveKeys($contrato, "fila {$claveFila}");
+    }
+
+    expect($tira['APR'])->toMatchArray(['estatus' => 'APROBADA', 'es_aprobada' => true, 'es_reprobada' => false, 'es_cursando' => false])
+        ->and((float) $tira['APR']['calificacion_final'])->toBe(92.00);
+
+    expect($tira['REP'])->toMatchArray(['estatus' => 'REPROBADA', 'es_aprobada' => false, 'es_reprobada' => true])
+        ->and((float) $tira['REP']['calificacion_final'])->toBe(45.00);
+
+    expect($tira['CUR'])->toMatchArray(['estatus' => 'CURSANDO', 'es_aprobada' => false, 'es_reprobada' => false, 'es_cursando' => true])
+        ->and($tira['CUR']['calificacion_final'])->toBeNull();
+
+    expect($tira['BAJ'])->toMatchArray(['estatus' => 'BAJA', 'es_baja' => true, 'es_aprobada' => false, 'es_reprobada' => false]);
+
+    expect($tira['EQU'])->toMatchArray(['estatus' => 'EQUIVALENCIA', 'es_equivalencia' => true, 'es_aprobada' => false]);
+
+    expect($tira['PEN'])->toMatchArray(['estatus' => 'PENDIENTE', 'es_aprobada' => false, 'es_reprobada' => false, 'es_cursando' => false]);
 });

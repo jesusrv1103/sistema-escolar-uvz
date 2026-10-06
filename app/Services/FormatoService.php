@@ -223,11 +223,18 @@ class FormatoService
                     'nombre' => $grupo->aula->nombre,
                     'edificio' => $grupo->aula->edificio,
                 ] : null,
-                'horarios' => $grupo->horarios->map(fn ($h) => [
-                    'dia' => $h->dia->label(),
-                    'hora_inicio' => $h->hora_inicio->format('H:i'),
-                    'hora_fin' => $h->hora_fin->format('H:i'),
-                ])->toArray(),
+                // Misma forma que el DTO de inscripción: enum de día + Carbon.
+                // `lista_grupo` etiqueta y formatea desde esa forma (con texto
+                // hacía `Call to a member function sortBy() on array`, HTTP 500).
+                // El orden es determinista: día de la semana y luego hora inicio.
+                'horarios' => $grupo->horarios
+                    ->sortBy(fn ($h) => sprintf('%d-%s', $h->dia->orden(), $h->hora_inicio->format('H:i')))
+                    ->map(fn ($h) => [
+                        'dia' => $h->dia,
+                        'hora_inicio' => $h->hora_inicio,
+                        'hora_fin' => $h->hora_fin,
+                    ])
+                    ->values(),
                 'inscripcionesMaterias' => $grupo->inscripcionesMaterias->map(function ($inscripcion) {
                     return [
                         'id' => $inscripcion->id,

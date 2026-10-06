@@ -223,3 +223,84 @@ test('formato sin folio no intenta generar consecutivo', function () {
     $documento = \App\Models\DocumentoGenerado::where('tipo', 'KARDEX')->first();
     expect($documento->folio)->toBeNull();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Regresión pre-2.0-17 — BUG-02: `Grupo::$turno` era string
+|--------------------------------------------------------------------------
+|
+| `FormatoService::prepararDatos()` hace `$grupo->turno?->label()` para
+| HORARIO, LISTA_GRUPO y ACTA, pero la columna llegaba como texto plano
+| (sin cast) → "Call to a member function label() on string" (HTTP 500).
+|
+| El suite nunca lo vio porque `GrupoFactory` deja un `TurnoGrupo` en la
+| atribución del modelo recién creado (aún sin guardar como texto). El fallo
+| sólo aparece con la fila LEÍDA de la BD, que es lo que hace el producto en
+| el navegador: por eso las tres pruebas siguientes recargan el grupo.
+|
+*/
+test('BUG-02: el turno se lee de la BD como TurnoGrupo con su etiqueta', function () {
+    $grupo = Grupo::factory()->create(['turno' => 'VESPERTINO']);
+    $leido = Grupo::query()->findOrFail($grupo->id);
+
+    // El valor almacenado sigue siendo el texto original (sin migración).
+    expect($leido->getAttributes()['turno'])->toBe('VESPERTINO')
+        ->and($leido->turno)->toBeInstanceOf(TurnoGrupo::class)
+        ->and($leido->turno->value)->toBe('VESPERTINO')
+        ->and($leido->turno->label())->toBe('Vespertino');
+});
+
+test('BUG-02: HORARIO, LISTA_GRUPO y ACTA generan con el grupo recargado de la BD', function () {
+    \Illuminate\Support\Facades\Storage::fake('private');
+
+    $periodo = Periodo::factory()->create(['activo' => true]);
+    $programa = Programa::factory()->create(['activo' => true]);
+    $planEstudio = PlanEstudio::factory()->paraPrograma($programa)->create();
+    $planVersion = PlanVersion::factory()->forPlanEstudio($planEstudio)->vigente()->create();
+    $materia = Materia::factory()->paraPlanVersion($planVersion)->create(['activo' => true]);
+    $grupo = Grupo::factory()->paraMateria($materia)->paraPeriodo($periodo)->abierto()
+        ->create(['activo' => true, 'turno' => 'VESPERTINO']);
+    GrupoHorario::factory()->paraGrupo($grupo)->create();
+
+    $acta = Acta::factory()->create([
+        'grupo_id' => $grupo->id,
+        'periodo_id' => $periodo->id,
+        'estatus' => 'CERRADA',
+        'folio' => 'ACT-2026-00000001',
+    ]);
+
+    $alumno = Alumno::factory()->create();
+    $matricula = MatriculaPeriodo::factory()->activa()
+        ->paraAlumno($alumno)->paraPeriodo($periodo)->paraPrograma($programa)
+        ->create(['plan_version_id' => $planVersion->id]);
+    InscripcionMateria::factory()->paraMatricula($matricula)->paraGrupo($grupo)->cursando()->create();
+
+    // Así lo consume el producto: el turno llega como texto desde MySQL.
+    $grupoLeido = Grupo::query()->findOrFail($grupo->id);
+
+    $service = app(FormatoService::class);
+    // HORARIO y LISTA_GRUPO sólo se emiten desde `/admin/formatos` (ADMIN);
+    // el ACTA se emite también desde Formatos Académicos (CONTROL_ESCOLAR).
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+    $control = User::factory()->deRol(RolUsuario::CONTROL_ESCOLAR)->create();
+
+    $rutas = [
+        $service->generar(TipoFormato::HORARIO, $alumno, $matricula, $grupoLeido, [], $admin),
+        $service->generar(TipoFormato::LISTA_GRUPO, null, null, $grupoLeido, [], $admin),
+        $service->generar(TipoFormato::ACTA, null, null, $grupoLeido, ['acta_id' => $acta->id], $control),
+    ];
+
+    foreach ($rutas as $ruta) {
+        expect(\Illuminate\Support\Facades\Storage::disk('private')->get($ruta))->toStartWith('%PDF-');
+    }
+});
+
+test('BUG-02: el turno etiquetado llega a la preparación de datos de los formatos con grupo', function () {
+    $grupo = Grupo::factory()->create(['turno' => 'NOCTURNO']);
+    $leido = Grupo::query()->findOrFail($grupo->id);
+
+    expect($leido->turno?->label())->toBe('Nocturno')
+        // La plantilla de lista de grupo ya no necesita `tryFrom` defensivo:
+        // el service entrega la etiqueta como hace con `estatus`.
+        ->and(\App\Enums\TurnoGrupo::tryFrom($leido->getAttributes()['turno'])?->label())->toBe('Nocturno');
+});

@@ -63,7 +63,7 @@ class GrupoAdmin extends Component
         $this->clave = $grupo->clave;
         $this->nombre = $grupo->nombre ?? '';
         $this->cupo = $grupo->cupo;
-        $this->turno = $grupo->turno;
+        $this->turno = $grupo->turno?->value ?? $this->turno;
         $this->materiaId = $grupo->materia_id;
         $this->periodoId = $grupo->periodo_id;
         $this->docenteId = $grupo->docente_id;

@@ -21,6 +21,10 @@
         <div class="mt-4"><x-ui.alert tone="danger">{{ $message }}</x-ui.alert></div>
     @enderror
 
+    {{-- Misma regla que el backend: si la policy `DocumentoGenerado::create` niega
+         la emisión a este rol (p. ej. ADMINISTRACION), el botón no se muestra en
+         lugar de ofrecer una acción que terminaría siempre en 403. --}}
+    @can('create', \App\Models\DocumentoGenerado::class)
     <div class="mt-5">
         <x-ui.card>
             <x-slot:header>
@@ -86,4 +90,12 @@
             </form>
         </x-ui.card>
     </div>
+    @else
+    <div class="mt-5">
+        <x-ui.alert tone="info">
+            Este rol consulta los formatos académicos, pero no emite PDFs institucionales.
+            La emisión queda en Control Escolar y Administrador.
+        </x-ui.alert>
+    </div>
+    @endcan
 </div>

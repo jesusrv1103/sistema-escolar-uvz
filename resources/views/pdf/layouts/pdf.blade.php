@@ -165,6 +165,12 @@
             background-color: #fbfaf7;
         }
 
+        /* Estados de fila (kardex, boleta, historial, avance, tira, acta).
+           Deben ir después de :nth-child(even) para poder sobre-escribirlo. */
+        tr.table-success td { background-color: #e6f4ea; }
+        tr.table-danger td { background-color: #fbe9ea; }
+        tr.table-warning td { background-color: #fdf6e0; }
+
         .footer {
             margin-top: 50px;
             padding-top: 20px;
@@ -206,6 +212,13 @@
         .badge-abierta { background: #fff3cd; color: #856404; }
         .badge-cerrada { background: #d4edda; color: #155724; }
         .badge-cancelada { background: #f8d7da; color: #721c24; }
+
+        /* Utilidades de color que las plantillas usan sobre .badge
+           (mismo palette que los badges de arriba). */
+        .bg-success { background-color: #d4edda; color: #155724; }
+        .bg-danger { background-color: #f8d7da; color: #721c24; }
+        .bg-warning { background-color: #fff3cd; color: #856404; }
+        .text-dark { color: #383d41; }
 
         .page-break {
             page-break-after: always;

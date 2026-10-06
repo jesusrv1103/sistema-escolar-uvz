@@ -77,6 +77,7 @@
             </tbody>
         </table>
     </div>
+</div>
 @else
     <p class="text-center">No hay materias registradas.</p>
 @endif
@@ -87,7 +88,7 @@
     <div class="data-grid">
         <div class="data-item">
             <span class="data-label">Total materias</span>
-            <span class="data-value">{{ $resumen['total_materias'] ?? 0 }}</span>
+            <span class="data-value">{{ $tira->count() }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Créditos aprobados</span>

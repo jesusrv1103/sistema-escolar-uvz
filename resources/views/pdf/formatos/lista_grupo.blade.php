@@ -42,11 +42,11 @@
         </div>
         <div class="data-item">
             <span class="data-label">Docente</span>
-            <span class="data-value">{{ $grupo['docente']['nombreCompleto'] ?? 'Sin asignar' }}</span>
+            <span class="data-value">{{ $grupo['docente']['nombre_completo'] ?? 'Sin asignar' }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Aula</span>
-            <span class="data-value">{{ $grupo['aula']['nombre'] . ' (' . $grupo['aula']['edificio'] . ')' ?? 'Sin asignar' }}</span>
+            <span class="data-value">{{ $grupo['aula'] ? $grupo['aula']['nombre'] . ' (' . $grupo['aula']['edificio'] . ')' : 'Sin asignar' }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Cupo</span>
@@ -54,7 +54,7 @@
         </div>
         <div class="data-item">
             <span class="data-label">Turno</span>
-            <span class="data-value">{{ \App\Enums\TurnoGrupo::tryFrom($grupo['turno'])?->label() ?? $grupo['turno'] }}</span>
+            <span class="data-value">{{ $grupo['turno'] }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Estatus</span>
@@ -77,12 +77,12 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($grupo['horarios']->sortBy('dia.orden')->sortBy('hora_inicio') as $h)
+                @foreach($grupo['horarios'] as $h)
                     <tr>
                         <td>{{ $h['dia']->label() }}</td>
                         <td>{{ $h['hora_inicio']->format('H:i') }}</td>
                         <td>{{ $h['hora_fin']->format('H:i') }}</td>
-                        <td>{{ $grupo['aula']['nombre'] . ' (' . $grupo['aula']['edificio'] . ')' ?? 'Sin asignar' }}</td>
+                        <td>{{ $grupo['aula'] ? $grupo['aula']['nombre'] . ' (' . $grupo['aula']['edificio'] . ')' : 'Sin asignar' }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -133,6 +133,7 @@
             </tbody>
         </table>
     </div>
+</div>
 @else
     <p class="text-center">No hay alumnos inscritos en este grupo.</p>
 @endif

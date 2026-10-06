@@ -73,16 +73,17 @@
             </thead>
             <tbody>
                 @foreach($acta->grupo->inscripcionesMaterias->where('estatus', '!=', \App\Enums\EstatusInscripcionMateria::BAJA) as $inscripcion)
-                    <tr class="{{ $inscripcion->esAprobada() ? 'table-success' : ($inscripcion->esReprobada() ? 'table-danger' : '') }}">
+                    <tr class="{{ $inscripcion->isAprobada() ? 'table-success' : ($inscripcion->isReprobada() ? 'table-danger' : '') }}">
                         <td>{{ $inscripcion->matriculaPeriodo->alumno->nombre_completo }}</td>
                         <td>{{ $inscripcion->matriculaPeriodo->alumno->numero_control ?? '—' }}</td>
                         <td>{{ $inscripcion->calificacion_final ?? '—' }}</td>
-                        <td><span class="badge {{ $inscripcion->esAprobada() ? 'bg-success' : ($inscripcion->isReprobada() ? 'bg-danger' : 'bg-warning text-dark') }}">{{ $inscripcion->estatus->label() }}</span></td>
+                        <td><span class="badge {{ $inscripcion->isAprobada() ? 'bg-success' : ($inscripcion->isReprobada() ? 'bg-danger' : 'bg-warning text-dark') }}">{{ $inscripcion->estatus->label() }}</span></td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
+</div>
 @endif
 
 <div class="section mt-20">

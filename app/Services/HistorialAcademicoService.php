@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\EstatusEquivalencia;
+use App\Enums\EstatusInscripcionMateria;
 use App\Models\Alumno;
+use App\Models\Equivalencia;
 use App\Models\InscripcionMateria;
 use App\Models\Materia;
 use App\Models\PlanVersion;
@@ -55,7 +58,7 @@ class HistorialAcademicoService
                     $esAprobada = $inscripcion->isAprobada();
                     $esReprobada = $inscripcion->isReprobada();
                     $esCursando = $inscripcion->isCursando();
-                    $esExtraordinario = $inscripcion->estatus === 'EXTRAORDINARIO';
+                    $esExtraordinario = $inscripcion->estatus === EstatusInscripcionMateria::EXTRAORDINARIO;
 
                     return [
                         'matricula_periodo_id' => $matricula->id,
@@ -263,6 +266,24 @@ class HistorialAcademicoService
 
     /**
      * Tira de materias: plan vs estado de cada materia.
+     *
+     * Contrato de fila (consumido por `pdf/formatos/tira.blade.php`):
+     * `materia`, `estatus`, `calificacion_final`, `es_aprobada`,
+     * `es_reprobada`, `es_cursando`, `es_extraordinario`,
+     * `es_equivalencia` y `es_baja`.
+     *
+     * Estados, en este orden:
+     *
+     * 1. Historial ordinario → APROBADA / REPROBADA / CURSANDO /
+     *    EXTRAORDINARIO / VALIDADA (misma fuente que el promedio y el avance).
+     * 2. Equivalencia APROBADA con `materia_id` → materia acreditada externamente.
+     * 3. Inscripción BAJA → materia abandonada (excluida del promedio por diseño,
+     *    pero la tira debe mostrarla: es el estado real de esa materia).
+     * 4. Sin registro → PENDIENTE.
+     *
+     * `es_reprobada` faltaba y rompía el PDF con `Undefined array key` (BUG-03).
+     *
+     * @return Collection<int, array<string, mixed>>
      */
     public function tiraMaterias(Alumno $alumno): Collection
     {
@@ -277,22 +298,85 @@ class HistorialAcademicoService
         }
 
         $historial = $this->obtenerHistorial($alumno)->keyBy('materia.id');
+        $bajas = InscripcionMateria::where('estatus', EstatusInscripcionMateria::BAJA)
+            ->whereHas('matriculaPeriodo', fn ($q) => $q->where('alumno_id', $alumno->id))
+            ->with('grupo')
+            ->get()
+            ->keyBy('grupo.materia_id');
+        $equivalencias = Equivalencia::where('alumno_id', $alumno->id)
+            ->where('estatus', EstatusEquivalencia::APROBADA)
+            ->whereNotNull('materia_id')
+            ->get()
+            ->keyBy('materia_id');
 
-        return $matricula->planVersion->materias->map(function ($materia) use ($historial) {
+        return $matricula->planVersion->materias->map(function ($materia) use ($historial, $bajas, $equivalencias) {
             $registro = $historial->get($materia->id);
 
-            return [
-                'materia' => [
-                    'id' => $materia->id,
-                    'clave' => $materia->clave,
-                    'nombre' => $materia->nombre,
-                    'creditos' => $materia->creditos,
-                ],
-                'estatus' => $registro['estatus'] ?? 'PENDIENTE',
-                'calificacion_final' => $registro['calificacion_final'] ?? null,
-                'es_aprobada' => $registro['es_aprobada'] ?? false,
-                'es_extraordinario' => $registro['es_extraordinario'] ?? false,
-            ];
+            if ($registro !== null) {
+                return [
+                    'materia' => $this->datosMateriaDeTira($materia),
+                    'estatus' => $registro['estatus'],
+                    'calificacion_final' => $registro['calificacion_final'],
+                    'es_aprobada' => (bool) $registro['es_aprobada'],
+                    'es_reprobada' => (bool) $registro['es_reprobada'],
+                    'es_cursando' => (bool) $registro['es_cursando'],
+                    'es_extraordinario' => (bool) $registro['es_extraordinario'],
+                    'es_equivalencia' => false,
+                    'es_baja' => $registro['estatus'] === 'BAJA',
+                ];
+            }
+
+            if ($equivalencias->has($materia->id)) {
+                return $this->filaTiraSinHistorial($materia, 'EQUIVALENCIA', esEquivalencia: true);
+            }
+
+            if ($bajas->has($materia->id)) {
+                return $this->filaTiraSinHistorial($materia, 'BAJA', esBaja: true);
+            }
+
+            return $this->filaTiraSinHistorial($materia, 'PENDIENTE');
         })->values();
+    }
+
+    /**
+     * Datos de la materia con la forma que consume la plantilla de la tira.
+     *
+     * @return array{id: int, clave: string, nombre: string, creditos: int}
+     */
+    private function datosMateriaDeTira(Materia $materia): array
+    {
+        return [
+            'id' => $materia->id,
+            'clave' => $materia->clave,
+            'nombre' => $materia->nombre,
+            'creditos' => $materia->creditos,
+        ];
+    }
+
+    /**
+     * Fila de la tira sin registro en el historial (equivalencia, baja o pendiente).
+     *
+     * @return array<string, mixed>
+     */
+    private function filaTiraSinHistorial(
+        Materia $materia,
+        string $estatus,
+        bool $esEquivalencia = false,
+        bool $esBaja = false,
+    ): array {
+        return [
+            'materia' => $this->datosMateriaDeTira($materia),
+            'estatus' => $estatus,
+            'calificacion_final' => null,
+            // Una equivalencia acredita la materia, pero no es una calificación
+            // de este plantel: no se marca como aprobada para no inflar el
+            // semáforo de la plantilla ni el resumen del PDF.
+            'es_aprobada' => false,
+            'es_reprobada' => false,
+            'es_cursando' => false,
+            'es_extraordinario' => false,
+            'es_equivalencia' => $esEquivalencia,
+            'es_baja' => $esBaja,
+        ];
     }
 }

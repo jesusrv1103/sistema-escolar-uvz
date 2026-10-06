@@ -91,6 +91,7 @@
             </tbody>
         </table>
     </div>
+</div>
 @else
     <p class="text-center">No hay materias inscritas con horario en este periodo.</p>
 @endif

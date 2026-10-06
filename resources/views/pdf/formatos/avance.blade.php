@@ -103,6 +103,7 @@
             </tbody>
         </table>
     </div>
+</div>
 @else
     <p class="text-center">No hay historial académico registrado.</p>
 @endif
