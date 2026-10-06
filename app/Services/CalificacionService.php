@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Concerns\HasAudit;
 use App\Enums\EstatusInscripcionMateria;
 use App\Enums\TipoPrerrequisito;
 use App\Exceptions\CalificacionException;

@@ -16,6 +16,7 @@ use App\Services\HistorialAcademicoService;
 use App\Enums\EstatusInscripcionMateria;
 use App\Enums\RolUsuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class)->group('historial-academico');
 
@@ -182,4 +183,34 @@ test('la ficha de historial de un alumno responde y dibuja la tira de materias',
         ->assertOk()
         ->assertSee('Tira de materias', false)
         ->assertSee($materia->clave, false);
+});
+
+test('el listado de historial abre la ficha del alumno seleccionado', function () {
+    // Regresión pre-merge: `alumnoSeleccionado()` llamaba `$this->resetPage()`
+    // sin `use WithPagination`, así que el clic en "Ver historial" devolvía
+    // 500 (BadMethodCallException) y la ficha nunca se abría desde /historial.
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+    $alumno = Alumno::factory()->create();
+    $periodo = Periodo::factory()->create(['activo' => true]);
+    $programa = Programa::factory()->create(['activo' => true]);
+    $planEstudio = PlanEstudio::factory()->paraPrograma($programa)->create();
+    $planVersion = PlanVersion::factory()->forPlanEstudio($planEstudio)->vigente()->create();
+    $materia = Materia::factory()->paraPlanVersion($planVersion)->create(['activo' => true, 'creditos' => 4]);
+    Grupo::factory()->paraMateria($materia)->paraPeriodo($periodo)->abierto()->create(['activo' => true, 'cupo' => 40]);
+    MatriculaPeriodo::factory()->activa()->paraAlumno($alumno)->paraPeriodo($periodo)->paraPrograma($programa)->create([
+        'plan_version_id' => $planVersion->id,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Academico\HistorialAcademico::class)
+        ->call('alumnoSeleccionado', $alumno->id)
+        ->assertSet('alumno.id', $alumno->id)
+        ->assertSee('Tira de materias', false);
+
+    // y el filtro conserva la paginación sin reventar
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Academico\HistorialAcademico::class)
+        ->set('busqueda', 'ZZZZ')
+        ->call('limpiarFiltros')
+        ->assertSet('busqueda', '');
 });

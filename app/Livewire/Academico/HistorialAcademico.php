@@ -8,10 +8,13 @@ use App\Services\HistorialAcademicoService;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
 class HistorialAcademico extends Component
 {
+    use WithPagination;
+
     public ?Alumno $alumno = null;
     public string $busqueda = '';
     public string $filtroPeriodo = '';
