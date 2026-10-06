@@ -16,6 +16,8 @@ use App\Models\Observacion;
 use App\Models\Pago;
 use App\Models\PlanEstudio;
 use App\Models\PlanVersion;
+use App\Models\PracticaProfesional;
+use App\Models\ServicioSocial;
 use App\Models\User;
 use App\Policies\CalificacionPolicy;
 use App\Policies\DocumentoGeneradoPolicy;
@@ -30,6 +32,8 @@ use App\Policies\ObservacionPolicy;
 use App\Policies\PagoPolicy;
 use App\Policies\PlanEstudioPolicy;
 use App\Policies\PlanVersionPolicy;
+use App\Policies\PracticaProfesionalPolicy;
+use App\Policies\ServicioSocialPolicy;
 use App\Policies\UsuarioPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -142,6 +146,17 @@ class AuthServiceProvider extends ServiceProvider
         'beca.rechazar' => [RolUsuario::ADMINISTRACION],
         'estado_cuenta.ver' => [RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
         'carta_no_adeudo.generar' => [RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
+        // 2.0-13 — Servicio social y prácticas profesionales
+        // (CONTROL_ESCOLAR es protagonista; ADMISIONES, ADMINISTRACION y DOCENTE
+        // no obtienen permisos de escritura en estos procesos)
+        'servicio_social.ver' => [RolUsuario::CONTROL_ESCOLAR, RolUsuario::ADMINISTRACION],
+        'servicio_social.crear' => [RolUsuario::CONTROL_ESCOLAR],
+        'servicio_social.actualizar' => [RolUsuario::CONTROL_ESCOLAR],
+        'servicio_social.validar' => [RolUsuario::CONTROL_ESCOLAR],
+        'practica.ver' => [RolUsuario::CONTROL_ESCOLAR, RolUsuario::ADMINISTRACION],
+        'practica.crear' => [RolUsuario::CONTROL_ESCOLAR],
+        'practica.actualizar' => [RolUsuario::CONTROL_ESCOLAR],
+        'practica.validar' => [RolUsuario::CONTROL_ESCOLAR],
     ];
 
     public function boot(): void
@@ -181,6 +196,8 @@ class AuthServiceProvider extends ServiceProvider
         Gate::policy(Beca::class, BecaPolicy::class);
         Gate::policy(BecaAlumno::class, BecaAlumnoPolicy::class);
         Gate::policy(AjusteFinanciero::class, AjusteFinancieroPolicy::class);
+        Gate::policy(ServicioSocial::class, ServicioSocialPolicy::class);
+        Gate::policy(PracticaProfesional::class, PracticaProfesionalPolicy::class);
 
         // Las policies de modelos de fases futuras ya existen en App\Policies
         // y Laravel las resuelve por convención; aquí solo se registran las que tienen modelo.

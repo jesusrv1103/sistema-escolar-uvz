@@ -431,6 +431,29 @@
 
 ## Macrobloque 2.0-13 → 2.0-16 — autorizado (registro)
 
+### Estado de ejecución
+
+| Fase | Estado | Gate |
+|---|---|---|
+| 2.0-13 Servicio social + prácticas | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 676 tests / 3058 assertions / 0 fallas · 69 rutas · build OK · view:cache OK |
+| 2.0-14 Egreso + titulación + constancia | ⬜ en curso | — |
+| 2.0-15 Portal de docente | ⬜ pendiente | — |
+| 2.0-16 Portal de alumno | ⬜ pendiente | — |
+
+### 2.0-13 — Servicio social y prácticas profesionales (completa)
+
+- **Tablas nuevas:** `servicios_sociales` y `practicas_profesionales` (ambas con `UNIQUE(alumno_id)`, `estatus`, `validado_por`/`validado_at`, timestamps). En Prácticas, `calificacion` es **texto** (sin escala inferida).
+- **Enums:** `EstatusServicioSocial` y `EstatusPracticaProfesional` = `EN_PROCESO` / `VALIDADO` (la ausencia de fila se muestra "Sin registro"); `label()` es_MX.
+- **Servicios:** `ServicioSocialService` (`crear`, `actualizar`, `registrarAvance`, `validar`) y `PracticaProfesionalService` (`crear`, `actualizar`, `validar`), patrón `BajaService`: `Gate::authorize` server-side + `DB::transaction` + `AuditoriaService` + excepción de dominio.
+- **Reglas conservadoras:** un registro por alumno; crear nunca valida (avance 0); avance 0–100 almacenable que **no auto-valida**; validación explícita sólo CONTROL_ESCOLAR/ADMIN; **inmutable** tras VALIDADO; fechas coherentes; sin horas obligatorias, sin % mínimo y sin escala de prácticas.
+- **Capacidades nuevas (§8.2):** `servicio_social.{ver,crear,actualizar,validar}` y `practica.{ver,crear,actualizar,validar}` — CONTROL_ESCOLAR escribe, ADMINISTRACION sólo lee; ADMISIONES/DOCENTE/ALUMNO sin acceso; ADMIN vía `Gate::before`.
+- **Policies delegadoras:** `ServicioSocialPolicy`, `PracticaProfesionalPolicy` (registradas en `AuthServiceProvider`).
+- **UI:** `/servicio-social` y `/practicas-profesionales` (listado con filtros, modal crear/editar, validar con confirmación), dos items en el grupo **Académico** del sidebar con `can`, anclas `#servicio-social-{id}` / `#practica-{id}`, estados vacíos `.ui-empty`.
+- **Lectura de avance académico:** columna y campo de solo lectura desde `HistorialAcademicoService` (fuente única).
+- **Corrección incluida:** `HistorialAcademicoService::creditosTotalesPlan()` usaba `auth()->user()?->id` como `alumno_id` (con sesión iniciada leía otro expediente); ahora usa el alumno indicado, con prueba de regresión.
+- **Pruebas:** `ServicioSocialPracticasTest` (47) — matriz de capacidades por rol, 403 por pantalla, unicidad por alumno, avance sin auto-validación, rango 0–100, inmutabilidad, doble validación, auditoría, lectura de ADMINISTRACION, textos de prácticas, fechas invertidas y avance académico con usuario ≠ alumno.
+- **Gate:** `composer test` **676 / 3058 / 0 fallas** (baseline 629 / 2971) · 69 rutas · `view:cache` OK · `npm run build` OK (57.66 kB) · sin `public/hot`.
+
 - **Autorización explícita del usuario** para ejecutar como **un único macrobloque** las fases **2.0-13** (Servicio social + prácticas profesionales), **2.0-14** (Egreso + titulación internos + constancia de terminación), **2.0-15** (Portal de docente) y **2.0-16** (Portal de alumno, rol `ALUMNO` con aislamiento estricto D-N5).
 - **Regla vigente:** `reglas-desarrollo.md` §2 → **§2.1 Excepción de MACROBLOQUE**: por defecto cada fase requiere autorización; dentro de un macrobloque enumerado, el gate verde de una fase permite continuar **automáticamente** a la siguiente **del mismo macrobloque**, conservando gates internos por fase y deteniéndose ante cualquier bloqueo real.
 - **Orden obligatorio:** 2.0-13 → 2.0-14 → 2.0-15 → 2.0-16. **2.0-17 NO está autorizada.**

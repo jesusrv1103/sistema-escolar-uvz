@@ -43,6 +43,8 @@
                 ['label' => 'Formatos académicos', 'icon' => 'receipt', 'route' => 'formatos-academicos.index', 'match' => 'formatos-academicos.*', 'can' => 'formato_academico.generar'],
                 ['label' => 'Bajas', 'icon' => 'no-symbol', 'route' => 'bajas-equivalencias.bajas', 'match' => 'bajas-equivalencias.*', 'can' => 'baja.ver'],
                 ['label' => 'Equivalencias', 'icon' => 'scale', 'route' => 'bajas-equivalencias.equivalencias', 'match' => 'bajas-equivalencias.equivalencias', 'can' => 'equivalencia.ver'],
+                ['label' => 'Servicio social', 'icon' => 'check-circle', 'route' => 'servicio-social.index', 'match' => 'servicio-social.*', 'can' => 'servicio_social.ver'],
+                ['label' => 'Prácticas profesionales', 'icon' => 'clipboard', 'route' => 'practicas-profesionales.index', 'match' => 'practicas-profesionales.*', 'can' => 'practica.ver'],
             ],
         ],
 

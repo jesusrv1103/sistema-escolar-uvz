@@ -23,6 +23,8 @@ use App\Livewire\Academico\HistorialAcademico;
 use App\Livewire\Academico\FormatoAcademico;
 use App\Livewire\Academico\BajaAdmin;
 use App\Livewire\Academico\EquivalenciaAdmin;
+use App\Livewire\Academico\PracticasProfesionalesIndex;
+use App\Livewire\Academico\ServicioSocialIndex;
 use App\Livewire\Academico\BecaAdmin;
 use App\Livewire\Alumnos\FormAlumno;
 use App\Livewire\Alumnos\FormContactos;
@@ -132,6 +134,16 @@ Route::middleware(['auth'])->prefix('becas-descuentos')->name('becas-descuentos.
     Route::get('/becas', BecaAdmin::class)->name('becas');
     Route::get('/estado-cuenta', BecaAdmin::class)->name('estado-cuenta');
     Route::get('/carta-no-adeudo', BecaAdmin::class)->name('carta-no-adeudo');
+});
+
+// Servicio Social y Prácticas Profesionales (2.0-13) — CONTROL_ESCOLAR protagoniza.
+// Autorización fina (capacidades servicio_social.* / practica.*) en cada componente.
+Route::middleware(['auth'])->prefix('servicio-social')->name('servicio-social.')->group(function () {
+    Route::get('/', ServicioSocialIndex::class)->name('index');
+});
+
+Route::middleware(['auth'])->prefix('practicas-profesionales')->name('practicas-profesionales.')->group(function () {
+    Route::get('/', PracticasProfesionalesIndex::class)->name('index');
 });
 
 // Catálogos administrables (Fase 3) — solo ADMIN.

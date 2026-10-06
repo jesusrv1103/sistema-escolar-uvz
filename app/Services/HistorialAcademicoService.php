@@ -146,10 +146,14 @@ class HistorialAcademicoService
 
     /**
      * Calcula créditos totales del plan de estudios actual.
+     *
+     * La matrícula se busca SIEMPRE por el alumno indicado: en una versión
+     * anterior se usaba `auth()->user()?->id` como `alumno_id`, de modo que con
+     * sesión iniciada se leían los créditos de otro expediente (usuario ≠ alumno).
      */
     public function creditosTotalesPlan(Alumno $alumno): int
     {
-        $matriculaActiva = MatriculaPeriodo::where('alumno_id', auth()->user()?->id ?? $alumno->id)
+        $matriculaActiva = MatriculaPeriodo::where('alumno_id', $alumno->id)
             ->where('estatus', 'ACTIVA')
             ->latest('periodo_id')
             ->first();
