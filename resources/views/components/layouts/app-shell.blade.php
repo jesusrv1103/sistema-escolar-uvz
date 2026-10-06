@@ -32,6 +32,9 @@
             'icon' => 'academic-cap',
             'items' => [
                 ['label' => 'Planes de estudio', 'icon' => 'folder', 'route' => 'admin.planes-estudio', 'match' => ['admin.planes-estudio', 'admin.versiones', 'admin.materias'], 'can' => 'usuario.manage'],
+                // Entrada directa al listado global de materias: la misma puerta
+                // server-side que exige la pantalla de gestión (MateriaAdmin).
+                ['label' => 'Materias', 'icon' => 'academic-cap', 'route' => 'admin.materias.index', 'match' => 'admin.materias.index', 'can' => 'materia.create'],
                 ['label' => 'Evaluaciones', 'icon' => 'clipboard', 'route' => 'admin.evaluaciones', 'match' => 'admin.evaluaciones', 'can' => 'usuario.manage'],
                 ['label' => 'Calificaciones', 'icon' => 'chart-bar', 'route' => 'admin.calificaciones', 'match' => 'admin.calificaciones', 'can' => 'usuario.manage'],
                 ['label' => 'Asistencia', 'icon' => 'check-circle', 'route' => 'admin.asistencia', 'match' => 'admin.asistencia', 'can' => 'usuario.manage'],

@@ -79,6 +79,15 @@
                                     </td>
                                     <td>
                                         <div class="ui-row-actions">
+                                            {{-- Entrada explícita a las materias de esta versión: completa el
+                                                 flujo Plan → Versiones → Materias sin URLs manuales. --}}
+                                            <x-ui.button size="sm" variant="secondary" icon="academic-cap"
+                                                href="{{ route('admin.materias', [
+                                                    'plan' => $v->plan_id,
+                                                    'version' => $v->id,
+                                                ]) }}">
+                                                Materias
+                                            </x-ui.button>
                                             @if ($v->esPropuesta())
                                                 <x-ui.icon-button label="Editar versión {{ $v->version }}" icon="pencil"
                                                     wire:click="abrirModalEditar({{ $v->id }})" />

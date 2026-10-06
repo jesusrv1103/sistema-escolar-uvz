@@ -98,7 +98,7 @@
                         </thead>
                         <tbody>
                             @foreach ($materias as $m)
-                                <tr wire:key="materia-{{ $m->id }}">
+                                <tr wire:key="materia-{{ $m->id }}" id="materia-{{ $m->id }}">
                                     <td class="font-medium text-brand-primary">{{ $m->clave }}</td>
                                     <td class="font-medium text-brand-text">{{ $m->nombre }}</td>
                                     <td class="text-brand-muted">{{ $m->creditos }}</td>

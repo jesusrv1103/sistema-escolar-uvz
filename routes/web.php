@@ -14,6 +14,7 @@ use App\Livewire\Academico\GenerarFormato;
 use App\Livewire\Academico\GrupoAdmin;
 use App\Livewire\Academico\GrupoHorarioAdmin;
 use App\Livewire\Academico\MateriaAdmin;
+use App\Livewire\Academico\MateriasIndex;
 use App\Livewire\Academico\PlanEstudioAdmin;
 use App\Livewire\Academico\PlanVersionAdmin;
 use App\Livewire\Academico\AsistenciaAdmin;
@@ -159,4 +160,8 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     Route::get('/planes-estudio', PlanEstudioAdmin::class)->name('planes-estudio');
     Route::get('/planes-estudio/{plan}/versiones', PlanVersionAdmin::class)->name('versiones');
     Route::get('/planes-estudio/{plan}/versiones/{version}/materias', MateriaAdmin::class)->name('materias');
+
+    // Entrada global a Materias (navegabilidad 2.0-12): sólo consulta y
+    // enlaces; el CRUD sigue en la ruta anterior con sus políticas intactas.
+    Route::get('/materias', MateriasIndex::class)->name('materias.index');
 });

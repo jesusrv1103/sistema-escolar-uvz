@@ -91,6 +91,13 @@
                                     </td>
                                     <td>
                                         <div class="ui-row-actions">
+                                            {{-- Acción explícita y con etiqueta: el flujo Plan → Versiones → Materias
+                                                 debe ser descubrible sin conocer URLs. Editar/desactivar/eliminar
+                                                 siguen siendo acciones separadas (iconos). --}}
+                                            <x-ui.button size="sm" variant="secondary" icon="academic-cap"
+                                                href="{{ route('admin.versiones', $plan) }}">
+                                                Versiones y materias
+                                            </x-ui.button>
                                             <x-ui.icon-button label="Editar plan {{ $plan->clave }}" icon="pencil"
                                                 wire:click="abrirModalEditar({{ $plan->id }})" />
                                             <x-ui.icon-button label="{{ $plan->activo ? 'Desactivar' : 'Activar' }} plan {{ $plan->clave }}"
