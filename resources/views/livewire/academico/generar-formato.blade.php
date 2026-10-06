@@ -100,6 +100,12 @@
                 </x-ui.empty-state>
             @endif
         </x-ui.card>
+
+        {{-- Errores que la acción `generar()` ya lanza sobre esta sección:
+             antes no se mostraban y el botón "Generar PDF" parecía no hacer nada. --}}
+        @error('matriculaSeleccionada')
+            <p class="ui-error mt-3" role="alert">{{ $message }}</p>
+        @enderror
     </section>
 
     {{-- ========================= 3. GRUPO ========================= --}}
@@ -146,6 +152,12 @@
                     </x-ui.empty-state>
                 @endif
             </x-ui.card>
+
+            {{-- Mismo criterio que la sección 2: el error de validación ya
+                 existía pero no tenía dónde pintarse. --}}
+            @error('grupoSeleccionado')
+                <p class="ui-error mt-3" role="alert">{{ $message }}</p>
+            @enderror
         </section>
     @endif
 

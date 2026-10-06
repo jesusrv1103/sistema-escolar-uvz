@@ -90,10 +90,14 @@ class FormatoAcademico extends Component
                     auth()->user()
                 );
 
+            // El ACTA es un documento del grupo, no del alumno: su registro de
+            // trazabilidad se emite sin `alumno_id`, así que filtrar por alumno
+            // no encontraría nada y nunca aparecería la descarga. Los demás
+            // formatos siguen vinculándose a su alumno.
             $this->ultimoDocumentoId = DocumentoGenerado::vincularArchivoEmitido(
                 $pdfPath,
                 $formato,
-                $alumno?->getKey(),
+                $formato === TipoFormato::ACTA ? null : $alumno?->getKey(),
                 $emitidoDesde,
             )?->getKey();
 

@@ -3,8 +3,11 @@
 use App\Enums\RolUsuario;
 use App\Enums\TipoFormato;
 use App\Livewire\Academico\GenerarFormato;
+use App\Models\Acta;
 use App\Models\Alumno;
 use App\Models\DocumentoGenerado;
+use App\Models\Grupo;
+use App\Models\Materia;
 use App\Models\MatriculaPeriodo;
 use App\Models\Periodo;
 use App\Models\PlanEstudio;
@@ -235,4 +238,144 @@ test('formatos académicos II genera el kardex y ofrece su descarga', function (
     $componente->assertSet('ultimoDocumentoId', $documento->getKey())
         ->assertSee('Descargar PDF')
         ->assertSee(route('documentos.generados.descargar', $documento->getKey()));
+});
+
+/*
+|--------------------------------------------------------------------------
+| QA pre-2.0-17 — hallazgos N-1, N-2 y N-3
+|--------------------------------------------------------------------------
+|
+| N-1  El ACTA es un documento del grupo: `FormatoService::generar()` lo
+|      registra sin `alumno_id`, pero el componente buscaba la trazabilidad
+|      filtrando por el alumno seleccionado → 0 coincidencias → 0 descarga
+|      (el PDF se emitía y en pantalla no había nada que descargar).
+|
+| N-2  `documentos_generados.folio` es UNIQUE y el ACTA reutiliza
+|      `actas.folio`: volver a emitir el mismo acta intentaba un segundo
+|      INSERT con el mismo folio (SQLSTATE 23000 / 1062) y el error crudo
+|      llegaba a la pantalla. Ahora la fila se reutiliza; las constancias
+|      siguen recibiendo un folio nuevo del consecutivo por emisión.
+|
+| N-3  `generar()` ya validaba `grupoSeleccionado` y `matriculaSeleccionada`,
+|      pero la vista no pintaba ninguno de los dos: pulsar "Generar PDF" no
+|      producía explicación alguna.
+|
+*/
+
+/**
+ * Escenario: periodo + programa + plan + materia + grupo, para los formatos
+ * que trabajan sobre un grupo (acta, horario y lista de grupo).
+ *
+ * @return array{0: Periodo, 1: Programa, 2: PlanVersion, 3: Materia, 4: Grupo}
+ */
+function escenarioGrupoFormato(): array
+{
+    $periodo = Periodo::factory()->create(['activo' => true]);
+    $programa = Programa::factory()->create(['activo' => true]);
+    $planEstudio = PlanEstudio::factory()->paraPrograma($programa)->create();
+    $planVersion = PlanVersion::factory()->forPlanEstudio($planEstudio)->vigente()->create();
+    $materia = Materia::factory()->paraPlanVersion($planVersion)->create(['activo' => true]);
+    $grupo = Grupo::factory()->paraMateria($materia)->paraPeriodo($periodo)->abierto()
+        ->create(['activo' => true]);
+
+    return [$periodo, $programa, $planVersion, $materia, $grupo];
+}
+
+test('N-1: el acta emitido desde formatos académicos ofrece su descarga', function () {
+    Storage::fake('private');
+
+    [$periodo, $programa, , , $grupo] = escenarioGrupoFormato();
+
+    $alumno = Alumno::factory()->create();
+    $acta = Acta::factory()->create([
+        'grupo_id' => $grupo->id,
+        'periodo_id' => $periodo->id,
+        'estatus' => 'CERRADA',
+        'folio' => 'ACT-2026-00000001',
+    ]);
+    $usuario = User::factory()->deRol(RolUsuario::CONTROL_ESCOLAR)->create();
+
+    $componente = Livewire::actingAs($usuario)
+        ->test(\App\Livewire\Academico\FormatoAcademico::class)
+        ->call('generarFormato', 'acta', $alumno->getKey(), $acta->getKey())
+        ->assertHasNoErrors();
+
+    $documento = DocumentoGenerado::where('tipo', 'ACTA')->firstOrFail();
+
+    // Documento de grupo: no se le inventa un alumno sólo para poder filtrarlo.
+    expect($documento->alumno_id)->toBeNull()
+        ->and($documento->folio)->toBe('ACT-2026-00000001');
+
+    $componente->assertSet('ultimoDocumentoId', $documento->getKey())
+        ->assertSee('Descargar PDF')
+        ->assertSee(route('documentos.generados.descargar', $documento->getKey()));
+});
+
+test('N-2: regenerar el mismo acta reutiliza su fila de trazabilidad', function () {
+    Storage::fake('private');
+
+    [$periodo, , , , $grupo] = escenarioGrupoFormato();
+
+    $acta = Acta::factory()->create([
+        'grupo_id' => $grupo->id,
+        'periodo_id' => $periodo->id,
+        'estatus' => 'CERRADA',
+        'folio' => 'ACT-2026-00000001',
+    ]);
+    $usuario = User::factory()->deRol(RolUsuario::CONTROL_ESCOLAR)->create();
+    $servicio = app(\App\Services\FormatoService::class);
+
+    $primera = $servicio->generar(TipoFormato::ACTA, null, null, $grupo, ['acta_id' => $acta->id], $usuario);
+    $segunda = $servicio->generar(TipoFormato::ACTA, null, null, $grupo, ['acta_id' => $acta->id], $usuario);
+
+    expect($primera)->not->toBeEmpty()
+        ->and($segunda)->not->toBeEmpty()
+        ->and(DocumentoGenerado::where('tipo', 'ACTA')->count())->toBe(1)
+        ->and(DocumentoGenerado::where('folio', 'ACT-2026-00000001')->count())->toBe(1);
+});
+
+test('N-2: las constancias conservan un folio y una fila por emisión', function () {
+    Storage::fake('private');
+
+    [$usuario, $alumno] = escenarioDescargaFormato();
+
+    Livewire::actingAs($usuario)
+        ->test(GenerarFormato::class)
+        ->set('tipoFormato', TipoFormato::CONSTANCIA_INSCRIPCION->value)
+        ->call('seleccionarAlumno', $alumno->getKey())
+        ->call('generar')
+        ->assertHasNoErrors()
+        ->call('generar')
+        ->assertHasNoErrors();
+
+    $folios = DocumentoGenerado::where('tipo', 'CONSTANCIA_INSCRIPCION')->pluck('folio');
+
+    expect($folios)->toHaveCount(2)
+        ->and($folios->filter()->unique())->toHaveCount(2);
+});
+
+test('N-3: la pantalla explica por qué no se generó el horario', function () {
+    Storage::fake('private');
+
+    [, $programa, $planVersion, , $grupo] = escenarioGrupoFormato();
+
+    $alumno = Alumno::factory()->create();
+    MatriculaPeriodo::factory()->activa()
+        ->paraAlumno($alumno)
+        ->paraPeriodo($grupo->periodo)
+        ->paraPrograma($programa)
+        ->create(['plan_version_id' => $planVersion->id]);
+    $usuario = User::factory()->deRol(RolUsuario::ADMIN)->create();
+
+    Livewire::actingAs($usuario)
+        ->test(GenerarFormato::class)
+        ->set('tipoFormato', TipoFormato::HORARIO->value)
+        ->call('seleccionarAlumno', $alumno->getKey())
+        ->call('seleccionarGrupo', $grupo->getKey())
+        ->call('generar')
+        ->assertHasErrors(['grupoSeleccionado'])
+        // El error ya existía; lo nuevo es que la vista lo muestra.
+        ->assertSee('El alumno no está inscrito en este grupo.');
+
+    expect(DocumentoGenerado::where('tipo', 'HORARIO')->count())->toBe(0);
 });

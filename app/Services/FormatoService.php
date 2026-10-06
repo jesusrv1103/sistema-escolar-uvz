@@ -363,7 +363,7 @@ class FormatoService
         array $snapshotDatos,
         ?User $usuario,
     ): void {
-        DocumentoGenerado::create([
+        $atributos = [
             'alumno_id' => $alumno?->id,
             'matricula_periodo_id' => $matricula?->id,
             'grupo_id' => $grupo?->id,
@@ -372,7 +372,42 @@ class FormatoService
             'emitido_por' => $usuario?->id,
             'emitido_at' => now(),
             'snapshot_datos' => $snapshotDatos,
-        ]);
+        ];
+
+        // `documentos_generados.folio` es UNIQUE y sólo el ACTA reutiliza un
+        // folio ya emitido (`actas.folio`), de modo que volver a generarlo
+        // reenviaba un segundo INSERT con el mismo folio (SQLSTATE 23000/1062)
+        // y el error crudo llegaba a la pantalla. La clave lógica del documento
+        // con folio es el folio: se conserva UNA fila por folio y se refresca
+        // la emisión; los folios de constancia siguen llegando nuevos del
+        // consecutivo, así que su comportamiento no cambia.
+        if ($folio !== null) {
+            $emitido = DocumentoGenerado::query()->where('folio', $folio)->first();
+
+            if ($emitido !== null) {
+                // Mismo folio sólo si es el mismo tipo (y el mismo grupo, cuando
+                // ambos están registrados): nunca se reescribe un ajeno.
+                $incompatible = $emitido->tipo->value !== $tipo->value
+                    || ($grupo !== null && $emitido->grupo_id !== null && $emitido->grupo_id !== $grupo->id);
+
+                if ($incompatible) {
+                    abort(409, "El folio {$folio} ya está registrado para otro documento.");
+                }
+
+                $emitido->fill([
+                    'alumno_id' => $emitido->alumno_id ?? $alumno?->id,
+                    'matricula_periodo_id' => $emitido->matricula_periodo_id ?? $matricula?->id,
+                    'grupo_id' => $emitido->grupo_id ?? $grupo?->id,
+                    'emitido_por' => $usuario?->id,
+                    'emitido_at' => now(),
+                    'snapshot_datos' => $snapshotDatos,
+                ])->save();
+
+                return;
+            }
+        }
+
+        DocumentoGenerado::create($atributos);
     }
 
     /**
