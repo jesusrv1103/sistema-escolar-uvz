@@ -46,7 +46,7 @@ Cuando el usuario autorice **explícitamente un MACROBLOQUE** compuesto por vari
 - **Nunca** continuar más allá de la última fase explícitamente autorizada.
 - Ninguna otra regla de este documento se debilita por esta excepción.
 
-> **Macrobloque vigente:** **2.0-13 → 2.0-16** (Servicio social y prácticas · Egreso y titulación internos · Portal de docente · Portal de alumno), autorizado explícitamente por el usuario y ejecutado en la rama `feat/2.0-13-16-cierre-portales`. **2.0-17 NO está autorizada.** Registro del alcance en `docs/plan-implementacion.md` y `docs/estado-proyecto.md`; auditoría de diseño en `docs/analisis-macrobloque-2.0-13-16.md`.
+> **Macrobloque autorizado y CERRADO:** **2.0-13 → 2.0-16** (Servicio social y prácticas · Egreso y titulación internos · Portal de docente · Portal de alumno), autorizado explícitamente por el usuario y ejecutado en la rama `feat/2.0-13-16-cierre-portales`; **las 4 fases quedaron completas con gate verde (773 tests / 3293 assertions / 0 fallas · 81 rutas · 50 migraciones) y el macrobloque está CERRADO**. Esta excepción ya no está vigente: cualquier fase nueva (incluida **2.0-17, NO autorizada**) vuelve a exigir autorización previa bajo la regla general de §2. Registro del alcance en `docs/plan-implementacion.md` y `docs/estado-proyecto.md`; auditoría de diseño en `docs/analisis-macrobloque-2.0-13-16.md`.
 
 Principio:
 
