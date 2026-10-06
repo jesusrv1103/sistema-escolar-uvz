@@ -7,16 +7,24 @@
         <div class="grid items-end gap-3 md:grid-cols-4">
             <div class="md:col-span-3">
                 <x-ui.field label="Alumno" for="ec-alumno" :error="$errors->first('alumnoEstadoCuenta')">
-                    <x-ui.select id="ec-alumno" wire:model="alumnoEstadoCuenta">
+                    {{-- El id viaja a la acción: `alumnoEstadoCuenta` es un modelo tipado y no
+                         admite el texto que envía `wire:model` (TypeError al enviar). --}}
+                    <x-ui.select id="ec-alumno" wire:change="seleccionarAlumnoEstadoCuenta($event.target.value)">
                         <option value="">Seleccionar alumno</option>
                         @foreach (\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
-                            <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
+                            <option value="{{ $a->id }}" @selected($alumnoEstadoCuenta?->getKey() === $a->id)>
+                                {{ $a->nombre_completo }} ({{ $a->curp }})
+                            </option>
                         @endforeach
                     </x-ui.select>
                 </x-ui.field>
             </div>
 
-            <x-ui.button icon="magnifying-glass" wire:click="abrirEstadoCuenta($alumnoEstadoCuenta)"
+            {{-- El id se interpolaba como `$alumnoEstadoCuenta`, que en JavaScript es una
+                 variable indefinida: la acción recibía null. Con `{{ }}` Livewire
+                 resuelve el modelo a partir del id. --}}
+            <x-ui.button icon="magnifying-glass"
+                wire:click="abrirEstadoCuenta({{ $alumnoEstadoCuenta?->getKey() ?? 'null' }})"
                 :disabled="! $alumnoEstadoCuenta" wire:loading.attr="disabled" wire:target="abrirEstadoCuenta">
                 <span wire:loading.remove wire:target="abrirEstadoCuenta">Consultar</span>
                 <span wire:loading wire:target="abrirEstadoCuenta"><x-ui.loading label="Consultando…" /></span>
@@ -42,7 +50,9 @@
 
                 $totalCargos = $conceptos->sum('monto_total');
                 $totalPagos = $pagos->where('estatus', 'VALIDADO')->sum('monto');
-                $totalAjustes = $ajustes->sum('efectoSobreSaldo');
+                // `efectoSobreSaldo` es un método, no una columna: como clave de
+                // `sum()` devolvía null y el total de ajustes salía siempre 0.
+                $totalAjustes = $ajustes->sum(fn ($ajuste) => $ajuste->efectoSobreSaldo());
                 $saldo = $totalCargos - $totalPagos - $totalAjustes;
             @endphp
 
@@ -108,7 +118,8 @@
                                         @php
                                             $pagosConcepto = $pagos->where('concepto_pago_id', $c->id)->where('estatus', 'VALIDADO');
                                             $totalPagado = $pagosConcepto->sum('monto');
-                                            $ajustesConcepto = $ajustes->where('concepto_pago_id', $c->id)->sum('efectoSobreSaldo');
+                                            $ajustesConcepto = $ajustes->where('concepto_pago_id', $c->id)
+                                                ->sum(fn ($ajuste) => $ajuste->efectoSobreSaldo());
                                             $saldoConcepto = $c->monto_total - $totalPagado - $ajustesConcepto;
                                         @endphp
                                         <tr wire:key="concepto-ec-{{ $c->id }}">

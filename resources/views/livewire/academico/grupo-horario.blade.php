@@ -117,7 +117,7 @@
     <x-ui.modal id="modal-horario" size="sm"
         :title="$horarioEnEdicion ? 'Editar horario' : 'Nuevo horario'"
         :open="$modalAbierto" close="cerrarModal">
-        <form wire:submit="guardar" class="space-y-4">
+        <form novalidate wire:submit="guardar" class="space-y-4">
             @if ($errors->any())
                 <x-ui.alert tone="danger">
                     <ul class="list-inside list-disc space-y-0.5">

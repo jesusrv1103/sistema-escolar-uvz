@@ -22,7 +22,9 @@ use App\Enums\TipoAjusteFinanciero;
 use App\Enums\RolUsuario;
 use App\Enums\EstatusConceptoPago;
 use App\Enums\EstatusInscripcionMateria;
+use App\Enums\EstatusConvenio;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class)->group('becas');
 
@@ -285,4 +287,211 @@ test('carta de no adeudo se genera solo con saldo exigible 0', function () {
     
     expect($saldo)->toBe(1000.00);
     expect($saldo > 0)->toBeTrue();
+});
+
+function fixtureBecaAprobable(array $beca = []): array
+{
+    $periodo = Periodo::factory()->create(['activo' => true]);
+    $becaModel = Beca::factory()->create($beca + [
+        'tipo' => TipoBeca::PORCENTAJE,
+        'valor' => '20.00',
+        'alcance' => AlcanceBeca::INSCRIPCION,
+        'periodo_id' => $periodo->id,
+        'activo' => true,
+    ]);
+    $alumno = Alumno::factory()->create();
+    $inscripcion = Inscripcion::factory()->create([
+        'alumno_id' => $alumno->id,
+        'periodo_id' => $periodo->id,
+    ]);
+    $concepto = ConceptoPago::factory()->create([
+        'tipo' => 'INSCRIPCION',
+        'monto_total' => 10000.00,
+        'estatus' => EstatusConceptoPago::PENDIENTE,
+        'inscripcion_id' => $inscripcion->id,
+    ]);
+    $asignacion = BecaAlumno::create([
+        'beca_id' => $becaModel->id,
+        'alumno_id' => $alumno->id,
+        'periodo_id' => $periodo->id,
+        'estatus' => EstatusBeca::PENDIENTE,
+        'asignada_por' => User::factory()->deRol(RolUsuario::CONTROL_ESCOLAR)->create()->id,
+    ]);
+
+    return [$periodo, $becaModel, $alumno, $inscripcion, $concepto, $asignacion];
+}
+
+test('aprobar una beca crea los ajustes financieros del concepto del alumno', function () {
+    // Reproduce el fallo real: la consulta usaba inscripcion.matriculaPeriodo.*
+    // (relación inexistente) y la aprobación quedaba en error.
+    [, , , , $concepto, $asignacion] = fixtureBecaAprobable();
+
+    $aprobador = User::factory()->deRol(RolUsuario::ADMINISTRACION)->create();
+
+    Livewire::actingAs($aprobador)->test(\App\Livewire\Academico\BecaAdmin::class)
+        ->call('aprobar', $asignacion->getKey())
+        ->assertHasNoErrors();
+
+    expect($asignacion->fresh()->estatus)->toBe(EstatusBeca::APROBADA);
+
+    $ajuste = AjusteFinanciero::where('beca_alumno_id', $asignacion->id)
+        ->where('tipo', TipoAjusteFinanciero::DESCUENTO_BECA)
+        ->sole();
+
+    expect($ajuste->concepto_pago_id)->toBe($concepto->id)
+        ->and((float) $ajuste->monto)->toBe(2000.00)
+        ->and($ajuste->registrado_por)->toBe($aprobador->id);
+});
+
+test('reaprobar una beca no duplica los ajustes financieros (idempotencia)', function () {
+    [, , , , , $asignacion] = fixtureBecaAprobable();
+
+    $aprobador = User::factory()->deRol(RolUsuario::ADMINISTRACION)->create();
+
+    Livewire::actingAs($aprobador)->test(\App\Livewire\Academico\BecaAdmin::class)
+        ->call('aprobar', $asignacion->getKey())
+        ->assertHasNoErrors();
+
+    // Vuelve a pendiente y se aprueba de nuevo: no debe acumular descuentos.
+    $asignacion->refresh()->update([
+        'estatus' => EstatusBeca::PENDIENTE,
+        'aprobada_por' => null,
+        'fecha_aprobacion' => null,
+    ]);
+
+    Livewire::actingAs($aprobador)->test(\App\Livewire\Academico\BecaAdmin::class)
+        ->call('aprobar', $asignacion->getKey())
+        ->assertHasNoErrors();
+
+    expect(AjusteFinanciero::where('beca_alumno_id', $asignacion->id)
+        ->where('tipo', TipoAjusteFinanciero::DESCUENTO_BECA)->count())->toBe(1);
+});
+
+
+test('no aprueba beca de INSCRIPCION si el alumno ya tiene convenio aprobado en el periodo', function () {
+    [, , , $inscripcion, , $asignacion] = fixtureBecaAprobable();
+
+    $inscripcion->update(['convenio_estatus' => EstatusConvenio::APROBADO->value]);
+
+    $aprobador = User::factory()->deRol(RolUsuario::ADMINISTRACION)->create();
+
+    Livewire::actingAs($aprobador)->test(\App\Livewire\Academico\BecaAdmin::class)
+        ->call('aprobar', $asignacion->getKey())
+        ->assertHasErrors(['aprobar']);
+
+    expect($asignacion->fresh()->estatus)->toBe(EstatusBeca::PENDIENTE)
+        ->and(AjusteFinanciero::where('beca_alumno_id', $asignacion->id)->count())->toBe(0);
+});
+
+test('las rutas de estado de cuenta y carta de no adeudo abren su propia pestaña', function () {
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+
+    $this->actingAs($admin)
+        ->get(route('becas-descuentos.estado-cuenta'))
+        ->assertOk()
+        ->assertSee('Estado de cuenta del alumno')
+        ->assertSee('>Consultar<', false);
+
+    $this->actingAs($admin)
+        ->get(route('becas-descuentos.carta-no-adeudo'))
+        ->assertOk()
+        ->assertSee('Generar carta');
+
+    $this->actingAs($admin)
+        ->get(route('becas-descuentos.becas'))
+        ->assertOk()
+        ->assertSee('Catálogo de becas');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Regresión WAVE UI/UX 2.0-12 — estados económicos del alumno
+|--------------------------------------------------------------------------
+|
+| `efectoSobreSaldo()` es un MÉTODO de `AjusteFinanciero`, no una columna:
+|
+|  * En la carta se usaba como columna en SQL → SQLSTATE 42S22 al desglosar
+|    los conceptos: la carta de no adeudo devolvía 500.
+|  * En el estado de cuenta se usaba como clave de `sum()` de collection, que
+|    lee un atributo inexistente → null → el total de ajustes salía siempre 0
+|    y el saldo exigible no descontaba las becas.
+|
+| Ambos casos estaban sin cubrir: ningún test montaba la vista con ajustes.
+|
+*/
+
+function beca_alumno_con_ajuste(App\Models\User $admin): array
+{
+    $periodo = App\Models\Periodo::factory()->create(['activo' => true]);
+    $alumno = App\Models\Alumno::factory()->create();
+    $inscripcion = App\Models\Inscripcion::factory()->create([
+        'alumno_id' => $alumno->id,
+        'periodo_id' => $periodo->id,
+    ]);
+    $concepto = App\Models\ConceptoPago::factory()->create([
+        'tipo' => 'INSCRIPCION',
+        'monto_total' => 10000.00,
+        'estatus' => App\Enums\EstatusConceptoPago::PENDIENTE,
+        'inscripcion_id' => $inscripcion->id,
+    ]);
+    App\Models\AjusteFinanciero::create([
+        'alumno_id' => $alumno->id,
+        'concepto_pago_id' => $concepto->id,
+        'tipo' => App\Enums\TipoAjusteFinanciero::DESCUENTO_BECA,
+        'monto' => '250.00',
+        'registrado_por' => $admin->id,
+        'registrado_at' => now(),
+    ]);
+
+    return [$alumno, $concepto];
+}
+
+test('la carta de no adeudo desglosa los conceptos sin romper en SQL (panel)', function () {
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+    [$alumno] = beca_alumno_con_ajuste($admin);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Academico\BecaAdmin::class)
+        ->set('vista', 'carta-no-adeudo')
+        ->call('seleccionarAlumnoCarta', (string) $alumno->getKey())
+        ->assertSet('alumnoCarta', fn ($a) => $a?->is($alumno))
+        ->assertSee('Saldo exigible')
+        ->assertSee('9,750.00');
+});
+
+test('la carta de no adeudo desglosa los conceptos sin romper en SQL (modal)', function () {
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+    [$alumno] = beca_alumno_con_ajuste($admin);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Academico\BecaAdmin::class)
+        ->call('abrirCartaNoAdeudo', $alumno->getKey())
+        ->assertSet('modalCartaNoAdeudoAbierto', true)
+        ->assertSee('Saldo exigible')
+        ->assertSee('9,750.00');
+});
+
+test('el estado de cuenta descuenta el efecto de los ajustes del saldo (panel)', function () {
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+    [$alumno] = beca_alumno_con_ajuste($admin);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Academico\BecaAdmin::class)
+        ->set('vista', 'estado-cuenta')
+        ->call('seleccionarAlumnoEstadoCuenta', (string) $alumno->getKey())
+        ->assertSet('alumnoEstadoCuenta', fn ($a) => $a?->is($alumno))
+        ->assertSee('Saldo exigible')
+        ->assertSee('9,750.00');
+});
+
+test('el estado de cuenta descuenta el efecto de los ajustes del saldo (modal)', function () {
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+    [$alumno] = beca_alumno_con_ajuste($admin);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Academico\BecaAdmin::class)
+        ->call('abrirEstadoCuenta', $alumno->getKey())
+        ->assertSet('modalEstadoCuentaAbierto', true)
+        ->assertSee('Saldo exigible')
+        ->assertSee('9,750.00');
 });

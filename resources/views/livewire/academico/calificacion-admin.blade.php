@@ -2,7 +2,7 @@
     <x-ui.page-header title="Captura de Calificaciones"
         :description="$grupo
             ? 'Matriz de calificaciones del grupo ' . $grupo->clave . ' (' . $grupo->materia->clave . ').'
-            : 'Selecciona un grupo desde el listado de evaluaciones para capturar calificaciones.'">
+            : 'Selecciona un grupo para abrir la matriz y capturar calificaciones.'">
         <x-slot:meta>
             @if ($grupo)
                 <x-ui.badge tone="primary">{{ $grupo->clave }}</x-ui.badge>
@@ -11,11 +11,30 @@
         </x-slot:meta>
     </x-ui.page-header>
 
+    {{-- --------------------- Selección de grupo --------------------- --}}
+    <div class="mt-5">
+        <x-ui.filters>
+            <div class="grid gap-3 md:grid-cols-4">
+                <x-ui.field label="Grupo" hint="Filtra la matriz por grupo.">
+                    {{-- wire:model sobre una propiedad tipada (Model) no puede recibir el id
+                         del navegador: el id se envía a la acción y Blade marca la opción. --}}
+                    <x-ui.select wire:change="seleccionarGrupo($event.target.value)" aria-label="Grupo">
+                        <option value="">Seleccionar grupo</option>
+                        @foreach ($grupos as $g)
+                            <option value="{{ $g->id }}" @selected($grupo?->getKey() === $g->id)>
+                                {{ $g->clave }} - {{ $g->materia->clave }} ({{ $g->periodo->clave }})
+                            </option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
+            </div>
+        </x-ui.filters>
+    </div>
+
     @if (! $grupo)
         <div class="mt-5">
-            <x-ui.alert tone="warning">
-                Selecciona un grupo desde el listado de evaluaciones para capturar calificaciones.
-            </x-ui.alert>
+            <x-ui.empty-state icon="chart-bar" title="Sin grupo seleccionado"
+                message="Elige un grupo en el filtro para ver la matriz de calificaciones del grupo." />
         </div>
     @else
         {{-- ------------------- Resumen de ponderación ------------------- --}}
@@ -154,13 +173,19 @@
                                                 $cal = $inscripcion->calificaciones->where('evaluacion_id', $eval->id)->first();
                                             @endphp
                                             <td class="text-right tabular-nums">
-                                                @if ($cal !== null)
-                                                    <x-ui.badge :tone="$cal->valor >= 60 ? 'success' : 'danger'">
-                                                        {{ number_format($cal->valor, 2) }}
-                                                    </x-ui.badge>
-                                                @else
-                                                    <span class="text-brand-muted">—</span>
-                                                @endif
+                                                <button type="button"
+                                                    class="-m-1.5 rounded px-1.5 py-1.5 transition-colors hover:bg-brand-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                                                    wire:click="abrirModalCapturar({{ $inscripcion->id }}, {{ $eval->id }})"
+                                                    wire:loading.attr="disabled"
+                                                    aria-label="Capturar {{ $eval->nombre }} de {{ $inscripcion->matriculaPeriodo->alumno->nombre_completo }}">
+                                                    @if ($cal !== null)
+                                                        <x-ui.badge :tone="$cal->valor >= 60 ? 'success' : 'danger'">
+                                                            {{ number_format($cal->valor, 2) }}
+                                                        </x-ui.badge>
+                                                    @else
+                                                        <span class="text-brand-muted">—</span>
+                                                    @endif
+                                                </button>
                                             </td>
                                         @endforeach
                                         <td class="text-right tabular-nums font-semibold text-brand-text">
@@ -182,15 +207,14 @@
                                         <td class="text-right">
                                             <div class="ui-row-actions" role="group"
                                                 aria-label="Acciones de {{ $inscripcion->matriculaPeriodo->alumno->nombre_completo }}">
-                                                <x-ui.icon-button label="Capturar calificaciones"
-                                                    icon="pencil"
-                                                    wire:click="abrirModalCapturar({{ $inscripcion->id }}, {{ $evaluaciones->first()?->id ?? 0 }})" />
                                                 @if (\App\Models\Evaluacion::ponderacionTotalGrupo($grupo->id) === 100
                                                     && $inscripcion->estatus->value === 'CURSANDO')
                                                     <x-ui.icon-button label="Consolidar calificación final"
                                                         icon="check-circle" variant="success"
                                                         wire:click="consolidar({{ $inscripcion->id }})"
                                                         wire:confirm="¿Consolidar la calificación final de este alumno? Esta acción no se puede deshacer." />
+                                                @else
+                                                    <span class="text-brand-muted" aria-hidden="true">—</span>
                                                 @endif
                                             </div>
                                         </td>
@@ -214,9 +238,10 @@
 
 
     {{-- ------------------------- Modal de captura ------------------------- --}}
-    <x-ui.modal id="modal-capturar-calificacion" title="Capturar Calificación"
+    <x-ui.modal id="modal-capturar-calificacion"
+        :title="$evaluacionCaptura ? 'Capturar ' . $evaluacionCaptura->nombre : 'Capturar Calificación'"
         :open="$modalCalificacionAbierto" close="cerrarModalCalificacion">
-        <form wire:submit="guardarCalificacion">
+        <form novalidate id="form-calificacion" wire:submit="guardarCalificacion">
             @if ($errors->any())
                 <x-ui.alert tone="danger">
                     <ul class="list-inside list-disc space-y-0.5">
@@ -228,7 +253,13 @@
             @endif
 
             <div class="mt-4 space-y-3">
-                <input type="hidden" wire:model="dispatch">
+                @if ($inscripcionCaptura && $evaluacionCaptura)
+                    <p class="text-sm text-brand-muted">
+                        {{ $inscripcionCaptura->matriculaPeriodo->alumno->nombre_completo }}
+                        · {{ $evaluacionCaptura->nombre }}
+                        ({{ number_format($evaluacionCaptura->ponderacion, 0) }}%)
+                    </p>
+                @endif
 
                 <x-ui.field label="Calificación" for="cal-valor" required
                     :error="$errors->first('valor')" hint="Entre 0.00 y 100.00">
@@ -244,7 +275,7 @@
 
             <x-slot:footer>
                 <x-ui.button variant="secondary" wire:click="cerrarModalCalificacion">Cancelar</x-ui.button>
-                <x-ui.button type="submit" icon="check" wire:loading.attr="disabled" wire:target="guardarCalificacion">
+                <x-ui.button type="submit" form="form-calificacion" icon="check" wire:loading.attr="disabled" wire:target="guardarCalificacion">
                     <span wire:loading.remove wire:target="guardarCalificacion">Guardar</span>
                     <span wire:loading wire:target="guardarCalificacion"><x-ui.loading label="Guardando…" /></span>
                 </x-ui.button>

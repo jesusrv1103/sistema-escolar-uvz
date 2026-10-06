@@ -3,7 +3,19 @@
         description="Generación de PDFs institucionales: kardex, boleta, historial, acta, tira de materias y avance." />
 
     @if (session('success'))
-        <div class="mt-4"><x-ui.alert tone="success">{{ session('success') }}</x-ui.alert></div>
+        <div class="mt-4">
+            <x-ui.alert tone="success">
+                {{ session('success') }}
+                <x-slot:action>
+                    @if ($ultimoDocumentoId)
+                        <x-ui.button size="sm" variant="secondary" icon="document-text"
+                            href="{{ route('documentos.generados.descargar', $ultimoDocumentoId) }}">
+                            Descargar PDF
+                        </x-ui.button>
+                    @endif
+                </x-slot:action>
+            </x-ui.alert>
+        </div>
     @endif
     @error('generar')
         <div class="mt-4"><x-ui.alert tone="danger">{{ $message }}</x-ui.alert></div>
@@ -18,7 +30,9 @@
                 </div>
             </x-slot:header>
 
-            <form wire:submit="generarFormato($tipo, {{ $alumno?->id ?? 'null' }}, {{ $acta?->id ?? 'null' }})">
+            {{-- Los argumentos van como valores de Blade: `$tipo` a secas sería una
+                 variable de JavaScript (undefined) y llegaría null a la acción. --}}
+            <form novalidate wire:submit="generarFormato('{{ $tipo }}', {{ $alumno?->getKey() ?? 'null' }}, {{ $acta?->getKey() ?? 'null' }})">
                 <div class="grid gap-3 md:grid-cols-3">
                     <div>
                         <x-ui.field label="Tipo de formato" for="fmt-tipo" required :error="$errors->first('tipo')">
@@ -32,10 +46,12 @@
 
                     <div>
                         <x-ui.field label="Alumno" for="fmt-alumno" required :error="$errors->first('alumno')">
-                            <x-ui.select id="fmt-alumno" wire:model.live="alumno">
+                            <x-ui.select id="fmt-alumno" wire:change="seleccionarAlumno($event.target.value)">
                                 <option value="">Seleccionar alumno</option>
                                 @foreach (\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
-                                    <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
+                                    <option value="{{ $a->id }}" @selected($alumno?->getKey() === $a->id)>
+                                        {{ $a->nombre_completo }} ({{ $a->curp }})
+                                    </option>
                                 @endforeach
                             </x-ui.select>
                         </x-ui.field>
@@ -44,10 +60,10 @@
                     <div>
                         <x-ui.field label="Acta" for="fmt-acta" :error="$errors->first('acta')"
                             hint="Solo necesario para el acta de calificaciones.">
-                            <x-ui.select id="fmt-acta" wire:model.live="acta">
+                            <x-ui.select id="fmt-acta" wire:change="seleccionarActa($event.target.value)">
                                 <option value="">Seleccionar acta (solo para Acta de Calificaciones)</option>
                                 @foreach (\App\Models\Acta::with('grupo.materia')->orderByDesc('created_at')->get() as $a)
-                                    <option value="{{ $a->id }}">
+                                    <option value="{{ $a->id }}" @selected($acta?->getKey() === $a->id)>
                                         {{ $a->grupo->clave }} - {{ $a->grupo->materia->nombre }} ({{ $a->periodo->clave }})
                                     </option>
                                 @endforeach

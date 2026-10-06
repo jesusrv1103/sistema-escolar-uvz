@@ -116,7 +116,7 @@
         <x-ui.modal id="modal-equivalencia" size="lg"
             :title="($equivalencia ? 'Editar' : 'Registrar') . ' Equivalencia'"
             :open="true" close="$set('modalAbierto', false)">
-            <form wire:submit="guardar">
+            <form novalidate id="form-equivalencia" wire:submit="guardar">
                 <div class="grid gap-3 md:grid-cols-2">
                     @if ($errors->any())
                         <div class="md:col-span-2">
@@ -131,19 +131,21 @@
                     @endif
 
                     <x-ui.field label="Alumno" for="eq-alumno" required :error="$errors->first('alumno')">
-                        <x-ui.select id="eq-alumno" wire:model="alumno">
+                        <x-ui.select id="eq-alumno" wire:change="seleccionarAlumno($event.target.value)">
                             <option value="">Seleccionar alumno</option>
                             @foreach (\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
-                                <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
+                                <option value="{{ $a->id }}" @selected($alumno?->getKey() === $a->id)>
+                                    {{ $a->nombre_completo }} ({{ $a->curp }})
+                                </option>
                             @endforeach
                         </x-ui.select>
                     </x-ui.field>
 
                     <x-ui.field label="Materia UVZ (opcional)" for="eq-materia" :error="$errors->first('materia')">
-                        <x-ui.select id="eq-materia" wire:model="materia">
+                        <x-ui.select id="eq-materia" wire:change="seleccionarMateria($event.target.value)">
                             <option value="">Sin materia UVZ (crédito libre)</option>
                             @foreach (\App\Models\Materia::orderBy('clave')->get() as $m)
-                                <option value="{{ $m->id }}">
+                                <option value="{{ $m->id }}" @selected($materia?->getKey() === $m->id)>
                                     {{ $m->clave }} - {{ $m->nombre }} ({{ $m->creditos }} créditos)
                                 </option>
                             @endforeach
@@ -182,7 +184,7 @@
 
                 <x-slot:footer>
                     <x-ui.button variant="secondary" wire:click="$set('modalAbierto', false)">Cancelar</x-ui.button>
-                    <x-ui.button type="submit" icon="check"
+                    <x-ui.button type="submit" form="form-equivalencia" icon="check"
                         wire:loading.attr="disabled" wire:target="guardar">
                         <span wire:loading.remove wire:target="guardar">
                             {{ $equivalencia ? 'Actualizar' : 'Registrar' }}

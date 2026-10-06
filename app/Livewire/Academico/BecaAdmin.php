@@ -51,12 +51,19 @@ class BecaAdmin extends Component
     public ?Alumno $alumnoEstadoCuenta = null;
     public ?Alumno $alumnoCarta = null;
 
-    protected $listeners = ['becaRegistrada', 'asignacionRegistrada', 'aprobacionRealizada'];
-
     public function mount(): void
     {
         $this->fecha_inicio = now()->format('Y-m-d');
         $this->fecha_fin = now()->addYear()->format('Y-m-d');
+
+        // Cada ruta del grupo abre su propia pestaña: el sidebar enlaza a
+        // /becas-descuentos/estado-cuenta y /becas-descuentos/carta-no-adeudo,
+        // que compartían componente con /becas y quedaban en el catálogo.
+        $this->vista = match (request()->route()?->getName()) {
+            'becas-descuentos.estado-cuenta' => 'estado-cuenta',
+            'becas-descuentos.carta-no-adeudo' => 'carta-no-adeudo',
+            default => $this->vista,
+        };
     }
 
     public function abrirModalBeca(): void
@@ -147,6 +154,51 @@ class BecaAdmin extends Component
         $this->resetPage();
     }
 
+    /**
+     * Selección desde los combos de becas, asignaciones, estado de cuenta y
+     * carta de no adeudo.
+     *
+     * No pueden ser `wire:model`: las propiedades son modelos tipados y
+     * Livewire recibe el id como texto (TypeError "Cannot assign string"),
+     * con lo que la petición moría con 500 al enviar el formulario. El id
+     * llega a la acción y Blade marca la opción con `@selected`.
+     */
+    public function seleccionarPeriodoBeca(string $periodoId): void
+    {
+        $this->periodo = $periodoId !== '' ? Periodo::find($periodoId) : null;
+        $this->resetErrorBag(['periodo']);
+    }
+
+    public function seleccionarBecaAsignar(string $becaId): void
+    {
+        $this->becaAsignar = $becaId !== '' ? Beca::find($becaId) : null;
+        $this->resetErrorBag(['becaAsignar']);
+    }
+
+    public function seleccionarAlumnoAsignar(string $alumnoId): void
+    {
+        $this->alumnoAsignar = $alumnoId !== '' ? Alumno::find($alumnoId) : null;
+        $this->resetErrorBag(['alumnoAsignar']);
+    }
+
+    public function seleccionarPeriodoAsignar(string $periodoId): void
+    {
+        $this->periodoAsignar = $periodoId !== '' ? Periodo::find($periodoId) : null;
+        $this->resetErrorBag(['periodoAsignar']);
+    }
+
+    public function seleccionarAlumnoEstadoCuenta(string $alumnoId): void
+    {
+        $this->alumnoEstadoCuenta = $alumnoId !== '' ? Alumno::find($alumnoId) : null;
+        $this->resetErrorBag(['alumnoEstadoCuenta']);
+    }
+
+    public function seleccionarAlumnoCarta(string $alumnoId): void
+    {
+        $this->alumnoCarta = $alumnoId !== '' ? Alumno::find($alumnoId) : null;
+        $this->resetErrorBag(['alumnoCarta']);
+    }
+
     public function abrirModalAsignacion(): void
     {
         Gate::authorize('beca_asignar');
@@ -189,9 +241,9 @@ class BecaAdmin extends Component
 
         // Verificar acumulación con convenio si el alcance es INSCRIPCION
         if ($this->becaAsignar->alcance === \App\Enums\AlcanceBeca::INSCRIPCION || $this->becaAsignar->alcance === \App\Enums\AlcanceBeca::AMBOS) {
-            $tieneConvenio = \App\Models\ConvenioAlumno::where('alumno_id', $this->alumnoAsignar->id)
+            $tieneConvenio = \App\Models\Inscripcion::where('alumno_id', $this->alumnoAsignar->id)
                 ->where('periodo_id', $this->periodoAsignar->id)
-                ->where('estatus', 'APROBADO')
+                ->where('convenio_estatus', \App\Enums\EstatusConvenio::APROBADO->value)
                 ->exists();
 
             if ($tieneConvenio) {
@@ -230,9 +282,9 @@ class BecaAdmin extends Component
         // Verificar acumulación con convenio antes de aprobar
         $beca = $asignacion->beca;
         if ($beca->alcance === \App\Enums\AlcanceBeca::INSCRIPCION || $beca->alcance === \App\Enums\AlcanceBeca::AMBOS) {
-            $tieneConvenio = \App\Models\ConvenioAlumno::where('alumno_id', $asignacion->alumno_id)
+            $tieneConvenio = \App\Models\Inscripcion::where('alumno_id', $asignacion->alumno_id)
                 ->where('periodo_id', $asignacion->periodo_id)
-                ->where('estatus', 'APROBADO')
+                ->where('convenio_estatus', \App\Enums\EstatusConvenio::APROBADO->value)
                 ->exists();
 
             if ($tieneConvenio) {
@@ -289,8 +341,12 @@ class BecaAdmin extends Component
         $periodo = $asignacion->periodo;
         $alumno = $asignacion->alumno;
 
-        $conceptos = ConceptoPago::where('inscripcion.matriculaPeriodo.alumno_id', $asignacion->alumno_id)
-            ->where('inscripcion.matriculaPeriodo.periodo_id', $asignacion->periodo_id)
+        // Relación real: conceptos_pago → inscripción (alumno + periodo).
+        $conceptos = ConceptoPago::query()
+            ->whereHas('inscripcion', function ($q) use ($asignacion): void {
+                $q->where('alumno_id', $asignacion->alumno_id)
+                    ->where('periodo_id', $asignacion->periodo_id);
+            })
             ->whereIn('tipo', ['INSCRIPCION', 'MENSUALIDAD'])
             ->get();
 
@@ -298,8 +354,9 @@ class BecaAdmin extends Component
         $aplicarMensualidades = in_array($beca->alcance, [\App\Enums\AlcanceBeca::MENSUALIDADES, \App\Enums\AlcanceBeca::AMBOS]);
 
         foreach ($conceptos as $concepto) {
-            $aplicar = ($concepto->tipo === 'INSCRIPCION' && $aplicarInscripcion) ||
-                       ($concepto->tipo === 'MENSUALIDAD' && $aplicarMensualidades);
+            // `tipo` está casteado a TipoConcepto: se compara contra el caso del enum.
+            $aplicar = ($concepto->tipo === \App\Enums\TipoConcepto::INSCRIPCION && $aplicarInscripcion) ||
+                       ($concepto->tipo === \App\Enums\TipoConcepto::MENSUALIDAD && $aplicarMensualidades);
 
             if (!$aplicar) {
                 continue;

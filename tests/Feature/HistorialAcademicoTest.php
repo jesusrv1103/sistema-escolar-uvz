@@ -161,3 +161,25 @@ test('avance académico calcula correctamente', function () {
     // Sin materias aprobadas, avance debe ser 0%
     expect($service->porcentajeAvance($alumno))->toBe(0.0);
 });
+
+test('la ficha de historial de un alumno responde y dibuja la tira de materias', function () {
+    // Regresión: la tabla "Tira de materias" leía $m['es_equivalencia'],
+    // clave que solo existe en el historial por periodo → 500 en /historial/{alumno}.
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+    $alumno = Alumno::factory()->create();
+    $periodo = Periodo::factory()->create(['activo' => true]);
+    $programa = Programa::factory()->create(['activo' => true]);
+    $planEstudio = PlanEstudio::factory()->paraPrograma($programa)->create();
+    $planVersion = PlanVersion::factory()->forPlanEstudio($planEstudio)->vigente()->create();
+    $materia = Materia::factory()->paraPlanVersion($planVersion)->create(['activo' => true, 'creditos' => 4]);
+    Grupo::factory()->paraMateria($materia)->paraPeriodo($periodo)->abierto()->create(['activo' => true, 'cupo' => 40]);
+    MatriculaPeriodo::factory()->activa()->paraAlumno($alumno)->paraPeriodo($periodo)->paraPrograma($programa)->create([
+        'plan_version_id' => $planVersion->id,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('historial.ver', $alumno))
+        ->assertOk()
+        ->assertSee('Tira de materias', false)
+        ->assertSee($materia->clave, false);
+});

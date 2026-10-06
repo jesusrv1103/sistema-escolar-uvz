@@ -90,8 +90,12 @@
                                     <td class="text-brand-muted">{{ $inscripcion->periodo?->nombre ?? '—' }}</td>
                                     <td>
                                         <x-ui.badge
-                                            :tone="$inscripcion->estatus === \App\Enums\InscripcionEstatus::DRAFT
-                                                ? 'neutral' : 'primary'">
+                                            :tone="match ($inscripcion->estatus->value) {
+                                                'DRAFT' => 'neutral',
+                                                'ENROLLED' => 'success',
+                                                'CANCELLED' => 'danger',
+                                                default => 'primary',
+                                            }">
                                             {{ $inscripcion->estatus->label() }}
                                         </x-ui.badge>
                                     </td>

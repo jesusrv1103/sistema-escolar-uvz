@@ -18,10 +18,12 @@
         <x-ui.filters>
             <div class="grid gap-3 md:grid-cols-4">
                 <x-ui.field label="Grupo" :error="$errors->first('grupo')">
-                    <x-ui.select wire:model.live="grupo" aria-label="Grupo">
+                    {{-- El id viaja a la acción: `grupo` es un modelo tipado y no admite
+                         el texto que envía `wire:model` (TypeError "Cannot assign string"). --}}
+                    <x-ui.select wire:change="seleccionarGrupo($event.target.value)" aria-label="Grupo">
                         <option value="">Seleccionar grupo</option>
                         @foreach ($grupos as $g)
-                            <option value="{{ $g->id }}">
+                            <option value="{{ $g->id }}" @selected($grupo?->getKey() === $g->id)>
                                 {{ $g->clave }} - {{ $g->materia->clave }} ({{ $g->periodo->clave }})
                             </option>
                         @endforeach
@@ -70,7 +72,7 @@
                     <x-ui.empty-state icon="users" title="Lista sin cargar"
                         message="Haga clic en «Cargar lista» para ver los alumnos del grupo." />
                 @else
-                    <form wire:submit="guardar">
+                    <form novalidate wire:submit="guardar">
                         <div class="overflow-x-auto">
                             <table class="ui-table">
                                 <thead>

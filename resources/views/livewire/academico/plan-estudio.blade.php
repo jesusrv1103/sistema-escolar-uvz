@@ -120,7 +120,7 @@
     <x-ui.modal id="modal-plan"
         :title="$planEnEdicion ? 'Editar plan de estudio' : 'Nuevo plan de estudio'"
         :open="$modalAbierto" close="cerrarModal" size="lg">
-        <form wire:submit="guardar" class="space-y-5">
+        <form novalidate wire:submit="guardar" class="space-y-5">
             @if ($errors->any())
                 <x-ui.alert tone="danger">
                     <ul class="list-inside list-disc space-y-0.5">

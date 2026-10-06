@@ -192,7 +192,7 @@
                                                 @if ($m['es_extraordinario'])
                                                     <x-ui.badge tone="warning">Extraordinario</x-ui.badge>
                                                 @endif
-                                                @if ($m['es_equivalencia'])
+                                                @if ($m['es_equivalencia'] ?? false)
                                                     <x-ui.badge tone="info">Equivalencia</x-ui.badge>
                                                 @endif
                                             </div>

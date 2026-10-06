@@ -20,7 +20,9 @@
 
             $totalCargos = $conceptos->sum('monto_total');
             $totalPagos = $pagos->where('estatus', 'VALIDADO')->sum('monto');
-            $totalAjustes = $ajustes->sum('efectoSobreSaldo');
+            // `efectoSobreSaldo` es un método, no una columna: como clave de `sum()`
+            // devolvía null y el total de ajustes salía siempre 0 (ver AjusteFinanciero).
+            $totalAjustes = $ajustes->sum(fn ($ajuste) => $ajuste->efectoSobreSaldo());
             $saldo = $totalCargos - $totalPagos - $totalAjustes;
         @endphp
 
@@ -64,7 +66,8 @@
                         @php
                             $pagosConcepto = $pagos->where('concepto_pago_id', $c->id)->where('estatus', 'VALIDADO');
                             $totalPagado = $pagosConcepto->sum('monto');
-                            $ajustesConcepto = $ajustes->where('concepto_pago_id', $c->id)->sum('efectoSobreSaldo');
+                            $ajustesConcepto = $ajustes->where('concepto_pago_id', $c->id)
+                                ->sum(fn ($ajuste) => $ajuste->efectoSobreSaldo());
                             $saldoConcepto = $c->monto_total - $totalPagado - $ajustesConcepto;
                         @endphp
                         <tr wire:key="ec-modal-concepto-{{ $c->id }}">

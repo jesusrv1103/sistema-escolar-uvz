@@ -40,7 +40,7 @@
                     <p class="text-sm font-semibold text-brand-text">Nueva observación</p>
                 </x-slot:header>
 
-                <form wire:submit="crear" class="space-y-3">
+                <form novalidate wire:submit="crear" class="space-y-3">
                     <div class="grid gap-3 sm:grid-cols-[220px_1fr]">
                         <x-ui.field label="Tipo" for="obs-tipo" required :error="$errors->first('tipo')">
                             <x-ui.select id="obs-tipo" wire:model="tipo">

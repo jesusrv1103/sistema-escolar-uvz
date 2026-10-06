@@ -20,7 +20,7 @@
     </div>
 </div>
 
-@if($grupo)
+@if(!empty($grupo))
 <div class="section">
     <div class="section-title">Información del Grupo</div>
     <div class="data-grid">

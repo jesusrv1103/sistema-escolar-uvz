@@ -26,7 +26,7 @@
                 de la actualización.
             </p>
 
-            <form wire:submit="guardar" class="grid gap-4 sm:grid-cols-2">
+            <form novalidate wire:submit="guardar" class="grid gap-4 sm:grid-cols-2">
                 <x-ui.field label="Tipo de sangre" for="tipo_sangre" :error="$errors->first('tipo_sangre')">
                     <x-ui.select id="tipo_sangre" wire:model="tipo_sangre">
                         <option value="">No capturado</option>

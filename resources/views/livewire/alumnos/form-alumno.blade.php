@@ -46,7 +46,7 @@
                 </div>
             </x-slot:header>
 
-            <form wire:submit="guardar" class="space-y-6">
+            <form novalidate wire:submit="guardar" class="space-y-6">
                 {{-- Identificación --}}
                 <fieldset class="grid gap-4 sm:grid-cols-2">
                     <legend class="ui-section-title mb-2 w-full">Identificación</legend>

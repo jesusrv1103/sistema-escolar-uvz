@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Enums\EstatusEquivalencia;
 use App\Enums\RolUsuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class)->group('equivalencias');
 
@@ -124,4 +125,39 @@ test('equivalencia no entra al promedio académico', function () {
     
     // Verificar que la equivalencia NO tiene calificación numérica
     expect($equivalencia->calificacion_numerica ?? null)->toBeNull();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Regresión WAVE UI/UX 2.0-12 — validación del estatus
+|--------------------------------------------------------------------------
+|
+| `$estatus` es un `EstatusEquivalencia` (enum), pero la regla era
+| `'required|in:PENDIENTE,APROBADA,RECHAZADA'`. El validador `in:` convierte el
+| valor a string y un enum no se puede convertir:
+|
+|     Error: Object of class App\Enums\EstatusEquivalencia could not be converted to string
+|
+| Guardar una equivalencia desde el navegador devolvía 500. La regla correcta
+| para una propiedad tipada con enum es `Rule::enum()` (patrón de FormAlumno,
+| Convenios y ListaObservaciones).
+|
+*/
+
+test('el formulario guarda la equivalencia validando el estatus enum', function () {
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+    $alumno = Alumno::factory()->create();
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Academico\EquivalenciaAdmin::class)
+        ->call('abrirModalCrear')
+        ->call('seleccionarAlumno', (string) $alumno->id)
+        ->set('origen', 'Universidad politécnica de Zacatecas')
+        ->set('creditos', 5)
+        ->call('guardar')
+        ->assertHasNoErrors()
+        ->assertSet('modalAbierto', false)
+        ->assertSet('estatus', EstatusEquivalencia::PENDIENTE);
+
+    expect(Equivalencia::where('alumno_id', $alumno->id)->count())->toBe(1);
 });

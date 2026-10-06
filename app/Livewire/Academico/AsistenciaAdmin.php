@@ -26,8 +26,26 @@ class AsistenciaAdmin extends Component
     public function mount(?Grupo $grupo = null): void
     {
         Gate::authorize('asistencia.crear');
-        $this->grupo = $grupo;
+        // Un Grupo vacío (resolución por contenedor sin id de ruta) no es una
+        // selección: se normaliza a null para no listar con `grupo_id null`.
+        $this->grupo = $grupo?->exists ? $grupo : null;
         $this->fecha = now()->format('Y-m-d');
+    }
+
+    /**
+     * Selección de grupo desde el filtro.
+     *
+     * No puede ser `wire:model`: `grupo` es un modelo tipado y Livewire recibe
+     * el id como texto (TypeError "Cannot assign string"). El id llega a esta
+     * acción y Blade marca la opción con `@selected`.
+     */
+    public function seleccionarGrupo(string $grupoId): void
+    {
+        $this->grupo = $grupoId !== '' ? Grupo::find($grupoId) : null;
+        // La lista cargada pertenecía al grupo anterior.
+        $this->asistencias = [];
+        $this->resetErrorBag();
+        $this->resetPage();
     }
 
     public function asistenciaRegistrada(): void
@@ -54,9 +72,15 @@ class AsistenciaAdmin extends Component
         $inscripciones = InscripcionMateria::where('grupo_id', $this->grupo->id)
             ->where('estatus', \App\Enums\EstatusInscripcionMateria::CURSANDO)
             ->with('matriculaPeriodo.alumno')
-            ->orderBy('matriculaPeriodo.alumno.apellidos')
-            ->orderBy('matriculaPeriodo.alumno.nombre')
-            ->get();
+            ->get()
+            // `matriculaPeriodo.alumno.apellidos` no es un orden SQL válido: no existe
+            // tal columna y una relación no puede ordenar la consulta. El orden se hace
+            // en PHP sobre la relación ya cargada (SQLSTATE 42S22 antes de este fix).
+            ->sortBy(fn ($inscripcion) => mb_strtolower(trim(
+                ($inscripcion->matriculaPeriodo?->alumno?->apellidos ?? '') . ' ' .
+                ($inscripcion->matriculaPeriodo?->alumno?->nombre ?? '')
+            )))
+            ->values();
 
         foreach ($inscripciones as $inscripcion) {
             $asistencia = Asistencia::where('inscripcion_materia_id', $inscripcion->id)

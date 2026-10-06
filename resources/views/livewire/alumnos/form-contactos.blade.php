@@ -25,7 +25,7 @@
                     <p class="text-sm font-semibold text-brand-text">{{ $titulo }}</p>
                 </x-slot:header>
 
-                <form wire:submit="guardar{{ $propiedad === 'tutor' ? 'Tutor' : 'Emergencia' }}" class="space-y-4">
+                <form novalidate wire:submit="guardar{{ $propiedad === 'tutor' ? 'Tutor' : 'Emergencia' }}" class="space-y-4">
                     <x-ui.field :label="'Nombre completo'" :error="$errors->first($propiedad . '.nombre')">
                         <x-ui.input wire:model="{{ $propiedad }}.nombre" maxlength="150"
                             :disabled="! $puedeEditar" />

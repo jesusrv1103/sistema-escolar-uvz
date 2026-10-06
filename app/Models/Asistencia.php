@@ -2,18 +2,21 @@
 
 namespace App\Models;
 
-use App\Concerns\HasAudit;
+use App\Models\Concerns\HasAudit;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Asistencia de un alumno a una materia (vía inscripción a materia).
  */
 class Asistencia extends Model
 {
-    use HasFactory, SoftDeletes, HasAudit;
+    // Sin SoftDeletes: la migración `create_asistencias_table` no define
+    // `deleted_at`, y el trait añadía `asistencias`.`deleted_at is null` a toda
+    // consulta → SQLSTATE 42S22 en cargar/guardar asistencia (nunca probado:
+    // no hay ningún test que consultara la tabla).
+    use HasFactory, HasAudit;
 
     protected $table = 'asistencias';
 

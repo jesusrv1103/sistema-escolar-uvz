@@ -28,6 +28,8 @@ class CalificacionAdmin extends Component
 
     public bool $modalCalificacionAbierto = false;
     public ?Calificacion $calificacionEnEdicion = null;
+    public ?InscripcionMateria $inscripcionCaptura = null;
+    public ?Evaluacion $evaluacionCaptura = null;
     public float $valor = 0;
     public string $observacion = '';
 
@@ -36,7 +38,10 @@ class CalificacionAdmin extends Component
     public function mount(?Grupo $grupo = null): void
     {
         Gate::authorize('calificacion.crear');
-        $this->grupo = $grupo;
+
+        // Un Grupo vacío (resolución por contenedor sin id de ruta) no es una
+        // selección: se normaliza a null para no consultar con `grupo_id null`.
+        $this->grupo = $grupo?->exists ? $grupo : null;
     }
 
     public function calificacionActualizada(): void
@@ -44,9 +49,23 @@ class CalificacionAdmin extends Component
         $this->resetPage();
     }
 
+    /**
+     * Selección de grupo desde el filtro.
+     *
+     * No puede ser `wire:model`: `grupo` es un modelo tipado y Livewire recibe
+     * el id como texto (TypeError "Cannot assign string"). El id llega a esta
+     * acción y Blade marca la opción seleccionada con `@selected`.
+     */
+    public function seleccionarGrupo(string $grupoId): void
+    {
+        $this->grupo = $grupoId !== '' ? Grupo::find($grupoId) : null;
+        $this->resetErrorBag();
+    }
+
     public function abrirModalCapturar(InscripcionMateria $inscripcion, Evaluacion $evaluacion): void
     {
         Gate::authorize('calificacion.crear');
+        $this->resetErrorBag();
 
         $existente = Calificacion::where('inscripcion_materia_id', $inscripcion->id)
             ->where('evaluacion_id', $evaluacion->id)
@@ -62,15 +81,17 @@ class CalificacionAdmin extends Component
             $this->observacion = '';
         }
 
-        $this->dispatch('abrir-modal-calificacion', [
-            'inscripcionId' => $inscripcion->id,
-            'evaluacionId' => $evaluacion->id,
-        ]);
+        $this->inscripcionCaptura = $inscripcion;
+        $this->evaluacionCaptura = $evaluacion;
+        $this->modalCalificacionAbierto = true;
     }
 
     public function cerrarModalCalificacion(): void
     {
+        $this->modalCalificacionAbierto = false;
         $this->calificacionEnEdicion = null;
+        $this->inscripcionCaptura = null;
+        $this->evaluacionCaptura = null;
         $this->valor = 0;
         $this->observacion = '';
         $this->resetErrorBag();
@@ -83,14 +104,16 @@ class CalificacionAdmin extends Component
             'observacion' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        if (! $this->inscripcionCaptura || ! $this->evaluacionCaptura) {
+            $this->addError('valor', 'Selecciona una calificación de la matriz para capturarla.');
+            return;
+        }
+
         try {
             $service = app(\App\Services\CalificacionService::class);
-            $inscripcion = \App\Models\InscripcionMateria::findOrFail($this->dispatch->get('inscripcionId') ?? 0);
-            $evaluacion = \App\Models\Evaluacion::findOrFail($this->dispatch->get('evaluacionId') ?? 0);
-
             $service->capturar(
-                $inscripcion,
-                $evaluacion,
+                $this->inscripcionCaptura,
+                $this->evaluacionCaptura,
                 $this->valor,
                 $this->observacion,
                 auth()->user()
@@ -122,7 +145,6 @@ class CalificacionAdmin extends Component
         $evaluaciones = $this->grupo
             ? \App\Models\Evaluacion::query()
                 ->where('grupo_id', $this->grupo->id)
-                ->where('estatus', '!=', 'BORRADOR')
                 ->with(['calificaciones'])
                 ->orderBy('fecha')
                 ->get()
@@ -137,8 +159,14 @@ class CalificacionAdmin extends Component
                 ->get()
             : collect();
 
+        $grupos = Grupo::with(['materia', 'periodo', 'docente'])
+            ->where('activo', true)
+            ->orderBy('clave')
+            ->get();
+
         return view('livewire.academico.calificacion-admin', [
             'grupo' => $this->grupo,
+            'grupos' => $grupos,
             'evaluaciones' => $evaluaciones,
             'inscripciones' => $inscripciones,
         ]);

@@ -24,9 +24,11 @@ class Grupo extends Model
         'docente_id',
         'aula_id',
         'clave',
+        'nombre',
         'cupo',
         'turno',
         'estatus',
+        'activo',
     ];
 
     /** @return array<string, string> */
@@ -100,6 +102,15 @@ class Grupo extends Model
     public function estaAbierto(): bool
     {
         return $this->estatus === EstatusGrupo::ABIERTO;
+    }
+
+    /**
+     * Verifica si el grupo está en estado CREADO (único en que se puede
+     * editar la ficha o alternar su activación).
+     */
+    public function esCreado(): bool
+    {
+        return $this->estatus === EstatusGrupo::CREADO;
     }
 
     /**

@@ -128,7 +128,7 @@
     @if ($modalBajaAbierto)
         <x-ui.modal id="modal-registrar-baja" size="lg" :title="'Registrar Baja ' . $tipoBaja"
             :open="true" close="$set('modalBajaAbierto', false)">
-            <form wire:submit="registrarBaja">
+            <form novalidate id="form-baja" wire:submit="registrarBaja">
                 <div class="grid gap-3 md:grid-cols-2">
                     @if ($errors->any())
                         <div class="md:col-span-2">
@@ -143,10 +143,12 @@
                     @endif
 
                     <x-ui.field label="Alumno" for="baja-alumno" required :error="$errors->first('alumno')">
-                        <x-ui.select id="baja-alumno" wire:model="alumno">
+                        <x-ui.select id="baja-alumno" wire:change="seleccionarAlumno($event.target.value)">
                             <option value="">Seleccionar alumno</option>
                             @foreach (\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
-                                <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
+                                <option value="{{ $a->id }}" @selected($alumno?->getKey() === $a->id)>
+                                    {{ $a->nombre_completo }} ({{ $a->curp }})
+                                </option>
                             @endforeach
                         </x-ui.select>
                     </x-ui.field>
@@ -154,11 +156,11 @@
                     @if ($tipoBaja === 'MATERIA')
                         <x-ui.field label="Materia (Inscripción)" for="baja-inscripcion" required
                             :error="$errors->first('inscripcion')">
-                            <x-ui.select id="baja-inscripcion" wire:model="inscripcion">
+                            <x-ui.select id="baja-inscripcion" wire:change="seleccionarInscripcion($event.target.value)">
                                 <option value="">Seleccionar inscripción</option>
                                 @foreach (\App\Models\InscripcionMateria::with('grupo.materia', 'matriculaPeriodo.alumno')
                                     ->where('estatus', '!=', 'BAJA')->get() as $i)
-                                    <option value="{{ $i->id }}">
+                                    <option value="{{ $i->id }}" @selected($inscripcion?->getKey() === $i->id)>
                                         {{ $i->matriculaPeriodo->alumno->nombre_completo }} - {{ $i->grupo->materia->clave }}
                                     </option>
                                 @endforeach
@@ -183,7 +185,7 @@
 
                 <x-slot:footer>
                     <x-ui.button variant="secondary" wire:click="$set('modalBajaAbierto', false)">Cancelar</x-ui.button>
-                    <x-ui.button type="submit" icon="check"
+                    <x-ui.button type="submit" form="form-baja" icon="check"
                         wire:loading.attr="disabled" wire:target="registrarBaja">
                         <span wire:loading.remove wire:target="registrarBaja">Registrar Baja</span>
                         <span wire:loading wire:target="registrarBaja"><x-ui.loading label="Registrando…" /></span>
@@ -197,7 +199,7 @@
     @if ($modalReingresoAbierto)
         <x-ui.modal id="modal-reingreso" title="Autorizar Reingreso"
             :open="true" close="$set('modalReingresoAbierto', false)">
-            <form wire:submit="autorizarReingreso">
+            <form novalidate wire:submit="autorizarReingreso">
                 <div class="space-y-3">
                     <x-ui.alert tone="info">
                         Autorizando reingreso para

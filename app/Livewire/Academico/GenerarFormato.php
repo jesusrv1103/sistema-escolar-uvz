@@ -4,10 +4,12 @@ namespace App\Livewire\Academico;
 
 use App\Enums\TipoFormato;
 use App\Models\Alumno;
+use App\Models\DocumentoGenerado;
 use App\Models\Grupo;
 use App\Models\MatriculaPeriodo;
 use App\Services\FormatoService;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -23,15 +25,24 @@ class GenerarFormato extends Component
     public bool $modalAlumnoAbierto = false;
     public bool $modalGrupoAbierto = false;
     public bool $generando = false;
+    /** Registro de trazabilidad del PDF recién emitido (habilita la descarga). */
+    public ?int $ultimoDocumentoId = null;
 
-    protected $listeners = ['alumnoSeleccionado', 'grupoSeleccionado'];
+    // Los nombres de evento se mantienen por compatibilidad; las acciones se
+    // nombran distinto porque la propiedad pública `$alumnoSeleccionado`
+    // sombrearía la acción en el proxy JS de Livewire (`$wire.alumnoSeleccionado`
+    // resolvería la propiedad y la selección desde el modal no se ejecutaría).
+    protected $listeners = [
+        'alumnoSeleccionado' => 'seleccionarAlumno',
+        'grupoSeleccionado' => 'seleccionarGrupo',
+    ];
 
     public function mount(): void
     {
         Gate::authorize('documento_generado.crear');
     }
 
-    public function alumnoSeleccionado(Alumno $alumno): void
+    public function seleccionarAlumno(Alumno $alumno): void
     {
         $this->alumnoSeleccionado = $alumno;
         $this->matriculaSeleccionada = null;
@@ -49,7 +60,7 @@ class GenerarFormato extends Component
         }
     }
 
-    public function grupoSeleccionado(Grupo $grupo): void
+    public function seleccionarGrupo(Grupo $grupo): void
     {
         $this->grupoSeleccionado = $grupo;
         $this->modalGrupoAbierto = false;
@@ -75,7 +86,7 @@ class GenerarFormato extends Component
     public function generar(): void
     {
         $this->validate([
-            'tipoFormato' => ['required', 'string', 'in:' . implode(',', TipoFormato::values())],
+            'tipoFormato' => ['required', 'string', Rule::in(array_column(TipoFormato::cases(), 'value'))],
             'alumnoSeleccionado' => ['required'],
         ]);
 
@@ -122,6 +133,7 @@ class GenerarFormato extends Component
                 }
             }
 
+            $emitidoDesde = now();
             $service = app(\App\Services\FormatoService::class);
             $pdfPath = $service->generar(
                 TipoFormato::from($this->tipoFormato),
@@ -131,6 +143,13 @@ class GenerarFormato extends Component
                 [],
                 auth()->user()
             );
+
+            $this->ultimoDocumentoId = DocumentoGenerado::vincularArchivoEmitido(
+                $pdfPath,
+                TipoFormato::from($this->tipoFormato),
+                $this->alumnoSeleccionado?->getKey(),
+                $emitidoDesde,
+            )?->getKey();
 
             session()->flash('success', "Formato generado correctamente.");
             $this->dispatch('pdf-generado', path: $pdfPath);

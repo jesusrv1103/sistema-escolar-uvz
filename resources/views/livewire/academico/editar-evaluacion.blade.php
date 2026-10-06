@@ -1,7 +1,7 @@
 <div>
     <x-ui.modal id="modal-editar-evaluacion" size="lg" title="Editar Evaluación"
         :open="$modalAbierto" close="cerrarModal">
-        <form wire:submit="guardar">
+        <form novalidate id="form-editar-evaluacion" wire:submit="guardar">
             @if ($errors->any())
                 <x-ui.alert tone="danger">
                     <ul class="list-inside list-disc space-y-0.5">
@@ -62,7 +62,7 @@
 
             <x-slot:footer>
                 <x-ui.button variant="secondary" wire:click="cerrarModal">Cancelar</x-ui.button>
-                <x-ui.button type="submit" icon="check" wire:loading.attr="disabled" wire:target="guardar">
+                <x-ui.button type="submit" form="form-editar-evaluacion" icon="check" wire:loading.attr="disabled" wire:target="guardar">
                     <span wire:loading.remove wire:target="guardar">Actualizar</span>
                     <span wire:loading wire:target="guardar"><x-ui.loading label="Guardando…" /></span>
                 </x-ui.button>

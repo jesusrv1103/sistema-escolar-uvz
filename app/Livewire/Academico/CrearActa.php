@@ -26,6 +26,27 @@ class CrearActa extends Component
         $this->modalAbierto = true;
     }
 
+    /**
+     * Selección desde los combos del modal.
+     *
+     * No puede ser `wire:model`: `periodo` y `grupo` son modelos tipados y
+     * Livewire recibe el id como texto (TypeError "Cannot assign string"). El
+     * id llega a la acción y Blade marca la opción con `@selected`.
+     */
+    public function seleccionarPeriodo(string $periodoId): void
+    {
+        $this->periodo = $periodoId !== '' ? Periodo::find($periodoId) : null;
+        // El listado de grupos depende del periodo: la selección anterior deja de existir.
+        $this->grupo = null;
+        $this->resetErrorBag();
+    }
+
+    public function seleccionarGrupo(string $grupoId): void
+    {
+        $this->grupo = $grupoId !== '' ? Grupo::find($grupoId) : null;
+        $this->resetErrorBag();
+    }
+
     public function crear(): void
     {
         $this->validate([

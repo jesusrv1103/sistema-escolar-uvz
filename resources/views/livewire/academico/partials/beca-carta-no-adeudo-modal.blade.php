@@ -17,7 +17,8 @@
 
             $totalCargos = $conceptos->sum('monto_total');
             $totalPagos = $pagos->sum('monto');
-            $totalAjustes = $ajustes->sum('efectoSobreSaldo');
+            // `efectoSobreSaldo` es un método, no una columna (ver AjusteFinanciero).
+            $totalAjustes = $ajustes->sum(fn ($ajuste) => $ajuste->efectoSobreSaldo());
             $saldo = $totalCargos - $totalPagos - $totalAjustes;
         @endphp
 
@@ -62,7 +63,10 @@
                     @forelse ($conceptos as $c)
                         @php
                             $pagado = \App\Models\Pago::where('concepto_pago_id', $c->id)->where('estatus', 'VALIDADO')->sum('monto');
-                            $ajustesC = \App\Models\AjusteFinanciero::where('concepto_pago_id', $c->id)->sum('efectoSobreSaldo');
+                            // La columna no existe en SQL: se traen los ajustes y se suman en PHP.
+                            $ajustesC = \App\Models\AjusteFinanciero::where('concepto_pago_id', $c->id)
+                                ->get()
+                                ->sum(fn ($ajuste) => $ajuste->efectoSobreSaldo());
                             $saldoC = $c->monto_total - $pagado - $ajustesC;
                         @endphp
                         <tr wire:key="cna-modal-concepto-{{ $c->id }}">

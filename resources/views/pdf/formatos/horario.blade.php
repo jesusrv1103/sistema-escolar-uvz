@@ -31,7 +31,7 @@
             <span class="data-label">Número de control</span>
             <span class="data-value">{{ $alumno['numero_control'] ?? 'Por asignar' }}</span>
         </div>
-        @if($matricula && $matricula['periodo'])
+        @if(!empty($matricula) && $matricula['periodo'])
             <div class="data-item">
                 <span class="data-label">Periodo</span>
                 <span class="data-value">{{ $matricula['periodo']['clave'] }} - {{ $matricula['periodo']['nombre'] }}</span>
@@ -40,7 +40,7 @@
     </div>
 </div>
 
-@if($matricula && $matricula['inscripcionesCursando'] && $matricula['inscripcionesCursando']->count())
+@if(!empty($matricula) && $matricula['inscripcionesCursando'] && $matricula['inscripcionesCursando']->count())
 <div class="section">
     <div class="section-title">Horario Semanal</div>
     <div class="table-wrapper">
@@ -95,7 +95,7 @@
     <p class="text-center">No hay materias inscritas con horario en este periodo.</p>
 @endif
 
-@if($matricula && $matricula['inscripcionesCursando'] && $matricula['inscripcionesCursando']->count())
+@if(!empty($matricula) && $matricula['inscripcionesCursando'] && $matricula['inscripcionesCursando']->count())
 <div class="section mt-20">
     <div class="section-title">Resumen de Carga</div>
     <div class="data-grid">

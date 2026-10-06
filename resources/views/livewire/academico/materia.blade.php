@@ -152,7 +152,7 @@
     <x-ui.modal id="modal-materia" size="lg"
         :title="$materiaEnEdicion ? 'Editar materia' : 'Nueva materia'"
         :open="$modalAbierto" close="cerrarModal">
-        <form wire:submit="guardar" class="space-y-4">
+        <form novalidate wire:submit="guardar" class="space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
                 <x-ui.field label="Clave" for="materia-clave" required
                     hint="Solo mayúsculas, números, guión y guion bajo." :error="$errors->first('clave')">

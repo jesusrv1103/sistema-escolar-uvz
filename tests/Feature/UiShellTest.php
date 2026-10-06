@@ -2,6 +2,9 @@
 
 use App\Enums\RolUsuario;
 use App\Livewire\Academico\PlanEstudioAdmin;
+use App\Models\Grupo;
+use App\Models\Materia;
+use App\Models\Periodo;
 use App\Models\PlanEstudio;
 use App\Models\Programa;
 use App\Models\User;
@@ -88,4 +91,18 @@ test('limpiar filtros restablece la busqueda y las listas', function () {
         ->call('limpiarFiltros')
         ->assertSet('busqueda', '')
         ->assertSet('filtroActivo', '');
+});
+
+test('el listado de grupos responde y muestra el turno en texto plano', function () {
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+    $materia = Materia::factory()->create();
+    $periodo = Periodo::factory()->create();
+    Grupo::factory()->creado()->paraMateria($materia)->paraPeriodo($periodo)
+        ->create(['turno' => 'MATUTINO']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.grupos'))
+        ->assertOk()
+        ->assertSee('Matutino', false)
+        ->assertSee($materia->clave, false);
 });

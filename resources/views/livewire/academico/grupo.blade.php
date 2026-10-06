@@ -116,7 +116,7 @@
                                     <td class="text-brand-muted">{{ $g->docente?->nombreCompleto() ?? '—' }}</td>
                                     <td class="text-brand-muted">{{ $g->aula?->nombre ?? '—' }}</td>
                                     <td class="font-medium text-brand-text">{{ $g->cupo }}</td>
-                                    <td class="text-brand-muted">{{ $g->turno->label() ?? $g->turno }}</td>
+                                    <td class="text-brand-muted">{{ \App\Enums\TurnoGrupo::tryFrom($g->turno)?->label() ?? $g->turno }}</td>
                                     <td>
                                         <span class="inline-flex flex-wrap gap-1">
                                             <x-ui.badge :tone="$tonos[$g->estatus->value] ?? 'neutral'">
@@ -163,7 +163,7 @@
     <x-ui.modal id="modal-grupo" size="lg"
         :title="$grupoEnEdicion ? 'Editar grupo' : 'Nuevo grupo'"
         :open="$modalAbierto" close="cerrarModal">
-        <form wire:submit="guardar" class="space-y-4">
+        <form novalidate wire:submit="guardar" class="space-y-4">
             @if ($errors->any())
                 <x-ui.alert tone="danger">
                     <ul class="list-inside list-disc space-y-0.5">

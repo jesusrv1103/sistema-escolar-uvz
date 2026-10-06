@@ -1,7 +1,7 @@
 @if ($modalBecaAbierto)
     <x-ui.modal id="modal-beca" size="lg" :title="($beca ? 'Editar' : 'Crear') . ' beca'"
         :open="true" close="$set('modalBecaAbierto', false)">
-        <form wire:submit="guardarBeca">
+        <form novalidate id="form-beca" wire:submit="guardarBeca">
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 @if ($errors->any())
                     <div class="sm:col-span-2 lg:col-span-4">
@@ -61,10 +61,12 @@
 
                 <div>
                     <x-ui.field label="Periodo" for="beca-periodo" required :error="$errors->first('periodo')">
-                        <x-ui.select id="beca-periodo" wire:model="periodo">
+                        <x-ui.select id="beca-periodo" wire:change="seleccionarPeriodoBeca($event.target.value)">
                             <option value="">Seleccionar periodo</option>
                             @foreach (\App\Models\Periodo::orderBy('fecha_inicio', 'desc')->get() as $p)
-                                <option value="{{ $p->id }}">{{ $p->clave }} - {{ $p->nombre }}</option>
+                                <option value="{{ $p->id }}" @selected($periodo?->getKey() === $p->id)>
+                                    {{ $p->clave }} - {{ $p->nombre }}
+                                </option>
                             @endforeach
                         </x-ui.select>
                     </x-ui.field>
@@ -93,7 +95,7 @@
 
             <x-slot:footer>
                 <x-ui.button variant="secondary" wire:click="$set('modalBecaAbierto', false)">Cancelar</x-ui.button>
-                <x-ui.button type="submit" icon="check" wire:loading.attr="disabled" wire:target="guardarBeca">
+                <x-ui.button type="submit" form="form-beca" icon="check" wire:loading.attr="disabled" wire:target="guardarBeca">
                     <span wire:loading.remove wire:target="guardarBeca">{{ $beca ? 'Actualizar' : 'Crear' }}</span>
                     <span wire:loading wire:target="guardarBeca"><x-ui.loading label="Guardando…" /></span>
                 </x-ui.button>

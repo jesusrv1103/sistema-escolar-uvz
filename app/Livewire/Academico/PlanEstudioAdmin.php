@@ -31,8 +31,6 @@ class PlanEstudioAdmin extends Component
     public bool $activo = true;
     public ?int $programaId = null;
 
-    protected $listeners = ['planCreado', 'planActualizado'];
-
     public function mount(): void
     {
         Gate::authorize('plan_estudio.create');

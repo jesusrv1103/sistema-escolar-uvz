@@ -187,6 +187,14 @@
                 <x-ui.alert tone="success">
                     Formato generado correctamente. Queda registrado en la trazabilidad de
                     documentos generados.
+                    <x-slot:action>
+                        @if ($ultimoDocumentoId)
+                            <x-ui.button size="sm" variant="secondary" icon="document-text"
+                                href="{{ route('documentos.generados.descargar', $ultimoDocumentoId) }}">
+                                Descargar PDF
+                            </x-ui.button>
+                        @endif
+                    </x-slot:action>
                 </x-ui.alert>
             </div>
         </x-ui.card>
@@ -219,13 +227,13 @@
                             @foreach ($alumnos as $alumno)
                                 <tr wire:key="res-alumno-{{ $alumno->id }}"
                                     class="cursor-pointer"
-                                    wire:click="alumnoSeleccionado({{ $alumno->id }})">
+                                    wire:click="seleccionarAlumno({{ $alumno->id }})">
                                     <td class="font-medium text-brand-text">{{ $alumno->nombre_completo }}</td>
                                     <td class="text-brand-muted">{{ $alumno->curp }}</td>
                                     <td class="text-brand-muted">{{ $alumno->numero_control ?? '—' }}</td>
                                     <td class="text-brand-muted">{{ $alumno->correo ?? '—' }}</td>
                                     <td class="text-right">
-                                        <x-ui.button size="sm" wire:click.stop="alumnoSeleccionado({{ $alumno->id }})">
+                                        <x-ui.button size="sm" wire:click.stop="seleccionarAlumno({{ $alumno->id }})">
                                             Seleccionar
                                         </x-ui.button>
                                     </td>
@@ -265,7 +273,7 @@
                         <tbody>
                             @foreach ($grupos as $grupo)
                                 <tr wire:key="res-grupo-{{ $grupo->id }}" class="cursor-pointer"
-                                    wire:click="grupoSeleccionado({{ $grupo->id }})">
+                                    wire:click="seleccionarGrupo({{ $grupo->id }})">
                                     <td class="font-medium text-brand-primary">{{ $grupo->clave }}</td>
                                     <td class="font-medium text-brand-text">{{ $grupo->materia->nombre }}</td>
                                     <td class="text-brand-muted">{{ $grupo->periodo->clave }}</td>
@@ -273,7 +281,7 @@
                                     <td class="text-brand-muted">{{ $grupo->aula?->nombre ?? '—' }}</td>
                                     <td class="text-brand-muted">{{ $grupo->cupo }}</td>
                                     <td class="text-right">
-                                        <x-ui.button size="sm" wire:click.stop="grupoSeleccionado({{ $grupo->id }})">
+                                        <x-ui.button size="sm" wire:click.stop="seleccionarGrupo({{ $grupo->id }})">
                                             Seleccionar
                                         </x-ui.button>
                                     </td>

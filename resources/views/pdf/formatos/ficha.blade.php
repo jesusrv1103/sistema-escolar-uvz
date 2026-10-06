@@ -62,7 +62,7 @@
     </div>
 </div>
 
-@if($matricula)
+@if(!empty($matricula))
 <div class="section">
     <div class="section-title">Información Académica Actual</div>
     <div class="data-grid">
@@ -100,7 +100,7 @@
 </div>
 @endif
 
-@if($matricula && $matricula['inscripcionesCursando'] && $matricula['inscripcionesCursando']->count())
+@if(!empty($matricula) && $matricula['inscripcionesCursando'] && $matricula['inscripcionesCursando']->count())
 <div class="section">
     <div class="section-title">Materias Inscritas (Cursando)</div>
     <div class="table-wrapper">
@@ -138,7 +138,7 @@
 </div>
 @endif
 
-@if($matricula && $matricula['inscripcionesAprobadas'] && $matricula['inscripcionesAprobadas']->count())
+@if(!empty($matricula) && $matricula['inscripcionesAprobadas'] && $matricula['inscripcionesAprobadas']->count())
 <div class="section">
     <div class="section-title">Materias Aprobadas</div>
     <div class="table-wrapper">

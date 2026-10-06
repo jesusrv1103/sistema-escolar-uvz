@@ -42,8 +42,6 @@ class GrupoAdmin extends Component
     public ?int $aulaId = null;
     public string $estatus = 'CREADO';
 
-    protected $listeners = ['grupoCreado', 'grupoActualizado'];
-
     public function mount(): void
     {
         Gate::authorize('grupo.create');
@@ -98,7 +96,7 @@ class GrupoAdmin extends Component
     public function guardar(): void
     {
         $this->validate([
-            'clave' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9_-]+$/', 'unique:grupos,clave,' . ($this->grupoEnEdicion?->id ?? 'NULL') . ',materia_id,' . $this->materiaId . ',periodo_id,' . $this->periodoId],
+            'clave' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9_-]+$/', 'unique:grupos,clave,' . ($this->grupoEnEdicion?->id ?? 'NULL') . ',id,materia_id,' . $this->materiaId . ',periodo_id,' . $this->periodoId],
             'nombre' => ['nullable', 'string', 'max:150'],
             'cupo' => ['required', 'integer', 'min:1', 'max:500'],
             'turno' => ['required', 'string', 'in:MATUTINO,VESPERTINO,NOCTURNO'],
@@ -150,9 +148,12 @@ class GrupoAdmin extends Component
             return;
         }
 
+        $materia = $this->grupoEnEdicion->materia;
+        $nombre = $this->nombre ?: "{$materia->nombre} - Grupo {$this->clave}";
+
         $this->grupoEnEdicion->update([
             'clave' => $this->clave,
-            'nombre' => $this->nombre,
+            'nombre' => $nombre,
             'cupo' => $this->cupo,
             'turno' => $this->turno,
             'docente_id' => $this->docenteId,

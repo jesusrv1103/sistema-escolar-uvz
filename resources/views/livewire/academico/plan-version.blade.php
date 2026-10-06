@@ -109,7 +109,7 @@
     <x-ui.modal id="modal-version"
         :title="$versionEnEdicion ? 'Editar versión' : 'Nueva versión'"
         :open="$modalAbierto" close="cerrarModal">
-        <form wire:submit="guardar" class="space-y-4">
+        <form novalidate wire:submit="guardar" class="space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
                 <x-ui.field label="Versión" for="version-numero" required :error="$errors->first('version')">
                     <x-ui.input id="version-numero" wire:model="version" maxlength="20" placeholder="Ej. 1.0 o 2024-1" />

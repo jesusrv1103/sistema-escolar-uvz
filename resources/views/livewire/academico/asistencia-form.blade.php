@@ -3,7 +3,7 @@
         :title="$asistenciaExistente ? 'Editar Asistencia' : 'Registrar Asistencia'"
         :open="$modalAbierto" close="$set('modalAbierto', false)">
         @if ($inscripcion !== null)
-            <form wire:submit="guardar">
+            <form novalidate id="form-asistencia" wire:submit="guardar">
                 <div class="space-y-3">
                     @if ($errors->any())
                         <x-ui.alert tone="danger">
@@ -47,7 +47,7 @@
 
                 <x-slot:footer>
                     <x-ui.button variant="secondary" wire:click="$set('modalAbierto', false)">Cancelar</x-ui.button>
-                    <x-ui.button type="submit" icon="check"
+                    <x-ui.button type="submit" form="form-asistencia" icon="check"
                         wire:loading.attr="disabled" wire:target="guardar">
                         <span wire:loading.remove wire:target="guardar">Guardar</span>
                         <span wire:loading wire:target="guardar"><x-ui.loading label="Guardando…" /></span>

@@ -46,8 +46,6 @@ class MateriaAdmin extends Component
     public string $tipoPrerreq = 'OBLIGATORIO';
     public string $busquedaPrerreq = '';
 
-    protected $listeners = ['materiaCreada', 'materiaActualizada'];
-
     public function mount(?PlanVersion $version = null): void
     {
         Gate::authorize('materia.create');

@@ -35,8 +35,6 @@ class GrupoHorarioAdmin extends Component
     public string $horaInicio = '';
     public string $horaFin = '';
 
-    protected $listeners = ['horarioCreado', 'horarioActualizado'];
-
     public function mount(?Grupo $grupo = null): void
     {
         Gate::authorize('grupo_horario.create');

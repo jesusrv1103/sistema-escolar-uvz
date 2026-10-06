@@ -7,6 +7,7 @@ use App\Models\Alumno;
 use App\Models\Materia;
 use App\Enums\EstatusEquivalencia;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -28,13 +29,30 @@ class EquivalenciaAdmin extends Component
     public string $dictamen = '';
     public EstatusEquivalencia $estatus = EstatusEquivalencia::PENDIENTE;
 
-    protected $listeners = ['equivalenciaRegistrada', 'equivalenciaActualizada'];
-
     public function limpiarFiltros(): void
     {
         $this->busqueda = '';
         $this->filtroEstatus = '';
         $this->resetPage();
+    }
+
+    /**
+     * Selección desde los combos del formulario.
+     *
+     * No puede ser `wire:model`: `alumno` y `materia` son modelos tipados y
+     * Livewire recibe el id como texto (TypeError "Cannot assign string"). El id
+     * llega a la acción y Blade marca la opción con `@selected`.
+     */
+    public function seleccionarAlumno(string $alumnoId): void
+    {
+        $this->alumno = $alumnoId !== '' ? Alumno::find($alumnoId) : null;
+        $this->resetErrorBag(['alumno']);
+    }
+
+    public function seleccionarMateria(string $materiaId): void
+    {
+        $this->materia = $materiaId !== '' ? Materia::find($materiaId) : null;
+        $this->resetErrorBag(['materia']);
     }
 
     public function abrirModalCrear(): void
@@ -78,7 +96,7 @@ class EquivalenciaAdmin extends Component
             'origen' => 'required|string|max:500',
             'creditos' => 'required|integer|min:0|max:20',
             'dictamen' => 'nullable|string|max:2000',
-            'estatus' => 'required|in:PENDIENTE,APROBADA,RECHAZADA',
+            'estatus' => ['required', Rule::enum(EstatusEquivalencia::class)],
         ]);
 
         try {

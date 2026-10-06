@@ -7,16 +7,23 @@
         <div class="grid items-end gap-3 md:grid-cols-4">
             <div class="md:col-span-3">
                 <x-ui.field label="Alumno" for="cna-alumno" :error="$errors->first('alumnoCarta')">
-                    <x-ui.select id="cna-alumno" wire:model="alumnoCarta">
+                    {{-- El id viaja a la acción: `alumnoCarta` es un modelo tipado y no
+                         admite el texto que envía `wire:model` (TypeError al enviar). --}}
+                    <x-ui.select id="cna-alumno" wire:change="seleccionarAlumnoCarta($event.target.value)">
                         <option value="">Seleccionar alumno</option>
                         @foreach (\App\Models\Alumno::orderBy('apellidos')->orderBy('nombre')->get() as $a)
-                            <option value="{{ $a->id }}">{{ $a->nombre_completo }} ({{ $a->curp }})</option>
+                            <option value="{{ $a->id }}" @selected($alumnoCarta?->getKey() === $a->id)>
+                                {{ $a->nombre_completo }} ({{ $a->curp }})
+                            </option>
                         @endforeach
                     </x-ui.select>
                 </x-ui.field>
             </div>
 
-            <x-ui.button icon="document-text" wire:click="abrirCartaNoAdeudo($alumnoCarta)"
+            {{-- El id se interpolaba como `$alumnoCarta`, que en JavaScript es una variable
+                 indefinida: la acción recibía null. Con `{{ }}` Livewire resuelve el modelo. --}}
+            <x-ui.button icon="document-text"
+                wire:click="abrirCartaNoAdeudo({{ $alumnoCarta?->getKey() ?? 'null' }})"
                 :disabled="! $alumnoCarta" wire:loading.attr="disabled" wire:target="abrirCartaNoAdeudo">
                 <span wire:loading.remove wire:target="abrirCartaNoAdeudo">Generar carta</span>
                 <span wire:loading wire:target="abrirCartaNoAdeudo"><x-ui.loading label="Generando…" /></span>
@@ -39,7 +46,9 @@
 
                 $totalCargos = $conceptos->sum('monto_total');
                 $totalPagos = $pagos->sum('monto');
-                $totalAjustes = $ajustes->sum('efectoSobreSaldo');
+                // `efectoSobreSaldo` es un método, no una columna: como clave de
+                // `sum()` devolvía null (total 0) o rompía en SQL. Ver AjusteFinanciero.
+                $totalAjustes = $ajustes->sum(fn ($ajuste) => $ajuste->efectoSobreSaldo());
                 $saldo = $totalCargos - $totalPagos - $totalAjustes;
             @endphp
 
@@ -96,7 +105,9 @@
                                     @foreach ($conceptos as $c)
                                         @php
                                             $pagado = \App\Models\Pago::where('concepto_pago_id', $c->id)->where('estatus', 'VALIDADO')->sum('monto');
-                                            $ajustesC = \App\Models\AjusteFinanciero::where('concepto_pago_id', $c->id)->sum('efectoSobreSaldo');
+                                            $ajustesC = \App\Models\AjusteFinanciero::where('concepto_pago_id', $c->id)
+                                                ->get()
+                                                ->sum(fn ($ajuste) => $ajuste->efectoSobreSaldo());
                                             $saldoC = $c->monto_total - $pagado - $ajustesC;
                                         @endphp
                                         <tr wire:key="concepto-cna-{{ $c->id }}">

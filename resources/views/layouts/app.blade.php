@@ -28,7 +28,7 @@
 <body class="min-h-screen bg-brand-bg text-brand-text antialiased">
     @if(auth()->check())
         <x-layouts.app-shell>
-            <main class="mx-auto max-w-7xl px-4 py-8">
+            <main class="mx-auto w-full min-w-0 max-w-7xl px-4 py-8">
                 {{-- Render full-page de Livewire: inyecta el componente como $slot
                      (rama @component con slot "slot"); las páginas clásicas usan
                      @extends + @section('content'). Sin esta rama doble, el contenido
