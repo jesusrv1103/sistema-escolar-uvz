@@ -38,6 +38,14 @@ class ActaService
 
         Gate::authorize('acta.crear');
 
+        // Portal docente (2.0-15): el DOCENTE sólo crea actas de sus grupos
+        // (mismo criterio de los servicios de evaluaciones/calificaciones/asistencia).
+        if ($usuario->rol->value === 'DOCENTE') {
+            if (!$usuario->docente || $grupo->docente_id !== $usuario->docente->id) {
+                abort(403, 'Solo el docente asignado al grupo puede crear su acta.');
+            }
+        }
+
         // Validar coherencia grupo/periodo
         if ($grupo->periodo_id !== $grupo->periodo->id) {
             throw new ActaException('El grupo no pertenece al periodo especificado.');

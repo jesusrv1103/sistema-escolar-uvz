@@ -55,7 +55,13 @@ class LoginController extends Controller
 
         $request->user()->forceFill(['last_login_at' => now()])->save();
 
-        return redirect()->intended(route('dashboard'));
+        // Portal de docente (2.0-15): el DOCENTE entra a su portal y no al
+        // panel operativo administrativo (que le devolvería 403).
+        $destino = $request->user()->rol->value === 'DOCENTE'
+            ? 'docente.inicio'
+            : 'dashboard';
+
+        return redirect()->intended(route($destino));
     }
 
     /**

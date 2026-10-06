@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Dashboard;
 
-use App\Models\Inscripcion;
 use App\Services\DashboardService;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
@@ -14,10 +13,11 @@ use Livewire\Component;
  *   EXCLUSIVAMENTE por `DashboardService` (sin queries duplicadas en la
  *   vista): tarjetas simples y responsive, sin gráficas, porcentajes,
  *   tendencias ni BI.
- * - Autorización reutilizada: `viewAny` de `Inscripcion` (la capacidad de
- *   lectura/listados existente, matriz §8.2) — los 4 roles autenticados y
- *   activos pasan; cualquier cuenta inactiva recibe 403 vía `Gate::before`,
- *   también cuando se fuerza el acceso a Livewire.
+ * - Autorización: `inscripcion.ver` (lectura de operación, matriz §8.2;
+ *   ADMISIONES, ADMINISTRACION y CONTROL_ESCOLAR) — con 2.0-15 el panel deja
+ *   de estar abierto a cualquier autenticado: DOCENTE/ALUMNO reciben 403, y
+ *   una cuenta inactiva también vía `Gate::before`, también cuando se fuerza
+ *   el acceso a Livewire.
  * - Solo lectura: sin acciones que muten datos; sin información médica
  *   (RB-18) y sin cache/Redis/jobs.
  */
@@ -25,7 +25,9 @@ class PanelOperativo extends Component
 {
     public function mount(): void
     {
-        Gate::authorize('viewAny', Inscripcion::class);
+        // Aislamiento de portales (2.0-15): el panel operativo es lectura de
+        // operación (`inscripcion.ver`); DOCENTE/ALUMNO reciben 403.
+        Gate::authorize('inscripcion.ver');
     }
 
     public function render()

@@ -437,7 +437,7 @@
 |---|---|---|
 | 2.0-13 Servicio social + prácticas | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 676 tests / 3058 assertions / 0 fallas · 69 rutas · build OK · view:cache OK |
 | 2.0-14 Egreso + titulación + constancia | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 715 tests / 3151 assertions / 0 fallas · 70 rutas · build OK · view:cache OK |
-| 2.0-15 Portal de docente | ⬜ pendiente | — |
+| 2.0-15 Portal de docente | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 753 tests / 3225 assertions / 0 fallas · 76 rutas · 0 migraciones · build OK · view:cache OK |
 | 2.0-16 Portal de alumno | ⬜ pendiente | — |
 
 ### 2.0-13 — Servicio social y prácticas profesionales (completa)
@@ -466,6 +466,19 @@
 - **Formato #13 (pipeline F):** `TipoFormato::CONSTANCIA_TERMINACION` — **sin folio** (`requiereFolio()` falso, `tipoConsecutivo()` nulo), **sólo para alumnos con egreso** (guarda en `FormatoService::generar`, 422 con mensaje claro), datos = egreso + avance + servicio social + prácticas; plantilla `constancia_terminacion.blade.php` y botón en `FormatoAcademico`.
 - **Pruebas:** `EgresoTitulacionTest` (39) — matriz de las 5 capacidades por rol, 403 por pantalla, faltantes explicados, snapshot de requisitos, doble egreso, baja definitiva, equivalencias (materia + créditos libres: 11 de 8), deuda irrelevante, folio único, estatus TITULADO, listado de egresados en el modal, ADMINISTRACION de sólo lectura y constancia sólo egresados.
 - **Gate:** `composer test` **715 / 3151 / 0 fallas** (baseline 676 / 3058) · 70 rutas · 49 migraciones (45 ejecutadas + 4 pendientes locales) · `view:cache` OK · `npm run build` OK (57.93 kB) · sin `public/hot`.
+
+### 2.0-15 — Portal de docente (completa)
+
+- **Sin migraciones** (fase sólo de autorización y portales).
+- **Capacidades nuevas (§8.2):** `portal_docente.acceder` y `docente.grupo.ver` (sólo DOCENTE) + la lectura endurecida de los 4 portales `alumno.ver`, `inscripcion.ver`, `pago.ver`, `documento.ver` = ADMISIONES + ADMINISTRACION + CONTROL_ESCOLAR (antes bastaba `$user->activo`: cualquier rol autenticado, incl. DOCENTE). ADMIN vía `Gate::before`.
+- **Policies endurecidas:** `AlumnoPolicy::viewAny|view`, `InscripcionPolicy::viewAny|view`, `PagoPolicy::viewAny|view|descargarComprobante`, `DocumentoPolicy::viewAny|view` ahora delegan en su capacidad `*.ver`; `GrupoPolicy::verComoDocente` (rol DOCENTE **y** grupo asignado a su perfil `docentes.user_id`).
+- **Portal:** rutas `GET /docente` (`docente.inicio`), `GET /docente/grupos/{grupo}` y 4 capturas reutilizadas (`…/evaluaciones|calificaciones|asistencia|actas`) → componentes `DocenteInicio` y `DocenteGrupo` (nuevos) + `EvaluacionAdmin`, `CalificacionAdmin`, `AsistenciaAdmin` y `ActaAdmin` existentes, todos con `mount` que exige `verComoDocente` cuando el usuario es DOCENTE (trait `App\Livewire\Concerns\AutorizaGrupoDocente`).
+- **Aislamiento de la captura:** `seleccionarGrupo` de Calificacion/Asistencia/CrearActa rechaza grupos ajenos para DOCENTE; los listados de grupos se filtran por el docente; `ActaService::crear` comprueba la propiedad del grupo (escritura de evaluaciones/calificaciones/asistencia ya estaba acotada en sus servicios).
+- **Brechas cerradas (auditoría H):** `HistorialAcademico` (sin gate alguno) → `historial.ver`; `BecaAdmin` → `beca.ver`; `BajaAdmin` → `baja.ver`; `EquivalenciaAdmin` → `equivalencia.ver`; `FormatoAcademico` → `formato_academico.generar`; `PanelOperativo` → `inscripcion.ver` (el `/dashboard` ahora da 403 a DOCENTE/ALUMNO).
+- **Navegación:** sidebar con `can` en Dashboard (`inscripcion.ver`), Alumnos (`alumno.ver`) e Inscripciones (`inscripcion.ver`) + grupo **Docente** con "Mis grupos" (sólo visible con `portal_docente.acceder`); marca, breadcrumb "Inicio", raíz `/` y `LoginController` apuntan a `docente.inicio` para DOCENTE (el resto conserva `/dashboard`).
+- **Correcciones puntuales:** `User::docenteOrCreate()` cachea el perfil recién creado (el portal veía "sin perfil" en la misma petición) y `EvaluacionAdmin::render` usaba `Grupo::evaluaciones()`, relación inexistente en la rama con grupo (latente hasta ahora por no existir ruta con `{grupo}`).
+- **Pruebas:** `PortalDocenteTest` (38) — matriz de las 6 capacidades por rol, portal abierto/cerrado por rol, redirección de login, 403 en dashboard y 13 pantallas admin, sidebar por rol, grupo propio vs. ajeno, capturas con grupo propio, listados sin grupos ajenos, bloqueo de cambio de selección, `ActaService` y estados vacíos.
+- **Gate:** `composer test` **753 / 3225 / 0 fallas** (baseline 715 / 3151) · 76 rutas (+6) · **0 migraciones nuevas** · `view:cache` OK · `npm run build` OK (58.06 kB) · sin `public/hot`.
 
 - **Autorización explícita del usuario** para ejecutar como **un único macrobloque** las fases **2.0-13** (Servicio social + prácticas profesionales), **2.0-14** (Egreso + titulación internos + constancia de terminación), **2.0-15** (Portal de docente) y **2.0-16** (Portal de alumno, rol `ALUMNO` con aislamiento estricto D-N5).
 - **Regla vigente:** `reglas-desarrollo.md` §2 → **§2.1 Excepción de MACROBLOQUE**: por defecto cada fase requiere autorización; dentro de un macrobloque enumerado, el gate verde de una fase permite continuar **automáticamente** a la siguiente **del mismo macrobloque**, conservando gates internos por fase y deteniéndose ante cualquier bloqueo real.

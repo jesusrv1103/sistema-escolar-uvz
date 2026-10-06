@@ -29,6 +29,8 @@ use App\Livewire\Academico\ServicioSocialIndex;
 use App\Livewire\Academico\TitulacionIndex;
 use App\Livewire\Academico\BecaAdmin;
 use App\Livewire\Alumnos\FormAlumno;
+use App\Livewire\Docentes\DocenteGrupo;
+use App\Livewire\Docentes\DocenteInicio;
 use App\Livewire\Alumnos\FormContactos;
 use App\Livewire\Alumnos\FormInfoMedica;
 use App\Livewire\Alumnos\ListaAlumnos;
@@ -45,7 +47,14 @@ use App\Livewire\Inscripciones\WizardInscripcion;
 use App\Livewire\Observaciones\ListaObservaciones;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('dashboard'));
+Route::get('/', function () {
+    $usuario = request()->user();
+
+    // Portal de docente (2.0-15): el DOCENTE no tiene /dashboard.
+    return redirect()->route(
+        $usuario !== null && $usuario->rol->value === 'DOCENTE' ? 'docente.inicio' : 'dashboard'
+    );
+});
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -156,6 +165,18 @@ Route::middleware(['auth'])->prefix('egreso')->name('egreso.')->group(function (
 
 Route::middleware(['auth'])->prefix('titulacion')->name('titulacion.')->group(function () {
     Route::get('/', TitulacionIndex::class)->name('index');
+});
+
+Route::middleware('auth')->prefix('docente')->name('docente.')->group(function () {
+    Route::get('/', DocenteInicio::class)->name('inicio');
+    // Detalle de un grupo propio: `GrupoPolicy::verComoDocente` en mount.
+    Route::get('/grupos/{grupo}', DocenteGrupo::class)->name('grupos.ver');
+    // Captura reutilizada (componentes existentes), acotada al grupo propio:
+    // mount exige `verComoDocente` cuando el usuario es DOCENTE.
+    Route::get('/grupos/{grupo}/evaluaciones', EvaluacionAdmin::class)->name('grupos.evaluaciones');
+    Route::get('/grupos/{grupo}/calificaciones', CalificacionAdmin::class)->name('grupos.calificaciones');
+    Route::get('/grupos/{grupo}/asistencia', AsistenciaAdmin::class)->name('grupos.asistencia');
+    Route::get('/grupos/{grupo}/actas', ActaAdmin::class)->name('grupos.actas');
 });
 
 // Catálogos administrables (Fase 3) — solo ADMIN.

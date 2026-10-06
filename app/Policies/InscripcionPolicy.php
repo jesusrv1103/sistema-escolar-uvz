@@ -12,12 +12,12 @@ class InscripcionPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->activo;
+        return $user->can('inscripcion.ver');
     }
 
     public function view(User $user): bool
     {
-        return $user->activo;
+        return $user->can('inscripcion.ver');
     }
 
     public function create(User $user): bool

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Academico;
 
+use App\Livewire\Concerns\AutorizaGrupoDocente;
 use App\Models\Asistencia;
 use App\Models\Grupo;
 use App\Models\InscripcionMateria;
@@ -14,7 +15,7 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class AsistenciaAdmin extends Component
 {
-    use WithPagination;
+    use AutorizaGrupoDocente, WithPagination;
 
     public string $busqueda = '';
     public ?Grupo $grupo = null;
@@ -26,6 +27,8 @@ class AsistenciaAdmin extends Component
     public function mount(?Grupo $grupo = null): void
     {
         Gate::authorize('asistencia.crear');
+        // Portal docente (2.0-15): el DOCENTE sólo entra por un grupo propio.
+        $this->autorizarGrupoSiDocente($grupo);
         // Un Grupo vacío (resolución por contenedor sin id de ruta) no es una
         // selección: se normaliza a null para no listar con `grupo_id null`.
         $this->grupo = $grupo?->exists ? $grupo : null;
@@ -41,7 +44,14 @@ class AsistenciaAdmin extends Component
      */
     public function seleccionarGrupo(string $grupoId): void
     {
-        $this->grupo = $grupoId !== '' ? Grupo::find($grupoId) : null;
+        $grupo = $grupoId !== '' ? Grupo::find($grupoId) : null;
+
+        // Portal docente (2.0-15): no se puede apuntar a un grupo ajeno.
+        if ($grupo !== null) {
+            $this->autorizarGrupoSiDocente($grupo);
+        }
+
+        $this->grupo = $grupo;
         // La lista cargada pertenecía al grupo anterior.
         $this->asistencias = [];
         $this->resetErrorBag();
@@ -124,10 +134,10 @@ class AsistenciaAdmin extends Component
 
     public function render()
     {
-        $grupos = Grupo::with(['materia', 'periodo', 'docente'])
-            ->where('activo', true)
-            ->orderBy('clave')
-            ->get();
+        $grupos = $this->limitarGruposAlDocente(
+            Grupo::with(['materia', 'periodo', 'docente'])
+                ->where('activo', true)
+        )->orderBy('clave')->get();
 
         return view('livewire.academico.asistencia-admin', [
             'grupos' => $grupos,

@@ -168,6 +168,17 @@ class AuthServiceProvider extends ServiceProvider
         'titulacion.ver' => [RolUsuario::CONTROL_ESCOLAR, RolUsuario::ADMINISTRACION],
         'titulacion.crear' => [RolUsuario::CONTROL_ESCOLAR],
         'titulacion.actualizar' => [RolUsuario::CONTROL_ESCOLAR],
+        // 2.0-15 — Portal de docente (sólo DOCENTE) + lectura de portales
+        // endurecida según §8.2: "Lectura de alumnos / inscripciones / pagos /
+        // documentos" = ADMISIONES, ADMINISTRACION y CONTROL_ESCOLAR. No es un
+        // permiso nuevo: antes valía `$user->activo` (cualquier rol autenticado,
+        // incl. DOCENTE). ADMIN pasa por Gate::before.
+        'portal_docente.acceder' => [RolUsuario::DOCENTE],
+        'docente.grupo.ver' => [RolUsuario::DOCENTE],
+        'alumno.ver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
+        'inscripcion.ver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
+        'pago.ver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
+        'documento.ver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
     ];
 
     public function boot(): void

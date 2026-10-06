@@ -23,9 +23,21 @@
      *  - items: subitems (solo grupos)
      */
     $nav = [
-        ['label' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard', 'match' => 'dashboard'],
-        ['label' => 'Alumnos', 'icon' => 'users', 'route' => 'alumnos.lista', 'match' => 'alumnos.*'],
-        ['label' => 'Inscripciones', 'icon' => 'clipboard', 'route' => 'inscripciones.lista', 'match' => 'inscripciones.*'],
+        // `can` = capacidad de lectura (2.0-15): el panel y los listados son
+        // administrativos; DOCENTE/ALUMNO no los ven (aislamiento de portales).
+        ['label' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard', 'match' => 'dashboard', 'can' => 'inscripcion.ver'],
+        ['label' => 'Alumnos', 'icon' => 'users', 'route' => 'alumnos.lista', 'match' => 'alumnos.*', 'can' => 'alumno.ver'],
+        ['label' => 'Inscripciones', 'icon' => 'clipboard', 'route' => 'inscripciones.lista', 'match' => 'inscripciones.*', 'can' => 'inscripcion.ver'],
+
+        // Portal de docente (2.0-15): sólo DOCENTE; el grupo desaparece para
+        // el resto de roles porque sus hijos quedan filtrados.
+        [
+            'label' => 'Docente',
+            'icon' => 'academic-cap',
+            'items' => [
+                ['label' => 'Mis grupos', 'icon' => 'users', 'route' => 'docente.inicio', 'match' => ['docente.inicio', 'docente.grupos.*'], 'can' => 'portal_docente.acceder'],
+            ],
+        ],
 
         [
             'label' => 'Académico',
@@ -134,6 +146,10 @@
     }
 
     $user = auth()->user();
+
+    // "Inicio" personal (2.0-15): el DOCENTE entra a su portal; el resto de
+    // roles conserva el panel operativo. (En 2.0-16 se suma ALUMNO.)
+    $inicio = $user->rol->value === 'DOCENTE' ? 'docente.inicio' : 'dashboard';
 @endphp
 
 <div id="app-shell" data-sidebar="expanded" class="min-h-screen">
@@ -160,7 +176,7 @@
         --}}
         <div class="shrink-0 border-b border-brand-line">
             <div class="flex h-16 items-center px-4">
-                <a href="{{ route('dashboard') }}"
+                <a href="{{ route($inicio) }}"
                     class="flex min-w-0 items-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
                     aria-label="{{ config('branding.name') }}">
                     <img src="{{ asset(config('branding.logo')) }}" alt="" width="1193" height="338"
@@ -277,7 +293,7 @@
                     <nav aria-label="Ruta de navegación" class="hidden text-xs text-brand-muted sm:block">
                         <ol class="flex items-center gap-1.5">
                             <li>
-                                <a href="{{ route('dashboard') }}"
+                                <a href="{{ route($inicio) }}"
                                     class="rounded transition-colors hover:text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary">Inicio</a>
                             </li>
                             @if ($group)

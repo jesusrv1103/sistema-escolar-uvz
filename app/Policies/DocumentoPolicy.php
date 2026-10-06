@@ -15,13 +15,13 @@ class DocumentoPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->activo;
+        return $user->can('documento.ver');
     }
 
     /** Lectura/descarga del documento (incluye el archivo en disco privado). */
     public function view(User $user, ?Documento $documento = null): bool
     {
-        return $user->activo;
+        return $user->can('documento.ver');
     }
 
     public function cargar(User $user): bool

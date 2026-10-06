@@ -5,6 +5,7 @@ namespace App\Livewire\Academico;
 use App\Enums\TipoEvaluacion;
 use App\Livewire\Academico\CrearEvaluacion;
 use App\Livewire\Academico\EditarEvaluacion;
+use App\Livewire\Concerns\AutorizaGrupoDocente;
 use App\Models\Evaluacion;
 use App\Models\Grupo;
 use App\Services\EvaluacionService;
@@ -16,7 +17,7 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class EvaluacionAdmin extends Component
 {
-    use WithPagination;
+    use AutorizaGrupoDocente, WithPagination;
 
     public string $busqueda = '';
     public string $filtroGrupo = '';
@@ -29,6 +30,8 @@ class EvaluacionAdmin extends Component
     public function mount(?Grupo $grupo = null): void
     {
         Gate::authorize('evaluacion.crear');
+        // Portal docente (2.0-15): el DOCENTE sólo entra por un grupo propio.
+        $this->autorizarGrupoSiDocente($grupo);
         $this->grupo = $grupo;
     }
 
@@ -81,11 +84,14 @@ class EvaluacionAdmin extends Component
 
     public function render()
     {
+        // `Grupo` no tiene relación `evaluaciones()` (la rama quedó sin usar
+        // hasta 2.0-15, cuando el portal del docente entra con grupo propio).
         $evaluaciones = $this->grupo
-            ? $this->grupo->evaluaciones()
+            ? \App\Models\Evaluacion::query()
+                ->where('grupo_id', $this->grupo->id)
                 ->when($this->busqueda, fn ($q) => $q->where('nombre', 'like', "%{$this->busqueda}%"))
                 ->when($this->filtroTipo !== '', fn ($q) => $q->where('tipo', $this->filtroTipo))
-                ->with(['grupo', 'creadaPor'])
+                ->with(['grupo.materia', 'creadaPor'])
                 ->orderBy('fecha', 'desc')
                 ->paginate(15)
             : \App\Models\Evaluacion::query()
@@ -96,7 +102,9 @@ class EvaluacionAdmin extends Component
                 ->orderBy('fecha', 'desc')
                 ->paginate(15);
 
-        $grupos = \App\Models\Grupo::with(['materia', 'periodo'])->orderBy('clave')->get();
+        $grupos = $this->limitarGruposAlDocente(
+            \App\Models\Grupo::with(['materia', 'periodo'])
+        )->orderBy('clave')->get();
         $tipos = \App\Enums\TipoEvaluacion::ejemplos();
 
         return view('livewire.academico.evaluacion-admin', [

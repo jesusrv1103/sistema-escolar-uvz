@@ -29,6 +29,12 @@ class EquivalenciaAdmin extends Component
     public string $dictamen = '';
     public EstatusEquivalencia $estatus = EstatusEquivalencia::PENDIENTE;
 
+    public function mount(): void
+    {
+        // Aislamiento de portales (2.0-15): gate en mount (antes sólo UX).
+        Gate::authorize('equivalencia.ver');
+    }
+
     public function limpiarFiltros(): void
     {
         $this->busqueda = '';

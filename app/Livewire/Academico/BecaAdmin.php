@@ -53,6 +53,11 @@ class BecaAdmin extends Component
 
     public function mount(): void
     {
+        // Aislamiento de portales (2.0-15): las 4 rutas del grupo (becas,
+        // estado de cuenta y carta de no adeudo) comparten esta capacidad de
+        // lectura, idéntica a `estado_cuenta.ver`/`carta_no_adeudo.generar`.
+        Gate::authorize('beca.ver');
+
         $this->fecha_inicio = now()->format('Y-m-d');
         $this->fecha_fin = now()->addYear()->format('Y-m-d');
 

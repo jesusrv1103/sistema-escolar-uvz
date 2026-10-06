@@ -64,12 +64,23 @@ class User extends Authenticatable
      */
     public function docenteOrCreate(): Docente
     {
-        return $this->docente ?? $this->docente()->create([
+        if ($this->docente !== null) {
+            return $this->docente;
+        }
+
+        $perfil = $this->docente()->create([
             'clave' => 'DOC-' . str_pad($this->id, 6, '0', STR_PAD_LEFT),
             'nombre' => $this->name,
             'apellidos' => '',
             'curp' => $this->generateCurp(),
         ]);
+
+        // Se cachea la relación recién creada: sin esto, la lectura anterior
+        // (`$this->docente` en null) quedaba cacheada y el portal del docente
+        // seguía viendo "sin perfil" hasta la siguiente petición (2.0-15).
+        $this->setRelation('docente', $perfil);
+
+        return $perfil;
     }
 
     /**

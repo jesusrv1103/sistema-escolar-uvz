@@ -28,6 +28,13 @@ class FormatoAcademico extends Component
 
     protected $listeners = ['generarFormato'];
 
+    public function mount(): void
+    {
+        // Aislamiento de portales (2.0-15): el menú ya usaba esta capacidad;
+        // la pantalla no la validaba server-side (DOCENTE/ADMISIONES la veían).
+        Gate::authorize('formato_academico.generar');
+    }
+
     public function generarFormato(string $tipo, ?Alumno $alumno = null, ?Acta $acta = null): void
     {
         Gate::authorize('documento_generado.crear');

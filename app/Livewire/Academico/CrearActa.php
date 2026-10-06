@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Academico;
 
+use App\Livewire\Concerns\AutorizaGrupoDocente;
 use App\Models\Acta;
 use App\Models\Grupo;
 use App\Models\Periodo;
@@ -11,6 +12,8 @@ use Livewire\Component;
 
 class CrearActa extends Component
 {
+    use AutorizaGrupoDocente;
+
     public bool $modalAbierto = false;
     public ?Grupo $grupo = null;
     public ?Periodo $periodo = null;
@@ -43,7 +46,14 @@ class CrearActa extends Component
 
     public function seleccionarGrupo(string $grupoId): void
     {
-        $this->grupo = $grupoId !== '' ? Grupo::find($grupoId) : null;
+        $grupo = $grupoId !== '' ? Grupo::find($grupoId) : null;
+
+        // Portal docente (2.0-15): no se puede apuntar a un grupo ajeno.
+        if ($grupo !== null) {
+            $this->autorizarGrupoSiDocente($grupo);
+        }
+
+        $this->grupo = $grupo;
         $this->resetErrorBag();
     }
 
@@ -82,11 +92,11 @@ class CrearActa extends Component
     public function render()
     {
         $periodos = Periodo::where('activo', true)->orderBy('fecha_inicio', 'desc')->get();
-        $grupos = Grupo::with(['materia', 'periodo', 'docente'])
-            ->where('activo', true)
-            ->where('periodo_id', $this->periodo?->id ?? 0)
-            ->orderBy('clave')
-            ->get();
+        $grupos = $this->limitarGruposAlDocente(
+            Grupo::with(['materia', 'periodo', 'docente'])
+                ->where('activo', true)
+                ->where('periodo_id', $this->periodo?->id ?? 0)
+        )->orderBy('clave')->get();
 
         return view('livewire.academico.crear-acta', [
             'periodos' => $periodos,

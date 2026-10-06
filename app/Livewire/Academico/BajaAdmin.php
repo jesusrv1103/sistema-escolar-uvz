@@ -34,6 +34,12 @@ class BajaAdmin extends Component
     public string $reingresoAt = '';
     public ?Baja $baja = null;
 
+    public function mount(): void
+    {
+        // Aislamiento de portales (2.0-15): gate en mount (antes sólo UX).
+        Gate::authorize('baja.ver');
+    }
+
     public function limpiarFiltros(): void
     {
         $this->busqueda = '';

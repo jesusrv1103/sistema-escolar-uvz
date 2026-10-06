@@ -21,6 +21,13 @@ class HistorialAcademico extends Component
 
     protected $listeners = ['alumnoSeleccionado'];
 
+    public function mount(): void
+    {
+        // Aislamiento de portales (2.0-15): esta pantalla no tenía ninguna
+        // autorización server-side (cualquier autenticado podía abrirla).
+        Gate::authorize('historial.ver');
+    }
+
     public function limpiarFiltros(): void
     {
         $this->busqueda = '';
