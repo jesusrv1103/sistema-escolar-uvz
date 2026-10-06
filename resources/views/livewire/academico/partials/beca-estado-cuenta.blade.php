@@ -33,27 +33,16 @@
 
         @if ($alumnoEstadoCuenta)
             @php
-                $conceptos = \App\Models\ConceptoPago::query()
-                    ->whereHas('inscripcion', fn ($q) => $q->where('alumno_id', $alumnoEstadoCuenta->id))
-                    ->with('inscripcion.alumno')
-                    ->orderBy('fecha_vencimiento')
-                    ->get();
-                $pagos = \App\Models\Pago::query()
-                    ->whereHas('conceptoPago.inscripcion', fn ($q) => $q->where('alumno_id', $alumnoEstadoCuenta->id))
-                    ->with('conceptoPago.inscripcion')
-                    ->orderByDesc('fecha_pago')
-                    ->get();
-                $ajustes = \App\Models\AjusteFinanciero::where('alumno_id', $alumnoEstadoCuenta->id)
-                    ->with('conceptoPago', 'becaAlumno.beca')
-                    ->orderByDesc('registrado_at')
-                    ->get();
-
-                $totalCargos = $conceptos->sum('monto_total');
-                $totalPagos = $pagos->where('estatus', 'VALIDADO')->sum('monto');
-                // `efectoSobreSaldo` es un método, no una columna: como clave de
-                // `sum()` devolvía null y el total de ajustes salía siempre 0.
-                $totalAjustes = $ajustes->sum(fn ($ajuste) => $ajuste->efectoSobreSaldo());
-                $saldo = $totalCargos - $totalPagos - $totalAjustes;
+                // Única fuente de la fórmula (2.0-16): el portal del alumno
+                // usa exactamente el mismo servicio.
+                $ec = app(\App\Services\EstadoCuentaService::class)->resumen($alumnoEstadoCuenta);
+                $conceptos = $ec['conceptos'];
+                $pagos = $ec['pagos'];
+                $ajustes = $ec['ajustes'];
+                $totalCargos = $ec['total_cargos'];
+                $totalPagos = $ec['total_pagos'];
+                $totalAjustes = $ec['total_ajustes'];
+                $saldo = $ec['saldo'];
             @endphp
 
             <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

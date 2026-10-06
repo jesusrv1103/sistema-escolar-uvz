@@ -39,6 +39,15 @@
             ],
         ],
 
+        // Portal de alumno (2.0-16): sólo ALUMNO, misma lógica de ocultado.
+        [
+            'label' => 'Alumno',
+            'icon' => 'user',
+            'items' => [
+                ['label' => 'Mi portal', 'icon' => 'user', 'route' => 'alumno.inicio', 'match' => ['alumno.*'], 'can' => 'portal_alumno.acceder'],
+            ],
+        ],
+
         [
             'label' => 'Académico',
             'icon' => 'academic-cap',
@@ -147,9 +156,13 @@
 
     $user = auth()->user();
 
-    // "Inicio" personal (2.0-15): el DOCENTE entra a su portal; el resto de
-    // roles conserva el panel operativo. (En 2.0-16 se suma ALUMNO.)
-    $inicio = $user->rol->value === 'DOCENTE' ? 'docente.inicio' : 'dashboard';
+    // "Inicio" personal (2.0-15 / 2.0-16): DOCENTE y ALUMNO entran a su
+    // portal; el resto de roles conserva el panel operativo.
+    $inicio = match ($user->rol->value) {
+        'DOCENTE' => 'docente.inicio',
+        'ALUMNO' => 'alumno.inicio',
+        default => 'dashboard',
+    };
 @endphp
 
 <div id="app-shell" data-sidebar="expanded" class="min-h-screen">

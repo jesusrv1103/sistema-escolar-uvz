@@ -438,7 +438,7 @@
 | 2.0-13 Servicio social + prácticas | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 676 tests / 3058 assertions / 0 fallas · 69 rutas · build OK · view:cache OK |
 | 2.0-14 Egreso + titulación + constancia | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 715 tests / 3151 assertions / 0 fallas · 70 rutas · build OK · view:cache OK |
 | 2.0-15 Portal de docente | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 753 tests / 3225 assertions / 0 fallas · 76 rutas · 0 migraciones · build OK · view:cache OK |
-| 2.0-16 Portal de alumno | ⬜ pendiente | — |
+| 2.0-16 Portal de alumno | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` (cierre del macrobloque) | 773 tests / 3293 assertions / 0 fallas · 81 rutas · 1 migración · build OK · view:cache OK |
 
 ### 2.0-13 — Servicio social y prácticas profesionales (completa)
 
@@ -479,6 +479,19 @@
 - **Correcciones puntuales:** `User::docenteOrCreate()` cachea el perfil recién creado (el portal veía "sin perfil" en la misma petición) y `EvaluacionAdmin::render` usaba `Grupo::evaluaciones()`, relación inexistente en la rama con grupo (latente hasta ahora por no existir ruta con `{grupo}`).
 - **Pruebas:** `PortalDocenteTest` (38) — matriz de las 6 capacidades por rol, portal abierto/cerrado por rol, redirección de login, 403 en dashboard y 13 pantallas admin, sidebar por rol, grupo propio vs. ajeno, capturas con grupo propio, listados sin grupos ajenos, bloqueo de cambio de selección, `ActaService` y estados vacíos.
 - **Gate:** `composer test` **753 / 3225 / 0 fallas** (baseline 715 / 3151) · 76 rutas (+6) · **0 migraciones nuevas** · `view:cache` OK · `npm run build` OK (58.06 kB) · sin `public/hot`.
+
+### 2.0-16 — Portal de alumno (completa — cierra el macrobloque 2.0-13 → 2.0-16)
+
+- **Migración nueva (1):** `alumnos.user_id` nullable + UNIQUE + FK → `users` (`restrictOnDelete`). No existía ninguna forma de vincular una cuenta ALUMNO con su expediente y el diseño exige identidad desde `auth()->user()->alumno`. Relación nueva `User::alumno()` (HasOne).
+- **Rol ALUMNO (D-N5):** `RolUsuario::ALUMNO` con `label()` es_MX "Alumno".
+- **Capacidad (§8.2):** `portal_alumno.acceder` => sólo ALUMNO (ADMIN por `Gate::before`). Las 4 lecturas `alumno.ver`/`inscripcion.ver`/`pago.ver`/`documento.ver` ya estaban desde 2.0-15.
+- **Rutas (§K), gate en mount, SIN `{alumno}` ni query params:** `GET /alumno` (`alumno.inicio`), `/alumno/kardex`, `/alumno/horario`, `/alumno/estado-cuenta`, `/alumno/documentos` → componentes `AlumnoInicio`, `AlumnoKardex`, `AlumnoHorario`, `AlumnoEstadoCuenta`, `AlumnoDocumentos` (nuevos, sólo lectura, todas las consultas acotadas al alumno de la cuenta).
+- **Fuentes reutilizadas (sin lógica nueva):** `HistorialAcademicoService` (kardex, promedio, créditos, avance) y `EstadoCuentaService` — **servicio nuevo extraído de la vista administrativa** con la fórmula de 2.0-12 intacta (`cargos − pagos VALIDADOS − ajustes`), usado por `beca-estado-cuenta` **y** por el portal: una sola fuente para ambas vistas.
+- **Policies con rama de propiedad:** `DocumentoGeneradoPolicy::view` gana ALUMNO sólo con `alumno_id === user->alumno->id`; `DocumentoPolicy::view` permite al ALUMNO los documentos de su propia inscripción (necesario para la descarga privada). Nada nuevo para otros roles.
+- **Navegación:** sidebar con grupo **Alumno** ("Mi portal", `can => portal_alumno.acceder`), `can` ya presente en todos los items; marca, breadcrumb "Inicio", raíz `/` y `LoginController` envían a `alumno.inicio` (DOCENTE a `docente.inicio`, el resto a `/dashboard`).
+- **Aislamiento comprobado:** `/dashboard` y 15 pantallas administrativas → 403 para ALUMNO; identidad por cuenta: batería A vs B en las 5 pantallas, ids de ruta inexistentes (404), `?alumno=` ignorado y payload de Livewire sin efecto; descarga del formato de B → 403.
+- **Pruebas:** `PortalAlumnoTest` (20) — matriz de la capacidad por rol, portal por rol, redirección de login, 403 en 15 rutas admin, sidebar por rol, aislamiento A/B completo, documentos ajenos, **identidad de la fórmula de estado de cuenta portal ↔ backoffice ↔ servicio** y estados vacíos.
+- **Gate:** `composer test` **773 / 3293 / 0 fallas** (baseline 753 / 3225) · 81 rutas (+5) · 50 migraciones (45 ejecutadas + 5 pendientes locales) · `view:cache` OK · `npm run build` OK (58.06 kB) · sin `public/hot`.
 
 - **Autorización explícita del usuario** para ejecutar como **un único macrobloque** las fases **2.0-13** (Servicio social + prácticas profesionales), **2.0-14** (Egreso + titulación internos + constancia de terminación), **2.0-15** (Portal de docente) y **2.0-16** (Portal de alumno, rol `ALUMNO` con aislamiento estricto D-N5).
 - **Regla vigente:** `reglas-desarrollo.md` §2 → **§2.1 Excepción de MACROBLOQUE**: por defecto cada fase requiere autorización; dentro de un macrobloque enumerado, el gate verde de una fase permite continuar **automáticamente** a la siguiente **del mismo macrobloque**, conservando gates internos por fase y deteniéndose ante cualquier bloqueo real.

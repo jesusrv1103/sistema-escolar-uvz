@@ -175,6 +175,9 @@ class AuthServiceProvider extends ServiceProvider
         // incl. DOCENTE). ADMIN pasa por Gate::before.
         'portal_docente.acceder' => [RolUsuario::DOCENTE],
         'docente.grupo.ver' => [RolUsuario::DOCENTE],
+        // 2.0-16 — Portal de alumno (sólo ALUMNO); la identidad siempre sale
+        // de `auth()->user()->alumno`, nunca de la ruta (aislamiento C1).
+        'portal_alumno.acceder' => [RolUsuario::ALUMNO],
         'alumno.ver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
         'inscripcion.ver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
         'pago.ver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],

@@ -44,6 +44,13 @@ class DocumentoGeneradoPolicy
             }
         }
 
+        // ALUMNO (2.0-16) ve sólo los documentos generados a su propio nombre
+        if ($user->rol->value === 'ALUMNO') {
+            return $documento->alumno_id !== null
+                && $user->alumno !== null
+                && $documento->alumno_id === $user->alumno->id;
+        }
+
         return false;
     }
 

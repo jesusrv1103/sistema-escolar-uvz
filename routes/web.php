@@ -29,6 +29,11 @@ use App\Livewire\Academico\ServicioSocialIndex;
 use App\Livewire\Academico\TitulacionIndex;
 use App\Livewire\Academico\BecaAdmin;
 use App\Livewire\Alumnos\FormAlumno;
+use App\Livewire\Alumnos\AlumnoDocumentos;
+use App\Livewire\Alumnos\AlumnoEstadoCuenta;
+use App\Livewire\Alumnos\AlumnoHorario;
+use App\Livewire\Alumnos\AlumnoInicio;
+use App\Livewire\Alumnos\AlumnoKardex;
 use App\Livewire\Docentes\DocenteGrupo;
 use App\Livewire\Docentes\DocenteInicio;
 use App\Livewire\Alumnos\FormContactos;
@@ -49,11 +54,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     $usuario = request()->user();
+    $rol = $usuario?->rol->value;
 
-    // Portal de docente (2.0-15): el DOCENTE no tiene /dashboard.
-    return redirect()->route(
-        $usuario !== null && $usuario->rol->value === 'DOCENTE' ? 'docente.inicio' : 'dashboard'
-    );
+    // Portales (2.0-15 / 2.0-16): DOCENTE y ALUMNO no tienen /dashboard.
+    return redirect()->route(match ($rol) {
+        'DOCENTE' => 'docente.inicio',
+        'ALUMNO' => 'alumno.inicio',
+        default => 'dashboard',
+    });
 });
 
 Route::middleware('guest')->group(function () {
@@ -177,6 +185,16 @@ Route::middleware('auth')->prefix('docente')->name('docente.')->group(function (
     Route::get('/grupos/{grupo}/calificaciones', CalificacionAdmin::class)->name('grupos.calificaciones');
     Route::get('/grupos/{grupo}/asistencia', AsistenciaAdmin::class)->name('grupos.asistencia');
     Route::get('/grupos/{grupo}/actas', ActaAdmin::class)->name('grupos.actas');
+});
+
+// Portal de alumno (2.0-16): identidad SIEMPRE desde `auth()->user()->alumno`
+// (sin {alumno} ni query params — aislamiento C1). Gate en mount.
+Route::middleware('auth')->prefix('alumno')->name('alumno.')->group(function () {
+    Route::get('/', AlumnoInicio::class)->name('inicio');
+    Route::get('/kardex', AlumnoKardex::class)->name('kardex');
+    Route::get('/horario', AlumnoHorario::class)->name('horario');
+    Route::get('/estado-cuenta', AlumnoEstadoCuenta::class)->name('estado.cuenta');
+    Route::get('/documentos', AlumnoDocumentos::class)->name('documentos');
 });
 
 // Catálogos administrables (Fase 3) — solo ADMIN.

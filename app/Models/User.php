@@ -60,6 +60,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Expediente de alumno vinculado a la cuenta (2.0-16 — portal de alumno).
+     *
+     * Es la ÚNICA fuente de identidad del portal: las rutas de `/alumno/*`
+     * no reciben `{alumno}` (aislamiento C1 aprobado).
+     */
+    public function alumno(): HasOne
+    {
+        return $this->hasOne(Alumno::class, 'user_id');
+    }
+
+    /**
      * Obtiene o crea el perfil de docente del usuario.
      */
     public function docenteOrCreate(): Docente
