@@ -102,6 +102,16 @@
     #app-shell[data-sidebar='collapsed'] details:not([open]) > .nav-children {
         display: block;
     }
+
+    /*
+     * El logo horizontal (3,5:1) cae a una caja de 48px en la barra colapsada:
+     * con la altura fija por clase se deformaba. Se libera la altura para que
+     * mande `max-width: 100%` de Tailwind y el logo conserve su proporción
+     * sin salirse del sidebar.
+     */
+    #app-shell[data-sidebar='collapsed'] #app-sidebar img {
+        height: auto;
+    }
 }
 
 /* Chevron del submenú girado cuando el grupo está abierto. */

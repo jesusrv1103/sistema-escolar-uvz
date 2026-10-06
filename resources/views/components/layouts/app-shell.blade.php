@@ -142,17 +142,32 @@
         aria-label="Navegación principal">
 
         {{-- Marca --}}
-        <div class="flex h-16 shrink-0 items-center gap-3 border-b border-brand-line px-4">
-            <a href="{{ route('dashboard') }}"
-                class="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                aria-label="{{ config('branding.name') }}">
-                <img src="{{ asset(config('branding.logo')) }}" alt="" width="1193" height="338"
-                    class="h-8 w-auto shrink-0 lg:h-9">
-                <span class="sidebar-label min-w-0 leading-tight">
-                    <span class="block truncate text-sm font-semibold text-brand-text">{{ config('branding.name') }}</span>
-                    <span class="block truncate text-xs text-brand-muted">{{ config('branding.system_name') }}</span>
-                </span>
-            </a>
+        {{--
+          El logo horizontal ya trae el escudo y el nombre, pero el texto de la
+          marca se pintaba en la misma fila con `truncate`: en 1920/1440/1024
+          (sidebar de 256px) "Universidad Villa de Zacatecas" se cortaba con
+          puntos suspensivos y en el drawer sólo cabía una parte. Se apila en
+          dos bloques —logo a la altura del topbar y nombre a ancho completo—
+          para que el texto se componga sin truncar en ningún breakpoint y sin
+          overflow horizontal. Sin abreviaturas ni cambios de branding.
+        --}}
+        <div class="shrink-0 border-b border-brand-line">
+            <div class="flex h-16 items-center px-4">
+                <a href="{{ route('dashboard') }}"
+                    class="flex min-w-0 items-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                    aria-label="{{ config('branding.name') }}">
+                    <img src="{{ asset(config('branding.logo')) }}" alt="" width="1193" height="338"
+                        class="h-8 w-auto shrink-0 lg:h-9">
+                </a>
+            </div>
+            <div class="sidebar-label px-4 pb-3">
+                <p class="break-words text-sm font-semibold leading-tight text-brand-text">
+                    {{ config('branding.name') }}
+                </p>
+                <p class="break-words text-xs leading-tight text-brand-muted">
+                    {{ config('branding.system_name') }}
+                </p>
+            </div>
         </div>
 
         {{-- Enlaces --}}

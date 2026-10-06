@@ -44,6 +44,41 @@ test('el sidebar solo muestra secciones autorizadas para el rol', function () {
         ->not->toContain('Tipos de documento');
 });
 
+test('la marca del sidebar muestra el nombre institucional sin truncar', function () {
+    $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
+
+    $html = $this->actingAs($admin)->get(route('dashboard'))->assertOk()->getContent();
+
+    $inicio = strpos($html, 'id="app-sidebar"');
+    $fin = strpos($html, '</aside>', (int) $inicio);
+    $sidebar = substr($html, (int) $inicio, $fin - (int) $inicio);
+
+    expect($inicio)->not->toBeFalse()
+        ->and($sidebar)->toContain(config('branding.name'))
+        ->and($sidebar)->toContain(config('branding.system_name'));
+
+    // Cada ocurrencia de la marca dentro del sidebar vive en una etiqueta sin
+    // `truncate`: con la clase, el nombre completo sólo se ve en pantallas
+    // anchas y en el resto aparecía con puntos suspensivos (1920→390).
+    foreach ([config('branding.name'), config('branding.system_name')] as $texto) {
+        $desde = 0;
+        $ocurrencias = 0;
+
+        while (($pos = strpos($sidebar, $texto, $desde)) !== false) {
+            $etiquetaIni = (int) strrpos(substr($sidebar, 0, $pos), '<');
+            $etiquetaFin = (int) strpos($sidebar, '>', $pos);
+
+            expect(substr($sidebar, $etiquetaIni, $etiquetaFin - $etiquetaIni + 1))
+                ->not->toContain('truncate');
+
+            $ocurrencias++;
+            $desde = $pos + strlen($texto);
+        }
+
+        expect($ocurrencias)->toBeGreaterThan(0);
+    }
+});
+
 test('el listado muestra estado vacio con accion cuando no hay planes', function () {
     $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
 
