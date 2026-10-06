@@ -429,6 +429,16 @@
 - **Documentación actualizada:** `analisis-evolucion-control-escolar.md`, `roadmap-sistema-escolar.md`, `arquitectura-mvp.md` (§7.3, §19, §24), `plan-implementacion.md` (F15/F16 → 2.0-00) y este documento; sin borrar información histórica, **sin código, sin migraciones y sin ejecución de tests** (tarea documental); commit local solo de documentación.
 - **Estado de fases de la Etapa 2: 2.0-00 ✅ COMPLETA e integrada en master** · **2.0-01 ✅ COMPLETA e integrada en master** · **2.0-02 ✅ COMPLETA e integrada en master** · **2.0-03 ✅ COMPLETA e integrada en master** · **2.0-04 ✅ COMPLETA e integrada en master** · **2.0-05 ✅ COMPLETA e integrada en master** · **2.0-06 ✅ COMPLETA e integrada en master** · **2.0-07 ✅ COMPLETA e integrada en master** · **2.0-08 ✅ COMPLETA e integrada en master** · **2.0-09 ✅ COMPLETA en feat/2.0-09-12-historicos-finanzas** · **2.0-10 ✅ COMPLETA en feat/2.0-09-12-historicos-finanzas** · **2.0-11 ✅ COMPLETA en feat/2.0-09-12-historicos-finanzas** · **2.0-12 ✅ COMPLETA en feat/2.0-09-12-historicos-finanzas** · 2.0-13 en adelante: NO INICIADAS.
 
+## Macrobloque 2.0-13 → 2.0-16 — autorizado (registro)
+
+- **Autorización explícita del usuario** para ejecutar como **un único macrobloque** las fases **2.0-13** (Servicio social + prácticas profesionales), **2.0-14** (Egreso + titulación internos + constancia de terminación), **2.0-15** (Portal de docente) y **2.0-16** (Portal de alumno, rol `ALUMNO` con aislamiento estricto D-N5).
+- **Regla vigente:** `reglas-desarrollo.md` §2 → **§2.1 Excepción de MACROBLOQUE**: por defecto cada fase requiere autorización; dentro de un macrobloque enumerado, el gate verde de una fase permite continuar **automáticamente** a la siguiente **del mismo macrobloque**, conservando gates internos por fase y deteniéndose ante cualquier bloqueo real.
+- **Orden obligatorio:** 2.0-13 → 2.0-14 → 2.0-15 → 2.0-16. **2.0-17 NO está autorizada.**
+- **Rama de ejecución:** `feat/2.0-13-16-cierre-portales` (creada desde `master` @ `dd57e65`). **Sin merge a master, sin push, sin remoto, sin rebase, sin force, sin borrado de ramas, sin deploy y sin tocar el demo** durante todo el macrobloque.
+- **Baseline de entrada:** 629 tests / 2971 assertions / 0 fallas · 67 rutas · `npm run build` OK · `view:cache` OK · árbol limpio.
+- **Auditoría de diseño previa a migraciones:** `docs/analisis-macrobloque-2.0-13-16.md` (A–L: reutilización, migraciones necesarias, vínculos User↔Docente/Alumno, servicios canónicos, pipeline de formatos, aislamiento de portales, requisitos de egreso soportados y reglas institucionales desconocidas **no inventadas**).
+- **Pendientes institucionales explícitamente NO inventados:** horas mínimas de servicio social, porcentaje mínimo académico para iniciar, documentos obligatorios de egreso, escala de calificación de prácticas, modalidades oficiales de titulación y formato de folio automático de titulación (si UVZ no lo define, no se genera).
+
 ## Macrobloque 2.0-05 → 2.0-08 — Evaluación Académica (implementado)
 
 ### 2.0-05 — Motor de Formatos + Primeros Formatos (completo)

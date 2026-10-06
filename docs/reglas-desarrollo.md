@@ -34,6 +34,20 @@ Si encuentras una contradicción importante: **DETENERTE y reportarla.** No deci
 - **NO iniciar la siguiente fase** aunque la actual termine correctamente.
 - No implementar funcionalidades del roadmap futuro sin aprobación.
 
+### 2.1 Excepción de MACROBLOQUE (autorización explícita del usuario)
+
+La regla anterior sigue siendo **la norma por defecto**: una fase requiere autorización y la siguiente **no** inicia automáticamente.
+
+Cuando el usuario autorice **explícitamente un MACROBLOQUE** compuesto por varias fases concretamente enumeradas, todas esas fases se consideran **parte del mismo alcance autorizado**:
+
+- Deben conservarse los **gates internos por fase** (pruebas dirigidas + `composer test` + `npm run build` + `route:list` + `view:cache` + documentación de cierre + commit local).
+- Si el gate de una fase queda **verde**, puede continuarse **automáticamente** a la siguiente fase **del mismo macrobloque**, sin pedir permiso nuevamente.
+- Debe **detenerse** únicamente ante un bloqueo real: contradicción de arquitectura, seguridad, regla de negocio no definida indispensable, migración destructiva, pérdida de datos, dependencia importante no prevista, cambio de alcance o prueba cuya intención aprobada deba modificarse.
+- **Nunca** continuar más allá de la última fase explícitamente autorizada.
+- Ninguna otra regla de este documento se debilita por esta excepción.
+
+> **Macrobloque vigente:** **2.0-13 → 2.0-16** (Servicio social y prácticas · Egreso y titulación internos · Portal de docente · Portal de alumno), autorizado explícitamente por el usuario y ejecutado en la rama `feat/2.0-13-16-cierre-portales`. **2.0-17 NO está autorizada.** Registro del alcance en `docs/plan-implementacion.md` y `docs/estado-proyecto.md`; auditoría de diseño en `docs/analisis-macrobloque-2.0-13-16.md`.
+
 Principio:
 
 > "Preparado para crecer, pero implementar únicamente lo que el MVP necesita."
