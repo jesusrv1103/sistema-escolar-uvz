@@ -102,6 +102,11 @@ class ServicioSocialIndex extends Component
 
     public function guardar(): void
     {
+        // Autorización explícita fuera del try: un 403 es 403, no un error de formulario.
+        $this->servicio !== null
+            ? Gate::authorize('servicio_social.actualizar', $this->servicio)
+            : Gate::authorize('servicio_social.crear');
+
         $this->validate([
             'alumno' => 'required',
             'actividad' => 'required|string|max:500',

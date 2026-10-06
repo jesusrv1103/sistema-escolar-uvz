@@ -1,6 +1,6 @@
 <div>
     <x-ui.page-header title="Formatos Académicos II"
-        description="Generación de PDFs institucionales: kardex, boleta, historial, acta, tira de materias y avance." />
+        description="Generación de PDFs institucionales: kardex, boleta, historial, acta, tira de materias, avance y constancia de terminación." />
 
     @if (session('success'))
         <div class="mt-4">

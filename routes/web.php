@@ -22,9 +22,11 @@ use App\Livewire\Academico\ActaAdmin;
 use App\Livewire\Academico\HistorialAcademico;
 use App\Livewire\Academico\FormatoAcademico;
 use App\Livewire\Academico\BajaAdmin;
+use App\Livewire\Academico\EgresoIndex;
 use App\Livewire\Academico\EquivalenciaAdmin;
 use App\Livewire\Academico\PracticasProfesionalesIndex;
 use App\Livewire\Academico\ServicioSocialIndex;
+use App\Livewire\Academico\TitulacionIndex;
 use App\Livewire\Academico\BecaAdmin;
 use App\Livewire\Alumnos\FormAlumno;
 use App\Livewire\Alumnos\FormContactos;
@@ -144,6 +146,16 @@ Route::middleware(['auth'])->prefix('servicio-social')->name('servicio-social.')
 
 Route::middleware(['auth'])->prefix('practicas-profesionales')->name('practicas-profesionales.')->group(function () {
     Route::get('/', PracticasProfesionalesIndex::class)->name('index');
+});
+
+// Egreso y Titulación internos (2.0-14) — procesos internos de CONTROL_ESCOLAR.
+// Autorización fina (capacidades egreso.* / titulacion.*) en cada componente.
+Route::middleware(['auth'])->prefix('egreso')->name('egreso.')->group(function () {
+    Route::get('/', EgresoIndex::class)->name('index');
+});
+
+Route::middleware(['auth'])->prefix('titulacion')->name('titulacion.')->group(function () {
+    Route::get('/', TitulacionIndex::class)->name('index');
 });
 
 // Catálogos administrables (Fase 3) — solo ADMIN.

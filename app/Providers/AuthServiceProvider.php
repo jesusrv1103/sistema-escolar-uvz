@@ -6,6 +6,7 @@ use App\Enums\RolUsuario;
 use App\Models\Calificacion;
 use App\Models\Documento;
 use App\Models\DocumentoGenerado;
+use App\Models\Egreso;
 use App\Models\Evaluacion;
 use App\Models\Grupo;
 use App\Models\GrupoHorario;
@@ -18,10 +19,12 @@ use App\Models\PlanEstudio;
 use App\Models\PlanVersion;
 use App\Models\PracticaProfesional;
 use App\Models\ServicioSocial;
+use App\Models\Titulacion;
 use App\Models\User;
 use App\Policies\CalificacionPolicy;
 use App\Policies\DocumentoGeneradoPolicy;
 use App\Policies\DocumentoPolicy;
+use App\Policies\EgresoPolicy;
 use App\Policies\EvaluacionPolicy;
 use App\Policies\GrupoHorarioPolicy;
 use App\Policies\GrupoPolicy;
@@ -34,6 +37,7 @@ use App\Policies\PlanEstudioPolicy;
 use App\Policies\PlanVersionPolicy;
 use App\Policies\PracticaProfesionalPolicy;
 use App\Policies\ServicioSocialPolicy;
+use App\Policies\TitulacionPolicy;
 use App\Policies\UsuarioPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -157,6 +161,13 @@ class AuthServiceProvider extends ServiceProvider
         'practica.crear' => [RolUsuario::CONTROL_ESCOLAR],
         'practica.actualizar' => [RolUsuario::CONTROL_ESCOLAR],
         'practica.validar' => [RolUsuario::CONTROL_ESCOLAR],
+        // 2.0-14 — Egreso y titulación internos (procesos internos de
+        // CONTROL_ESCOLAR; sin permisos nuevos para ADMISIONES/DOCENTE)
+        'egreso.ver' => [RolUsuario::CONTROL_ESCOLAR, RolUsuario::ADMINISTRACION],
+        'egreso.crear' => [RolUsuario::CONTROL_ESCOLAR],
+        'titulacion.ver' => [RolUsuario::CONTROL_ESCOLAR, RolUsuario::ADMINISTRACION],
+        'titulacion.crear' => [RolUsuario::CONTROL_ESCOLAR],
+        'titulacion.actualizar' => [RolUsuario::CONTROL_ESCOLAR],
     ];
 
     public function boot(): void
@@ -198,6 +209,8 @@ class AuthServiceProvider extends ServiceProvider
         Gate::policy(AjusteFinanciero::class, AjusteFinancieroPolicy::class);
         Gate::policy(ServicioSocial::class, ServicioSocialPolicy::class);
         Gate::policy(PracticaProfesional::class, PracticaProfesionalPolicy::class);
+        Gate::policy(Egreso::class, EgresoPolicy::class);
+        Gate::policy(Titulacion::class, TitulacionPolicy::class);
 
         // Las policies de modelos de fases futuras ya existen en App\Policies
         // y Laravel las resuelve por convención; aquí solo se registran las que tienen modelo.

@@ -45,6 +45,8 @@
                 ['label' => 'Equivalencias', 'icon' => 'scale', 'route' => 'bajas-equivalencias.equivalencias', 'match' => 'bajas-equivalencias.equivalencias', 'can' => 'equivalencia.ver'],
                 ['label' => 'Servicio social', 'icon' => 'check-circle', 'route' => 'servicio-social.index', 'match' => 'servicio-social.*', 'can' => 'servicio_social.ver'],
                 ['label' => 'Prácticas profesionales', 'icon' => 'clipboard', 'route' => 'practicas-profesionales.index', 'match' => 'practicas-profesionales.*', 'can' => 'practica.ver'],
+                ['label' => 'Egreso', 'icon' => 'arrow-trending-up', 'route' => 'egreso.index', 'match' => 'egreso.*', 'can' => 'egreso.ver'],
+                ['label' => 'Titulación', 'icon' => 'academic-cap', 'route' => 'titulacion.index', 'match' => 'titulacion.*', 'can' => 'titulacion.ver'],
             ],
         ],
 

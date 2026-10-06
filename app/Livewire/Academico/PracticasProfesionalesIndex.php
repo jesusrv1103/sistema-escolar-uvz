@@ -98,6 +98,11 @@ class PracticasProfesionalesIndex extends Component
 
     public function guardar(): void
     {
+        // Autorización explícita fuera del try: un 403 es 403, no un error de formulario.
+        $this->practica !== null
+            ? Gate::authorize('practica.actualizar', $this->practica)
+            : Gate::authorize('practica.crear');
+
         $this->validate([
             'alumno' => 'required',
             'empresa' => 'required|string|max:500',

@@ -103,6 +103,22 @@ class Alumno extends Model
         return $this->hasMany(DocumentoGenerado::class, 'alumno_id');
     }
 
+    /**
+     * Egreso académico interno (2.0-14). Null = aún no egresado.
+     */
+    public function egreso(): HasOne
+    {
+        return $this->hasOne(Egreso::class, 'alumno_id');
+    }
+
+    /**
+     * Expediente de titulación interno (2.0-14).
+     */
+    public function titulacion(): HasOne
+    {
+        return $this->hasOne(Titulacion::class, 'alumno_id');
+    }
+
     /** Búsqueda por nombre, apellidos, CURP o número de control. */
     public function scopeBuscar(Builder $consulta, ?string $termino): Builder
     {

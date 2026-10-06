@@ -436,7 +436,7 @@
 | Fase | Estado | Gate |
 |---|---|---|
 | 2.0-13 Servicio social + prácticas | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 676 tests / 3058 assertions / 0 fallas · 69 rutas · build OK · view:cache OK |
-| 2.0-14 Egreso + titulación + constancia | ⬜ en curso | — |
+| 2.0-14 Egreso + titulación + constancia | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 715 tests / 3151 assertions / 0 fallas · 70 rutas · build OK · view:cache OK |
 | 2.0-15 Portal de docente | ⬜ pendiente | — |
 | 2.0-16 Portal de alumno | ⬜ pendiente | — |
 
@@ -453,6 +453,19 @@
 - **Corrección incluida:** `HistorialAcademicoService::creditosTotalesPlan()` usaba `auth()->user()?->id` como `alumno_id` (con sesión iniciada leía otro expediente); ahora usa el alumno indicado, con prueba de regresión.
 - **Pruebas:** `ServicioSocialPracticasTest` (47) — matriz de capacidades por rol, 403 por pantalla, unicidad por alumno, avance sin auto-validación, rango 0–100, inmutabilidad, doble validación, auditoría, lectura de ADMINISTRACION, textos de prácticas, fechas invertidas y avance académico con usuario ≠ alumno.
 - **Gate:** `composer test` **676 / 3058 / 0 fallas** (baseline 629 / 2971) · 69 rutas · `view:cache` OK · `npm run build` OK (57.66 kB) · sin `public/hot`.
+
+### 2.0-14 — Egreso y titulación internos + constancia de terminación (completa)
+
+- **Tablas nuevas:** `egresos` (`UNIQUE(alumno_id)`, `plan_version_id`, créditos requeridos/acumulados, snapshot `requisitos` JSON, `registrado_por/at`) y `titulaciones` (`UNIQUE(alumno_id)`, `egreso_id` NOT NULL, `modalidad` y `folio_interno` opcionales con `UNIQUE`, `estatus`).
+- **Enum:** `EstatusTitulacion` = `EN_TRAMITE` / `TITULADO` (`label()` es_MX). Sin estados de rechazo/cancelación (no hay fuente que los defina).
+- **Servicio `EgresoService`:** `verificar()` evalúa **6 requisitos soportados por datos existentes** (fila 270 del análisis): plan identificable · materias del plan cubiertas (aprobadas o `Equivalencia::APROBADA` con `materia_id`; las equivalencias sin `materia_id` sólo aportan sus créditos) · créditos ≥ plan · Servicio Social VALIDADO · Prácticas VALIDADAS · sin baja (`BajaService::bloqueaNuevaMatricula`). `registrar()` sólo crea la fila cuando **todo** está cumplido (la existencia del registro = estado EGRESÓ) y guarda el snapshot + auditoría. **La deuda no es requisito** (prueba explícita) y **no se evalúan requisitos documentales** (sin fuente → pendiente institucional).
+- **Servicio `TitulacionService`:** exige egreso registrado, un expediente por alumno, `modalidad` texto libre (sin catálogo inferido), `folio_interno` **manual opcional con unicidad y sin folio automático**, auditoría en crear/actualizar.
+- **Capacidades nuevas (§8.2):** `egreso.{ver,crear}` y `titulacion.{ver,crear,actualizar}` — CONTROL_ESCOLAR escribe, ADMINISTRACION sólo lee; ADMISIONES/DOCENTE/ALUMNO sin acceso; ADMIN vía `Gate::before`.
+- **Policies delegadoras:** `EgresoPolicy` (sin update/delete: trazabilidad) y `TitulacionPolicy` (registradas en `AuthServiceProvider`); relaciones `Alumno::egreso()` y `Alumno::titulacion()`.
+- **UI:** `/egreso` (checklist de requisitos con detalle de faltantes, botón con confirmación, tabla de egresados con estado de titulación) y `/titulacion` (filtros, modal crear/editar sólo con alumnos egresados); dos items en el grupo **Académico** del sidebar con `can`; autorización explícita **fuera** del `try` para que un 403 sea 403.
+- **Formato #13 (pipeline F):** `TipoFormato::CONSTANCIA_TERMINACION` — **sin folio** (`requiereFolio()` falso, `tipoConsecutivo()` nulo), **sólo para alumnos con egreso** (guarda en `FormatoService::generar`, 422 con mensaje claro), datos = egreso + avance + servicio social + prácticas; plantilla `constancia_terminacion.blade.php` y botón en `FormatoAcademico`.
+- **Pruebas:** `EgresoTitulacionTest` (39) — matriz de las 5 capacidades por rol, 403 por pantalla, faltantes explicados, snapshot de requisitos, doble egreso, baja definitiva, equivalencias (materia + créditos libres: 11 de 8), deuda irrelevante, folio único, estatus TITULADO, listado de egresados en el modal, ADMINISTRACION de sólo lectura y constancia sólo egresados.
+- **Gate:** `composer test` **715 / 3151 / 0 fallas** (baseline 676 / 3058) · 70 rutas · 49 migraciones (45 ejecutadas + 4 pendientes locales) · `view:cache` OK · `npm run build` OK (57.93 kB) · sin `public/hot`.
 
 - **Autorización explícita del usuario** para ejecutar como **un único macrobloque** las fases **2.0-13** (Servicio social + prácticas profesionales), **2.0-14** (Egreso + titulación internos + constancia de terminación), **2.0-15** (Portal de docente) y **2.0-16** (Portal de alumno, rol `ALUMNO` con aislamiento estricto D-N5).
 - **Regla vigente:** `reglas-desarrollo.md` §2 → **§2.1 Excepción de MACROBLOQUE**: por defecto cada fase requiere autorización; dentro de un macrobloque enumerado, el gate verde de una fase permite continuar **automáticamente** a la siguiente **del mismo macrobloque**, conservando gates internos por fase y deteniéndose ante cualquier bloqueo real.

@@ -52,6 +52,12 @@ class FormatoService
             abort(400, 'Se requiere un alumno para este tipo de formato.');
         }
 
+        // Guarda de veracidad: la constancia de terminación sólo existe para
+        // alumnos con egreso registrado (emitirla sin egreso sería falso).
+        if ($tipo === TipoFormato::CONSTANCIA_TERMINACION && $alumno && !$alumno->egreso()->exists()) {
+            abort(422, 'Sólo se emite la Constancia de Terminación para alumnos con egreso registrado.');
+        }
+
         // Validar autorización
         $this->autorizar($tipo, $alumno, $matricula, $grupo, $usuario);
 
@@ -271,6 +277,16 @@ class FormatoService
             }
         }
 
+        // Fila 13: constancia de terminación (avance + servicio social + prácticas).
+        if ($tipo === \App\Enums\TipoFormato::CONSTANCIA_TERMINACION && $alumno) {
+            $historial = app(\App\Services\HistorialAcademicoService::class);
+
+            $datos['egreso'] = $alumno->egreso()->with(['planVersion.plan', 'registradoPor'])->first();
+            $datos['resumen'] = $historial->resumenAcademico($alumno);
+            $datos['servicio_social'] = \App\Models\ServicioSocial::where('alumno_id', $alumno->id)->first();
+            $datos['practicas'] = \App\Models\PracticaProfesional::where('alumno_id', $alumno->id)->first();
+        }
+
         return array_merge($datos, $datosExtra);
     }
 
@@ -322,6 +338,7 @@ class FormatoService
             TipoFormato::ACTA => 'acta',
             TipoFormato::TIRA => 'tira',
             TipoFormato::AVANCE => 'avance',
+            TipoFormato::CONSTANCIA_TERMINACION => 'constancia_terminacion',
         };
 
         return "{$prefijo}_{$timestamp}.pdf";

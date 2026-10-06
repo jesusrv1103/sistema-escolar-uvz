@@ -21,6 +21,7 @@ enum TipoFormato: string
     case ACTA = 'ACTA';
     case TIRA = 'TIRA';
     case AVANCE = 'AVANCE';
+    case CONSTANCIA_TERMINACION = 'CONSTANCIA_TERMINACION';
 
     public function label(): string
     {
@@ -36,6 +37,7 @@ enum TipoFormato: string
             self::ACTA => 'Acta de Calificaciones',
             self::TIRA => 'Tira de Materias',
             self::AVANCE => 'Reporte de Avance Académico',
+            self::CONSTANCIA_TERMINACION => 'Constancia de Terminación',
         };
     }
 

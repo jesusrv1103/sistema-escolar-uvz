@@ -50,6 +50,7 @@ class FormatoAcademico extends Component
                 'tira' => TipoFormato::TIRA,
                 'avance' => TipoFormato::AVANCE,
                 'acta' => TipoFormato::ACTA,
+                'constancia-terminacion' => TipoFormato::CONSTANCIA_TERMINACION,
                 default => throw new \InvalidArgumentException("Tipo de formato no válido: {$tipo}"),
             };
 
@@ -118,6 +119,7 @@ class FormatoAcademico extends Component
                 'acta' => 'Acta de Calificaciones',
                 'tira' => 'Carga/Tira de Materias',
                 'avance' => 'Reporte de Avance Académico',
+                'constancia-terminacion' => 'Constancia de Terminación',
             ],
         ]);
     }
