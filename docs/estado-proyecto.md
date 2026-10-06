@@ -429,7 +429,7 @@
 - **Documentación actualizada:** `analisis-evolucion-control-escolar.md`, `roadmap-sistema-escolar.md`, `arquitectura-mvp.md` (§7.3, §19, §24), `plan-implementacion.md` (F15/F16 → 2.0-00) y este documento; sin borrar información histórica, **sin código, sin migraciones y sin ejecución de tests** (tarea documental); commit local solo de documentación.
 - **Estado de fases de la Etapa 2: 2.0-00 ✅ COMPLETA e integrada en master** · **2.0-01 ✅ COMPLETA e integrada en master** · **2.0-02 ✅ COMPLETA e integrada en master** · **2.0-03 ✅ COMPLETA e integrada en master** · **2.0-04 ✅ COMPLETA e integrada en master** · **2.0-05 ✅ COMPLETA e integrada en master** · **2.0-06 ✅ COMPLETA e integrada en master** · **2.0-07 ✅ COMPLETA e integrada en master** · **2.0-08 ✅ COMPLETA e integrada en master** · **2.0-09 ✅ COMPLETA en feat/2.0-09-12-historicos-finanzas** · **2.0-10 ✅ COMPLETA en feat/2.0-09-12-historicos-finanzas** · **2.0-11 ✅ COMPLETA en feat/2.0-09-12-historicos-finanzas** · **2.0-12 ✅ COMPLETA en feat/2.0-09-12-historicos-finanzas** · 2.0-13 en adelante: NO INICIADAS.
 
-## Macrobloque 2.0-13 → 2.0-16 — autorizado (registro)
+## Macrobloque 2.0-13 → 2.0-16 — CERRADO (registro)
 
 ### Estado de ejecución
 
@@ -500,6 +500,14 @@
 - **Baseline de entrada:** 629 tests / 2971 assertions / 0 fallas · 67 rutas · `npm run build` OK · `view:cache` OK · árbol limpio.
 - **Auditoría de diseño previa a migraciones:** `docs/analisis-macrobloque-2.0-13-16.md` (A–L: reutilización, migraciones necesarias, vínculos User↔Docente/Alumno, servicios canónicos, pipeline de formatos, aislamiento de portales, requisitos de egreso soportados y reglas institucionales desconocidas **no inventadas**).
 - **Pendientes institucionales explícitamente NO inventados:** horas mínimas de servicio social, porcentaje mínimo académico para iniciar, documentos obligatorios de egreso, escala de calificación de prácticas, modalidades oficiales de titulación y formato de folio automático de titulación (si UVZ no lo define, no se genera).
+
+### Cierre del macrobloque 2.0-13 → 2.0-16
+
+- **Commits locales (base `dd57e65`, rama `feat/2.0-13-16-cierre-portales`):** `ec3845e` (docs de autorización) → `279dfe1` (2.0-13) → `94b099b` (2.0-14) → `c3450bb` (2.0-15) → `1d4fd84` (2.0-16). **0 remotes, sin push, sin merge a master, sin rebase, sin force, sin deploy y sin tocar el demo**; `git status` limpio al cierre.
+- **Métricas finales:** baseline 629 / 2971 / 0 fallas · 67 rutas → **773 tests / 3293 assertions / 0 fallas · 81 rutas** (+144 tests, +14 rutas). Migraciones: **5 nuevas** (servicios sociales, prácticas, egresos, titulaciones, `alumnos.user_id`) = 50 en total. Gates por fase: `composer test` → `view:cache` → `npm run build` (58.06 kB) → `route:list`, todos verdes en las 4 fases.
+- **Smoke desktop + 390 (local `php artisan serve` 127.0.0.1:8017):** RESULTADO **OK** — 0 fallos, 0 respuestas ≥500, 0 `console.error`, 0 `pageerror`, 62 enlaces internos verificados sin muertos, sin overflow horizontal a 390 px, generación y descarga de formato académico con `%PDF-` real, comprobante de pago 200 `application/pdf` (tras reparar en la BD local 8 pagos `VALIDADO` heredados sin `folio`/`validado_at`/`validado_por`: la guarda RB-19 los rechazaba con 404 **por diseño**).
+- **Aislamiento probado:** docente (`PortalDocenteTest`, 38) y alumno (`PortalAlumnoTest`, 20) — grupo/expediente propio vs. ajeno, ids de ruta inexistentes, query params y payload de Livewire sin efecto, 403 en admin y en descargas ajenas.
+- **PDFs privados:** disco `private` = `storage/app/private` (`serve => false`, fuera de `public/`), 0 PDFs bajo `public/`; descarga siempre por controlador con `auth` + policy (`documentos.archivo`, `documentos.generados.descargar`, comprobante de pago).
 
 ## Macrobloque 2.0-05 → 2.0-08 — Evaluación Académica (implementado)
 
