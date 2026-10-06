@@ -583,6 +583,50 @@
 
 ---
 
+## Macrobloque QA pre-2.0-17 — Correcciones DEMO (2026-10-06)
+
+> Rama `fix/pre-2.0-17-demo-qa` desde `d5fb5d4`. Objetivo: **corregir sin agregar funcionalidad**
+> los defectos detectados en la DEMO de presentación, con pruebas, documentación y despliegue.
+> Sin migraciones, sin rutas nuevas, sin dependencias nuevas y sin tocar seguridad.
+
+### Correcciones
+
+| ID | Defecto | Causa raíz | Corrección |
+|---|---|---|---|
+| **BUG-01** | 403 al generar formatos (`/formatos-academicos`) | Dos reglas distintas: la acción exigía `documento_generado.crear` (sólo ADMIN) y la pantalla `formato_academico.generar`; además el `catch (\Throwable)` convertía la `AuthorizationException` en un mensaje | Regla única en ambas capas (`formato_academico.generar` **+** `DocumentoGeneradoPolicy::create`) **fuera** del `try`; el botón se oculta con `@can` y el backend conserva el 403. ADMINISTRACION ve la pantalla sin botón (matriz §8.2 intacta) |
+| **BUG-02** | 500 en HORARIO, LISTA_GRUPO y ACTA | `Grupo::$turno` sin cast → `label()` sobre un `string` | Cast `'turno' => TurnoGrupo::class` (precedente: `estatus`); consumidores con `?->value` / `?->label()`. Sin migración: la BD conserva el texto |
+| **BUG-03** | 500 en TIRA (`Undefined array key "es_reprobada"`) | `tiraMaterias()` no emitía el contrato completo del DTO | Contrato completo (aprobada/reprobada/cursando/baja/extraordinario/equivalencia), `total_materias` del PDF corregido a `$tira?->count()` y `es_extraordinario` comparado contra el enum |
+| **BUG-04** | PDFs con HTML malformado y estados sin color | 8 de 12 plantillas abrían `<div class="section">` sin cerrar; 8 usaban clases de estado (`table-success`, `bg-warning`…) que el layout no define | `</div>` faltante + reglas `.table-*`/`.bg-*` en `pdf.layouts.pdf` con la paleta UVZ; contrato DTO/plantilla de `lista_grupo` y `acta` corregido. Auditoría en `docs/auditoria-pdfs-pre-2.0-17.md` |
+| **BUG-05** | «Guardar asistencia» → 419 *This page has expired* | **No es CSRF ni sesión caducada.** Livewire 3 captura cualquier `\TypeError` y hace `report($e); abort(419)` cuando `APP_DEBUG=false` (`HandleRequests.php:221-226`), enmascarando el error como «página caducada» | Se corrigió el `TypeError` real del guardado. Reproducido con **sesión nueva** en la DEMO: `POST /livewire/update` → 419 con el mismo `_token` que otra petición 200 de la misma sesión; `production.ERROR` registra el `TypeError` en el mismo segundo. **No se tocó CSRF ni sesión** |
+| **§14** | La asistencia no persistía | `registrarMasivo()` recibía `fecha` como `string` y `asistencias` como `array` de strings; el DOCENTE no se re-autorizaba | `DateTimeImmutable` validado, mapeo `id => bool`, re-autorización del grupo en `cargarLista`/`guardar` y rechazo de lista vacía |
+
+### Fuera de alcance (registrado, no fixeado)
+
+- `ENUM inscripciones_materias.estatus` **sin** `EXTRAORDINARIO` → `ExtraordinarioService` falla a nivel SQL: exige migración (§18/§20).
+- `obtenerHistorial()` filtra `estatus != 'BAJA'` comparando enum con texto → no-op; decisión de negocio pendiente.
+- `creditosAprobados()` contradice su docblock respecto a EXTRAORDINARIO (mismo origen: el ENUM).
+- Fuentes `DM Sans`/`Playfair Display` no embebidas en el PDF (DomPDF sustituye); agregar assets queda fuera.
+- `FormatoService::autorizar()` llama `Gate::authorize('ver', $grupo)`, ability inexistente en `GrupoPolicy` (la real es `view`): sólo la supera ADMIN por `Gate::before`, que es el único rol que alcanza esa ruta. Sin efecto visible; se registra para el backlog.
+
+### Gate §20
+
+- `composer test` → **790 tests / 3593 assertions / 0 failures / 0 errors / 0 risky** (baseline 773/3293: +17 tests, +300 assertions).
+- `php artisan view:cache` → OK · `npm run build` → OK · `php artisan route:list` → **81 rutas** (sin cambios).
+- Migraciones nuevas: **0** · Rutas nuevas: **0** · Dependencias nuevas: **0**.
+
+### Pruebas nuevas
+
+`FormatoPermisosTest` (matriz de 6 roles BUG-01) · `FormatoAcademicoTest` +regresiones BUG-02 ·
+`HistorialAcademicoTest` +contrato de tira (BUG-03) · `AsistenciaGuardarReproTest` (persistencia §14) ·
+`FormatoCatalogoPdfTest` (12/12 formatos) · `PdfPlantillasTest` (estructura y clases de las plantillas).
+
+### Documentación
+
+- `docs/auditoria-pdfs-pre-2.0-17.md` — inventario de los 12 formatos, defectos y decisiones (BUG-04).
+- `docs/demo-presentacion.md` — guion actualizado con las correcciones aplicadas.
+
+---
+
 ## Pendientes / registrados
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies: las 8 clases existen desde la Fase 2; `PagoPolicy`, `DocumentoPolicy` y `ObservacionPolicy` están **registradas explícitamente** en `AuthServiceProvider` (modelo real) y el resto se resuelve por convención cuando los modelos las usen (sin código artificial).
