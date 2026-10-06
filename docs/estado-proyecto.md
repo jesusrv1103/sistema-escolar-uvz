@@ -600,6 +600,26 @@
 | **BUG-05** | «Guardar asistencia» → 419 *This page has expired* | **No es CSRF ni sesión caducada.** Livewire 3 captura cualquier `\TypeError` y hace `report($e); abort(419)` cuando `APP_DEBUG=false` (`HandleRequests.php:221-226`), enmascarando el error como «página caducada» | Se corrigió el `TypeError` real del guardado. Reproducido con **sesión nueva** en la DEMO: `POST /livewire/update` → 419 con el mismo `_token` que otra petición 200 de la misma sesión; `production.ERROR` registra el `TypeError` en el mismo segundo. **No se tocó CSRF ni sesión** |
 | **§14** | La asistencia no persistía | `registrarMasivo()` recibía `fecha` como `string` y `asistencias` como `array` de strings; el DOCENTE no se re-autorizaba | `DateTimeImmutable` validado, mapeo `id => bool`, re-autorización del grupo en `cargarLista`/`guardar` y rechazo de lista vacía |
 
+### Hallazgos adicionales del QA (N-1 … N-3)
+
+Detectados al verificar BUG-01 y BUG-02 en la DEMO, con aprobación del usuario;
+siguen siendo corrección pre-2.0-17 y sin funcionalidad nueva.
+
+| ID | Hallazgo (evidencia en la DEMO) | Causa | Corrección |
+|---|---|---|---|
+| **N-1** | El ACTA se generaba pero **nunca aparecía «Descargar PDF»** (registro creado en `documentos_generados` y nada que descargar en pantalla) | `FormatoService::generar()` emite el ACTA sin `alumno_id` —es un documento del grupo— y `FormatoAcademico` filtraba `vincularArchivoEmitido()` por el alumno seleccionado → 0 coincidencias | El filtro de alumno pasa a `null` **sólo** para `TipoFormato::ACTA`; el resto de formatos conservan su vínculo con el alumno |
+| **N-2** | Regenerar el mismo ACTA fallaba con el **error crudo `SQLSTATE 23000 / 1062`** (`Duplicate entry 'ACT-2026-00000002' for key 'documentos_generados_folio_unique'`) | `documentos_generados.folio` es UNIQUE y el ACTA reutiliza `actas.folio`, pero el servicio hacía un segundo `create()` | Persistencia **idempotente por folio**: si el folio ya existe y es compatible (mismo `tipo` y mismo `grupo_id`, cuando ambos están registrados) se reutiliza la fila y sólo se refresca la emisión; si es incompatible → `abort(409)` con mensaje claro. **No se relajó el UNIQUE** y sigue habiendo exactamente una fila por folio. Las constancias conservan su semántica (folio nuevo del consecutivo en cada emisión, es decir, una fila por documento) |
+| **N-3** | En `/admin/formatos`, pulsar **«Generar PDF» no producía ninguna explicación** (HORARIO/LISTA_GRUPO parecían no hacer nada) | `generar()` ya validaba `grupoSeleccionado` y `matriculaSeleccionada`, pero la vista sólo pintaba `tipoFormato` y `generar` | Los dos errores se pintan con el patrón ya usado en esa misma vista (`@error` + `p.ui-error[role=alert]`). **No se cambiaron las reglas de campos requeridos**: sólo se hace visible el error que ya se producía |
+
+**N-3 · límite de datos de la DEMO (registrado, no fixeado):** en la DEMO,
+HORARIO y LISTA_GRUPO **no son emitibles**. `seleccionarAlumno()` toma la
+matrícula con `latest('fecha_matricula')` y todas las matrículas comparten
+fecha → se elige la del periodo 3, mientras que las inscripciones `CURSANDO`
+sólo existen en grupos del periodo 4; la validación responde «El alumno no está
+inscrito en este grupo.». Resolverlo exigiría cambiar el fixture (prohibido) o
+rediseñar la selección de matrícula (funcionalidad nueva); queda documentado y
+la guía de demo ya no promete esos dos formatos.
+
 ### Fuera de alcance (registrado, no fixeado)
 
 - `ENUM inscripciones_materias.estatus` **sin** `EXTRAORDINARIO` → `ExtraordinarioService` falla a nivel SQL: exige migración (§18/§20).
@@ -610,7 +630,7 @@
 
 ### Gate §20
 
-- `composer test` → **790 tests / 3593 assertions / 0 failures / 0 errors / 0 risky** (baseline 773/3293: +17 tests, +300 assertions).
+- `composer test` → **794 tests / 3612 assertions / 0 failures / 0 errors / 0 risky** (baseline 773/3293: +21 tests, +319 assertions).
 - `php artisan view:cache` → OK · `npm run build` → OK · `php artisan route:list` → **81 rutas** (sin cambios).
 - Migraciones nuevas: **0** · Rutas nuevas: **0** · Dependencias nuevas: **0**.
 
@@ -618,7 +638,10 @@
 
 `FormatoPermisosTest` (matriz de 6 roles BUG-01) · `FormatoAcademicoTest` +regresiones BUG-02 ·
 `HistorialAcademicoTest` +contrato de tira (BUG-03) · `AsistenciaGuardarReproTest` (persistencia §14) ·
-`FormatoCatalogoPdfTest` (12/12 formatos) · `PdfPlantillasTest` (estructura y clases de las plantillas).
+`FormatoCatalogoPdfTest` (12/12 formatos) · `PdfPlantillasTest` (estructura y clases de las plantillas) ·
+`DescargaDocumentoGeneradoTest` +4: **N-1** (ACTA con `ultimoDocumentoId` y enlace de descarga),
+**N-2** ×2 (regeneración de acta idempotente · constancias con folio y fila propios) y
+**N-3** (el error de `grupoSeleccionado` se ve en pantalla y no se crea documento).
 
 ### Documentación
 
