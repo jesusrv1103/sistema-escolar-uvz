@@ -95,6 +95,80 @@ test('todo modal que envuelve su pie en el formulario asocia el botón con el at
     expect($violaciones)->toBe([]);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Regresión — todo modal que envuelve su pie tiene botón de envío
+|--------------------------------------------------------------------------
+|
+| El guard anterior sólo miraba los pies que YA traían `type="submit"`, así
+| que un modal cuyo botón del pie se quedó como `type="button"` (el valor por
+| defecto de `x-ui.button`) pasaba inadvertido: no enviaba nada, no llegaba a
+| Livewire ni devolvía errores. Es el caso del modal "Autorizar Reingreso" de
+| Bajas, donde la acción nunca se ejecutaba.
+|
+*/
+
+/**
+ * @return list<array{0: string, 1: string, 2: string}> [archivo, id del formulario, acción]
+ */
+function ui_modales_con_pie_en_formulario(): array
+{
+    $encontrados = [];
+
+    foreach ((new Finder())->in(resource_path('views'))->files()->name('*.blade.php') as $archivo) {
+        $texto = $archivo->getContents();
+
+        preg_match_all('/<form\b[^>]*wire:submit="([^"]+)"[^>]*>/', $texto, $etiquetas, PREG_OFFSET_CAPTURE);
+
+        foreach ($etiquetas[1] as $i => [$accion, $inicio]) {
+            $cierre = strpos($texto, '</form>', $inicio);
+
+            if ($cierre === false) {
+                continue;
+            }
+
+            $dentro = substr($texto, $inicio, $cierre - $inicio);
+
+            if (strpos($dentro, '<x-slot:footer>') === false) {
+                continue;
+            }
+
+            preg_match('/\bid="([^"]+)"/', $etiquetas[0][$i][0], $id);
+
+            $encontrados[] = [
+                str_replace(resource_path('views') . '/', '', $archivo->getPathname()),
+                $id[1] ?? '',
+                $accion,
+            ];
+        }
+    }
+
+    return $encontrados;
+}
+
+test('todo modal que envuelve su pie en el formulario ofrece un botón de envío', function (): void {
+    $violaciones = [];
+
+    foreach (ui_modales_con_pie_en_formulario() as [$archivo, $id, $accion]) {
+        if ($id === '') {
+            $violaciones[] = sprintf('%s: <form wire:submit="%s"> sin id', $archivo, $accion);
+
+            continue;
+        }
+
+        $texto = (string) file_get_contents(resource_path('views/' . $archivo));
+
+        if (! preg_match('/<x-ui\.button\s+type="submit"\s+form="' . preg_quote($id, '/') . '"/', $texto)) {
+            $violaciones[] = sprintf('%s: el pie de "%s" no tiene botón type="submit" form="%s"', $archivo, $accion, $id);
+        }
+    }
+
+    // la revisión tiene que estar mirando los modales de verdad
+    expect(count(ui_modales_con_pie_en_formulario()))->toBeGreaterThan(5);
+
+    expect($violaciones)->toBe([]);
+});
+
 test('en el html renderizado todo botón de envío dispara un formulario', function (): void {
     $admin = User::factory()->deRol(RolUsuario::ADMIN)->create();
 

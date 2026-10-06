@@ -29,6 +29,7 @@ class MatriculaService
 {
     public function __construct(
         private readonly AuditoriaService $auditoria,
+        private readonly BajaService $bajas,
     ) {
     }
 
@@ -56,6 +57,11 @@ class MatriculaService
 
             if ($existe) {
                 throw new MatriculaException('El alumno ya tiene una matrícula en este periodo.');
+            }
+
+            // Baja definitiva o temporal vigente: bloquea nuevas matrículas (2.0-11)
+            if ($this->bajas->bloqueaNuevaMatricula($alumno)) {
+                throw new MatriculaException('El alumno tiene una baja registrada que impide nuevas matrículas.');
             }
 
             // Resolver plan_version si no se proporciona
@@ -236,6 +242,11 @@ class MatriculaService
 
         if ($this->puedeMatricularse($alumno->id, $periodo->id) === false) {
             throw new MatriculaException('El alumno ya tiene una matrícula en este periodo.');
+        }
+
+        // Baja definitiva o temporal vigente: bloquea nuevas matrículas (2.0-11)
+        if ($this->bajas->bloqueaNuevaMatricula($alumno)) {
+            throw new MatriculaException('El alumno tiene una baja registrada que impide nuevas matrículas.');
         }
     }
 

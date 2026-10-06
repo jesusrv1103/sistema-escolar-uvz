@@ -199,7 +199,7 @@
     @if ($modalReingresoAbierto)
         <x-ui.modal id="modal-reingreso" title="Autorizar Reingreso"
             :open="true" close="$set('modalReingresoAbierto', false)">
-            <form novalidate wire:submit="autorizarReingreso">
+            <form novalidate id="form-reingreso" wire:submit="autorizarReingreso">
                 <div class="space-y-3">
                     <x-ui.alert tone="info">
                         Autorizando reingreso para
@@ -220,7 +220,7 @@
 
                 <x-slot:footer>
                     <x-ui.button variant="secondary" wire:click="$set('modalReingresoAbierto', false)">Cancelar</x-ui.button>
-                    <x-ui.button variant="success" icon="check"
+                    <x-ui.button type="submit" form="form-reingreso" variant="success" icon="check"
                         wire:loading.attr="disabled" wire:target="autorizarReingreso">
                         <span wire:loading.remove wire:target="autorizarReingreso">Autorizar Reingreso</span>
                         <span wire:loading wire:target="autorizarReingreso"><x-ui.loading label="Autorizando…" /></span>

@@ -8,6 +8,7 @@ use App\Models\Alumno;
 use App\Models\InscripcionMateria;
 use App\Enums\TipoBaja;
 use App\Enums\EstatusEquivalencia;
+use App\Services\BajaService;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -97,9 +98,13 @@ class BajaAdmin extends Component
         ]);
 
         try {
-            // Lógica de registro delegada a servicio
-            // $service = app(BajaService::class);
-            // $service->registrar(...);
+            app(BajaService::class)->registrar(
+                $this->alumno,
+                TipoBaja::from($this->tipoBaja),
+                $this->motivo,
+                $this->fecha,
+                $this->inscripcion,
+            );
 
             $this->modalBajaAbierto = false;
             $this->reset(['tipoBaja', 'alumno', 'inscripcion', 'motivo', 'fecha']);
@@ -115,11 +120,17 @@ class BajaAdmin extends Component
             'reingresoAt' => 'required|date',
         ]);
 
+        if ($this->baja === null) {
+            $this->addError('reingreso', 'Selecciona la baja que se va a reingresar.');
+
+            return;
+        }
+
         try {
-            // $service = app(BajaService::class);
-            // $service->reingresar($this->baja, $this->reingresoAt);
+            app(BajaService::class)->reingresar($this->baja, $this->reingresoAt);
 
             $this->modalReingresoAbierto = false;
+            $this->reset(['baja', 'reingresoAt']);
             $this->dispatch('reingresoAutorizado');
         } catch (\Throwable $e) {
             $this->addError('reingreso', $e->getMessage());
