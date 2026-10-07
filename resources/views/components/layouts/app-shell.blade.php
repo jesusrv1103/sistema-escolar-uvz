@@ -83,6 +83,18 @@
         ],
 
         [
+            'label' => 'Reportes',
+            'icon' => 'chart-bar',
+            'items' => [
+                // Cada categoría enlaza a la misma pantalla con su filtro;
+                // la visibilidad usa la MISMA capacidad que valida el backend.
+                ['label' => 'Ingreso', 'icon' => 'clipboard', 'route' => 'reportes.index', 'params' => ['categoria' => 'ingreso'], 'match' => 'reportes.*', 'can' => 'reporte_ingreso.ver'],
+                ['label' => 'Académicos', 'icon' => 'academic-cap', 'route' => 'reportes.index', 'params' => ['categoria' => 'academicos'], 'match' => 'reportes.*', 'can' => 'reporte_academico.ver'],
+                ['label' => 'Financieros', 'icon' => 'banknotes', 'route' => 'reportes.index', 'params' => ['categoria' => 'financieros'], 'match' => 'reportes.*', 'can' => 'reporte_financiero.ver'],
+            ],
+        ],
+
+        [
             'label' => 'Catálogos',
             'icon' => 'squares',
             'items' => [
@@ -229,9 +241,17 @@
                                 </summary>
                                 <ul class="nav-children mt-1 space-y-1 pl-3">
                                     @foreach ($node['items'] as $child)
-                                        @php $active = $matches($child['match'] ?? $child['route']); @endphp
+                                        @php
+                                            $active = $matches($child['match'] ?? $child['route']);
+
+                                            // Ítems con parámetros (p. ej. `?categoria=`):
+                                            // sólo el que corresponde a la categoría abierta.
+                                            if ($active && isset($child['params']['categoria'])) {
+                                                $active = request()->query('categoria') === $child['params']['categoria'];
+                                            }
+                                        @endphp
                                         <li>
-                                            <a href="{{ route($child['route']) }}"
+                                            <a href="{{ route($child['route'], $child['params'] ?? []) }}"
                                                 @if ($active) aria-current="page" @endif
                                                 title="{{ $child['label'] }}"
                                                 @class([

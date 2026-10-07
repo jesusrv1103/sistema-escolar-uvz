@@ -182,6 +182,16 @@ class AuthServiceProvider extends ServiceProvider
         'inscripcion.ver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
         'pago.ver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
         'documento.ver' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
+        // 2.0-17 — Reportes operativos (matriz objetivo de la fase):
+        //   ADMIN pasa todo por Gate::before; ADMISIONES sólo Ingreso,
+        //   ADMINISTRACION sólo Financieros y CONTROL_ESCOLAR sólo Académicos.
+        //   DOCENTE y ALUMNO no obtienen el módulo global Reportes.
+        'reporte_ingreso.ver' => [RolUsuario::ADMISIONES],
+        'reporte_academico.ver' => [RolUsuario::CONTROL_ESCOLAR],
+        'reporte_financiero.ver' => [RolUsuario::ADMINISTRACION],
+        // El CSV exige ESTA capacidad Y la de la categoría del reporte:
+        // misma autorización que la pantalla (D-N6 resuelta: CSV, no XLSX).
+        'reporte.exportar' => [RolUsuario::ADMISIONES, RolUsuario::ADMINISTRACION, RolUsuario::CONTROL_ESCOLAR],
     ];
 
     public function boot(): void

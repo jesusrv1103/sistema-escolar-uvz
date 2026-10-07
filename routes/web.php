@@ -6,6 +6,7 @@ use App\Http\Controllers\Documentos\DescargaArchivosController;
 use App\Http\Controllers\Documentos\DescargaDocumentoGeneradoController;
 use App\Http\Controllers\Pagos\ComprobantePagoController;
 use App\Http\Controllers\Pagos\ComprobantePdfController;
+use App\Http\Controllers\Reportes\CsvReporteController;
 use App\Livewire\Academico\CrearEvaluacion;
 use App\Livewire\Academico\EditarEvaluacion;
 use App\Livewire\Academico\CalificacionAdmin;
@@ -50,6 +51,7 @@ use App\Livewire\Inscripciones\ListaInscripciones;
 use App\Livewire\Inscripciones\PanelEstados;
 use App\Livewire\Inscripciones\WizardInscripcion;
 use App\Livewire\Observaciones\ListaObservaciones;
+use App\Livewire\Reportes\PanelReportes;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -72,6 +74,14 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+});
+
+// Reportes operativos (2.0-17) — módulo global de consulta.
+// La autorización fina (capacidad de la categoría + `reporte.exportar`) y la
+// validación de filtros viven en el componente y en el controlador del CSV.
+Route::middleware('auth')->group(function () {
+    Route::get('/reportes', PanelReportes::class)->name('reportes.index');
+    Route::get('/reportes/csv/{reporte}', CsvReporteController::class)->name('reportes.csv');
 });
 
 // Rutas de alumnos / expediente (Fase 4) — solo usuarios autenticados;
