@@ -7,20 +7,24 @@
 > **Credenciales (ROL · EMAIL · PASSWORD · URL):** `~/.ssh/uvz_demo_presentacion` (permiso 600).
 > No están en este documento, en el repositorio, en el log ni en el reporte. Copiar de ahí al portapapeles.
 >
-> **Duración estimada:** 15–20 min · **15 pasos** · recorrido por rol (ADMIN → CONTROL_ESCOLAR →
-> ADMINISTRACION → DOCENTE → ALUMNO), cerrando con aislamiento y responsive.
+> **Duración estimada:** 15–20 min · **16 pasos** · recorrido por rol (ADMIN → CONTROL_ESCOLAR →
+> ADMINISTRACION → DOCENTE → ALUMNO), incluyendo el módulo **Reportes** y su exportación CSV,
+> cerrando con aislamiento y responsive.
 >
-> Entorno: demo `https://darkcyan-mongoose-808972.hostingersite.com`, código desplegado en
-> `d5fb5d4` (macrobloque 2.0-13 → 2.0-16) al momento de escribir el guion. **Correcciones QA
-> pre-2.0-17 aplicadas y desplegadas:** ver «Correcciones QA pre-2.0-17» al final.
+> Entorno: demo `https://darkcyan-mongoose-808972.hostingersite.com`. **Estado vigente: código
+> desplegado en `master` `fd19e02`** — fase **2.0-17 Reportes operativos** completada y
+> **ETAPA 2 COMPLETA (18/18)**; las correcciones QA pre-2.0-17 siguen aplicadas y desplegadas.
+> *(Histórico: al redactar este guion el código estaba en `d5fb5d4`, macrobloque 2.0-13 → 2.0-16.)*
+> Estado técnico completo: `docs/estado-proyecto.md` (sección «Fase 2.0-17 … CERRADA»).
 
 ## Antes de empezar (1 min)
 
 1. Abrir el archivo de credenciales y tener a mano las contraseñas de los 6 roles.
-2. Backup previo ya creado: `backups/bd-presentacion-20261006-160508.sql.gz` (600).
-3. Navegador en 1440 px (el responsive se muestra en el paso 15).
+2. Backup previo ya creado: `backups/bd-reportes2017-20261007-205758.sql.gz` (600); el del código
+   es `backups/codigo-reportes2017-20261007-205758.tar.gz`.
+3. Navegador en 1440 px (el responsive se muestra en el paso 16).
 
-## Recorrido (15 pasos)
+## Recorrido (16 pasos)
 
 | # | Rol | Pantalla | Qué se muestra |
 |---|---|---|---|
@@ -31,19 +35,57 @@
 | 5 | ADMIN | `/admin/periodos` + `/admin/planes-estudio` | Periodos `DEMO-2026-1` (histórico, cerrado) y `DEMO-2026-2` (vigente); plan `DEM-2026` con versión `DEMO-1` **VIGENTE**. |
 | 6 | ADMIN | `/admin/materias` + `/admin/grupos` + `/admin/aulas` | 6 materias `DEM-M1…DEM-M6` con **prerrequisito obligatorio M3 ← M1**; 11 grupos `DEM-G1…DEM-G11` (6 en el periodo histórico y 5 en el vigente) repartidos entre 2 docentes, con horarios y aulas `DEMO-A1/A2`. |
 | 7 | ADMIN | `/admin/actas` + `/historial` | Acta histórica **CERRADA con folio `ACT-2026-…`** y acta vigente **ABIERTA**; en Historial, el Kardex de Jorge Castillo con materias aprobadas y una reprobada (promedio, avance y créditos). |
-| 8 | CONTROL_ESCOLAR | `/servicio-social` + `/practicas-profesionales` | 4 servicios sociales (3 `VALIDADO`, 1 `EN_PROCESO` al 60 %) y 4 prácticas (3 `VALIDADO`, 1 `EN_PROCESO`), filtros y modal de alta/captura. |
-| 9 | CONTROL_ESCOLAR | `/egreso` + `/titulacion` | 2 egresos: Ricardo Vargas **cumple todos los requisitos** vs. Gabriela Ortiz **con 4 requisitos faltantes**; 2 titulaciones: Héctor Silva `TITULADO` con folio `DEMO-TIT-001` y Valeria Navarro `EN_TRAMITE` sin folio. |
-| 10 | CONTROL_ESCOLAR | `/formatos-academicos` | Generar `CONSTANCIA_INSCRIPCION` y `KARDEX` de Jorge → descarga inmediata en PDF (cabecera `%PDF`, disco privado). Desde la corrección QA pre-2.0-17 también se generan **TIRA** y **ACTA** (el acta reutiliza su folio `ACT-2026-…`, se puede volver a generar y la descarga aparece en el mismo aviso). **No intentar HORARIO ni LISTA_GRUPO**: sólo existen en `/admin/formatos` (ADMIN) y en la DEMO ninguna matrícula coincide con el periodo de las inscripciones `CURSANDO`, así que la pantalla responde «El alumno no está inscrito en este grupo.» (límite de los datos de la DEMO, no un defecto). |
-| 11 | ADMINISTRACION | `/becas-descuentos/becas` + `/becas-descuentos/estado-cuenta` | Beca `DEMO-BEC-01` 20 % tipo `PORCENTAJE` alcance `AMBOS`; en estado de cuenta se ven los **5 ajustes `DESCUENTO_BECA`** (300 + 4×240 = **1,260** aplicados sobre los cargos). |
-| 12 | ADMINISTRACION / ADMISIONES | `/inscripciones/{Castillo}` | Estado de cuenta de Jorge: `INSCRIPCION` 1,500 **PAGADA**, mensualidades 1 y 2 **PAGADAS**, 3 y 4 **PENDIENTES** (1,200 c/u) → 3 pagos `VALIDADO`; botón de comprobante institucional `/pagos/{id}/comprobante-pdf` (PDF generado bajo demanda). |
-| 13 | DOCENTE | `/docente` → `/docente/grupos/{DEM-G1}` | Portal del docente con **sus** grupos (`DEM-G1`, `DEM-G7`, `DEM-G8`); detalle con evaluaciones `Parcial 1/2 DEMO`, calificaciones capturadas (92, 88, 85, 78, 66…), asistencia y acta. Abrir después `/docente/grupos/{DEM-G2}` → **403** (grupo de otro docente: aislamiento). |
-| 14 | ALUMNO | `/alumno` → `/alumno/kardex`, `/horario`, `/estado-cuenta`, `/documentos` | Portal de Jorge Castillo: Kardex con el plan DEMO, horario con los grupos vigentes (`DEM-G8/G9/G10`), estado de cuenta con la beca y el saldo pendiente, y 7 formatos emitidos descargables (`%PDF`). Abrir `/inscripciones` o `/dashboard` → **403** (aislamiento C1: identidad siempre desde `auth()->user()->alumno`). |
-| 15 | ADMIN | Responsive + cierre | 1920 / 768 / 390 px en dashboard, inscripciones, grupos, servicio social y portal alumno: **sin desbordes horizontales**. Cierre: 0 HTTP ≥ 500, 0 `console.error`, 0 PDFs servidos desde `public_html`, log `production.ERROR` **sin variación frente al baseline 138**. |
+| 8 | ADMIN | `/reportes` | **Módulo Reportes (nuevo, 2.0-17):** el menú lateral muestra el grupo **Reportes** con 3 accesos y ADMIN ve **las 3 categorías** — Ingreso · Académicos · Financieros (8 reportes). Cambiar de pestaña, aplicar un **filtro** (periodo/estatus/búsqueda), ver el **resumen de conteos** y la **tabla** paginada; después **exportar el CSV** (detalle en «Módulo Reportes y exportación CSV»). |
+| 9 | CONTROL_ESCOLAR | `/servicio-social` + `/practicas-profesionales` | 4 servicios sociales (3 `VALIDADO`, 1 `EN_PROCESO` al 60 %) y 4 prácticas (3 `VALIDADO`, 1 `EN_PROCESO`), filtros y modal de alta/captura. **Mismo módulo Reportes en `/reportes?categoria=academicos`: Control Escolar ve SÓLO reportes académicos** (Ingreso y Financieros devuelven 403). |
+| 10 | CONTROL_ESCOLAR | `/egreso` + `/titulacion` | 2 egresos: Ricardo Vargas **cumple todos los requisitos** vs. Gabriela Ortiz **con 4 requisitos faltantes**; 2 titulaciones: Héctor Silva `TITULADO` con folio `DEMO-TIT-001` y Valeria Navarro `EN_TRAMITE` sin folio. |
+| 11 | CONTROL_ESCOLAR | `/formatos-academicos` | Generar `CONSTANCIA_INSCRIPCION` y `KARDEX` de Jorge → descarga inmediata en PDF (cabecera `%PDF`, disco privado). Desde la corrección QA pre-2.0-17 también se generan **TIRA** y **ACTA** (el acta reutiliza su folio `ACT-2026-…`, se puede volver a generar y la descarga aparece en el mismo aviso). **No intentar HORARIO ni LISTA_GRUPO**: sólo existen en `/admin/formatos` (ADMIN) y en la DEMO ninguna matrícula coincide con el periodo de las inscripciones `CURSANDO`, así que la pantalla responde «El alumno no está inscrito en este grupo.» (límite de los datos de la DEMO, no un defecto; no se tocó el fixture). |
+| 12 | ADMINISTRACION | `/becas-descuentos/becas` + `/becas-descuentos/estado-cuenta` | Beca `DEMO-BEC-01` 20 % tipo `PORCENTAJE` alcance `AMBOS`; en estado de cuenta se ven los **5 ajustes `DESCUENTO_BECA`** (300 + 4×240 = **1,260** aplicados sobre los cargos). **Módulo Reportes en `/reportes?categoria=financieros`: Administración ve SÓLO reportes financieros** (cartera, pagos, becas). |
+| 13 | ADMINISTRACION / ADMISIONES | `/inscripciones/{Castillo}` | Estado de cuenta de Jorge: `INSCRIPCION` 1,500 **PAGADA**, mensualidades 1 y 2 **PAGADAS**, 3 y 4 **PENDIENTES** (1,200 c/u) → 3 pagos `VALIDADO`; botón de comprobante institucional `/pagos/{id}/comprobante-pdf` (PDF generado bajo demanda). **ADMISIONES (mención): con su propio login abre sólo `/reportes?categoria=ingreso`** — Ingresos y aspirantes; Académicos y Financieros le dan 403. |
+| 14 | DOCENTE | `/docente` → `/docente/grupos/{DEM-G1}` | Portal del docente con **sus** grupos (`DEM-G1`, `DEM-G7`, `DEM-G8`); detalle con evaluaciones `Parcial 1/2 DEMO`, calificaciones capturadas (92, 88, 85, 78, 66…), asistencia y acta. Abrir después `/docente/grupos/{DEM-G2}` → **403** (grupo de otro docente: aislamiento). **Sin módulo global Reportes**: no aparece en el menú y `/reportes` da **403**. |
+| 15 | ALUMNO | `/alumno` → `/alumno/kardex`, `/horario`, `/estado-cuenta`, `/documentos` | Portal de Jorge Castillo: Kardex con el plan DEMO, horario con los grupos vigentes (`DEM-G8/G9/G10`), estado de cuenta con la beca y el saldo pendiente, y 7 formatos emitidos descargables (`%PDF`). Abrir `/inscripciones` o `/dashboard` → **403** (aislamiento C1: identidad siempre desde `auth()->user()->alumno`). **Sin módulo global Reportes**: sin entrada en el menú y **403** en `/reportes`. |
+| 16 | ADMIN | Responsive + cierre | 1920 / 1440 / 768 / 390 px en dashboard, inscripciones, grupos, servicio social, **reportes** y portal alumno: **sin desbordes horizontales**. Cierre: 0 HTTP ≥ 500, 0 `console.error`, 0 PDFs servidos desde `public_html`, log `production.ERROR` **sin variación frente al baseline 151** (registrado en `docs/estado-proyecto.md`). |
+
+## Módulo Reportes y exportación CSV (paso 8)
+
+**Matriz de roles (una sola pantalla, distinto alcance):**
+
+| Rol | `/reportes` |
+|---|---|
+| ADMIN | las **3** categorías: Ingreso · Académicos · Financieros |
+| CONTROL_ESCOLAR | sólo **Académicos** |
+| ADMINISTRACION | sólo **Financieros** |
+| ADMISIONES | sólo **Ingreso** |
+| DOCENTE · ALUMNO | **sin módulo global Reportes** (403) |
+
+**Demostración breve (~2 min):**
+
+1. Abrir `/reportes` con ADMIN: aparece el grupo **Reportes** en el menú (invisible para DOCENTE y
+   ALUMNO) y las **3 categorías** con sus 8 reportes.
+2. **Filtros:** cambiar periodo/estatus y escribir en la búsqueda → el resumen de conteos y la tabla
+   se recalculan; «Limpiar filtros» restaura todo y una búsqueda sin coincidencias muestra el
+   estado vacío.
+3. **Tabla:** encabezados legibles (`N. de control`, `Alumno`, `Programa`, `Periodo`, `Estatus`,
+   `Alta` — reporte de Ingreso), estados en texto en español y paginación.
+4. **Exportación CSV (descarga real):** botón «Exportar CSV» → archivo
+   `reporte-<reporte>-<AAAA-MM-DD>.csv` (p. ej. `reporte-ingreso-2026-10-07.csv`).
+5. **Abrirlo** con Excel, LibreOffice o Google Sheets: **encabezados en español**, **acentos
+   correctos** (apellidos como «Gutiérrez» o «Hernández») y contenido idéntico al de la tabla.
+6. **Filtros respetados:** aplicar un filtro y volver a exportar → el archivo trae **sólo** esas
+   filas (todas las del filtro, no sólo la página visible).
+7. **Privacidad:** el archivo **no** incluye CURP, domicilio, información médica ni credenciales;
+   sólo número de control y nombre (PII mínima).
+
+> **Frase para la presentación (decisión D-N6):** «Los reportes pueden exportarse a CSV compatible
+> con Excel, LibreOffice y Google Sheets.»
 
 ## Verificación de aislamiento (si hay tiempo)
 
 | Rol | Ruta | Esperado |
 |---|---|---|
+| CONTROL_ESCOLAR | `/reportes?categoria=ingreso`, `?categoria=financieros` | 403 |
+| ADMINISTRACION | `/reportes?categoria=ingreso`, `?categoria=academicos` | 403 |
+| ADMISIONES | `/reportes?categoria=academicos`, `?categoria=financieros` | 403 |
+| DOCENTE · ALUMNO | `/reportes` | 403 (sin entrada en el menú) |
 | ADMISIONES | `/servicio-social`, `/egreso`, `/historial`, `/formatos-academicos`, `/becas-descuentos/*` | 403 |
 | ADMISIONES · CONTROL_ESCOLAR · ADMINISTRACION | `/admin/materias`, `/admin/grupos` (sólo ADMIN) | 403 |
 | DOCENTE | `/dashboard`, `/alumnos`, `/alumno` | 403 |
@@ -91,13 +133,30 @@ no se muestran en la demo.
 
 Registro completo: `docs/auditoria-pdfs-pre-2.0-17.md` (BUG-04) y `docs/estado-proyecto.md`.
 
-## Verificación ejecutada (§24/§25)
+## Verificación ejecutada (§24/§25 — pre-2.0-17)
 
 - 6 perfiles × sus pantallas: **136 comprobaciones PASS, 0 FAIL**; 26 rutas esperadas devolvieron
   exactamente su 403; 0 HTTP ≥ 500, 0 `console.error`, 0 `pageerror`.
 - PDFs autenticados (`documentos-generados`, `comprobante-pdf`, `documentos/archivo`): 200 +
   `application/pdf` + cabecera `%PDF-`; sin sesión: 302 y sin PDF.
 - Responsive 1440 (§24) / 1920 / 768 / 390 sin overflow horizontal.
+- La verificación **post-2.0-17** (módulo Reportes y CSV en la DEMO: 71/71, 0 fallos) está en
+  «Estado vigente» y su registro técnico en `docs/estado-proyecto.md`.
+
+## Estado vigente (2026-10-07 · post-2.0-17)
+
+- **2.0-00 → 2.0-17 completas** → **ETAPA 2 COMPLETA (18/18 fases)**; no existe ninguna 2.0-18.
+- **QA final en verde:** **823 tests / 3864 assertions / 0 fallos** · **83 rutas** ·
+  **51 migraciones Ran / 0 Pending** · `npm run build` OK · `view:cache` OK.
+- **Reportes operativos implementados:** `/reportes` (8 reportes con filtros, resumen, tabla y
+  paginación) y `/reportes/csv/{reporte}`, con la misma autorización que la pantalla.
+- **CSV implementado** y verificado en la DEMO (**71/71 comprobaciones, 0 fallos**, 0 HTTP ≥ 500,
+  0 `console.error`, responsive 1440/768/390 sin desborde): compatible con **Excel, LibreOffice y
+  Google Sheets**. **XLSX fuera de alcance actual.**
+- **Demo desplegada** en `master` **`fd19e02`** con backups previos, `.env` intacto, datos de la
+  presentación sin cambios y el fixture **no** re-ejecutado.
+- **Limitaciones conservadas:** HORARIO y LISTA_GRUPO siguen sin escenario compatible con los datos
+  actuales de la presentación (límite documentado, no un defecto; **no se tocó el fixture**).
 
 ## Restricciones del escenario
 
