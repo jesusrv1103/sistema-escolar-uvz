@@ -99,14 +99,19 @@ acta usa los métodos reales del modelo.
 - **Resumen:** `promedio`, `creditos_aprobados / creditos_totales` y `porcentaje_avance`, todos
   claves existentes en `HistorialAcademicoService::resumenAcademico()`.
 
-## 5. Qué NO se tocó (y por qué)
+## 5. Qué NO se tocó en ese macrobloque (histórico) y estado hoy
 
-| Observación | Motivo |
-|---|---|
-| `obtenerHistorial()` filtra `estatus != 'BAJA'` comparando un enum con `'BAJA'`: no-op, las bajas sí aparecen | Decisión de negocio pendiente (§18): mostrar u ocultar bajas en Kardex/Historial no es un defecto visual. Requiere acuerdo con UVZ, no se decide aquí. |
-| `creditosAprobados()` contradice su docblock respecto a EXTRAORDINARIO | Depende del ENUM `inscripciones_materias.estatus`, que **no contiene** `EXTRAORDINARIO`: corregirlo exige una migración (§18/§20). |
-| Fuentes `DM Sans` / `Playfair Display` del layout no están embebidas | DomPDF sustituye por la fuente del sistema. Embebirlas implica agregar assets nuevos; fuera del alcance «sin paquetes ni assets nuevos». |
-| `ENUM inscripciones_materias.estatus` sin `EXTRAORDINARIO` | Rompe `ExtraordinarioService` a nivel SQL. Requiere migración → fuera del alcance de este macrobloque. |
+> **Texto histórico de la auditoría pre-2.0-17.** Tres de los cuatro puntos quedaron **resueltos**
+> en el microbloque **«Saneamiento final pre-2.0-17»** (2026-10-07) y uno se mantuvo fuera de
+> alcance por decisión explícita. El detalle está en `docs/estado-proyecto.md`.
+
+
+| Observación | Motivo | Estado |
+|---|---|---|
+| `obtenerHistorial()` filtra `estatus != 'BAJA'` comparando un enum con `'BAJA'`: no-op, las bajas sí aparecen | Decisión de negocio pendiente (§18): mostrar u ocultar bajas en Kardex/Historial no es un defecto visual. Requiere acuerdo con UVZ, no se decide aquí. | **✅ RESUELTO** (comparación contra el enum + prueba RB-A5: BAJA no aporta promedio ni créditos; la tira sigue mostrándola). |
+| `creditosAprobados()` contradice su docblock respecto a EXTRAORDINARIO | Depende del ENUM `inscripciones_materias.estatus`, que **no contiene** `EXTRAORDINARIO`: corregirlo exige una migración (§18/§20). | **✅ RESUELTO** (docblock reconciliado con D-N4/RB-A5 + pruebas). |
+| Fuentes `DM Sans` / `Playfair Display` del layout no están embebidas | DomPDF sustituye por la fuente del sistema. Embebirlas implica agregar assets nuevos; fuera del alcance «sin paquetes ni assets nuevos». | **⏸ SE MANTIENE fuera de alcance** (cosmético; no bloquea 2.0-17). |
+| `ENUM inscripciones_materias.estatus` sin `EXTRAORDINARIO` | Rompe `ExtraordinarioService` a nivel SQL. Requiere migración → fuera del alcance de este macrobloque. | **✅ RESUELTO** (migración incremental `2026_10_06_000001_…`, sin editar migraciones ejecutadas). |
 
 ## 6. Verificación
 
@@ -119,3 +124,14 @@ acta usa los métodos reales del modelo.
 | `DescargaDocumentoGeneradoTest` | Descarga con policy + Content-Type correcto |
 
 No se crearon migraciones, no se agregaron dependencias y no se modificaron datos de la DEMO.
+
+---
+
+## 6.1 Actualización (saneamiento final pre-2.0-17, 2026-10-07)
+
+La última fila de la tabla §5 («obtenerHistorial() filtra `estatus != 'BAJA'` comparando un
+enum con 'BAJA': no-op») se **cerró**: la comparación se hizo explícita contra
+`EstatusInscripcionMateria::BAJA` y la regla RB-A5 (BAJA no aporta promedio ni créditos) quedó
+fijada con prueba de regresión, sin cambiar la regla aprobada. En este microbloque **sí** se
+creó una migración (la del `ENUM` de §5) —ver `docs/estado-proyecto.md`—; ni dependencias ni
+cambios en los datos de la DEMO.

@@ -427,18 +427,22 @@
 - **Decisiones persistidas:** C1 portal de alumno aprobado con aislamiento estricto (2.0-16); C2/C3/D-N1 nueva entidad **`matriculas_periodo`** (`UNIQUE(alumno_id, periodo_id)`, máquina propia; `inscripciones` reservada a admisión/ingreso; `inscripciones_materias` sobre `matricula_periodo_id`); C4 **ETAPA 2 — Control Escolar** (F1–F14 = ETAPA 1, sin reescribir historia); C5 análisis persistible y commiteado; C6 **Opción A** → F15/F16 = **2.0-00 Blindaje del núcleo** (antes de 2.0-01); C7 datos institucionales no inventados y **2.0-01 no bloqueada** (catálogos vacíos); C8 formatos **internos UVZ** con pipeline DATOS/REGLAS → SERVICIO → PLANTILLA BLADE → PDF (fuera SEP/MEC/MET/SIGED/certificados/titulación electrónica).
 - **Roles:** conservados los 4 actuales; **DOCENTE** aprobado (2.0-06, D-N2); **ALUMNO** aprobado (2.0-16, D-N5); **COORDINADOR** no por ahora. **Diferidas a su fase:** D-N6. **Resueltas:** D-N3 (2.0-12), D-N4 (2.0-07), D-N7 (2.0-05/08).
 - **Documentación actualizada:** `analisis-evolucion-control-escolar.md`, `roadmap-sistema-escolar.md`, `arquitectura-mvp.md` (§7.3, §19, §24), `plan-implementacion.md` (F15/F16 → 2.0-00) y este documento; sin borrar información histórica, **sin código, sin migraciones y sin ejecución de tests** (tarea documental); commit local solo de documentación.
-- **Estado de fases de la Etapa 2: 2.0-00 ✅ COMPLETA e integrada en master** · **2.0-01 ✅ COMPLETA e integrada en master** · **2.0-02 ✅ COMPLETA e integrada en master** · **2.0-03 ✅ COMPLETA e integrada en master** · **2.0-04 ✅ COMPLETA e integrada en master** · **2.0-05 ✅ COMPLETA e integrada en master** · **2.0-06 ✅ COMPLETA e integrada en master** · **2.0-07 ✅ COMPLETA e integrada en master** · **2.0-08 ✅ COMPLETA e integrada en master** · **2.0-09 ✅ COMPLETA e integrada en master** (completada en `feat/2.0-09-12-historicos-finanzas`) · **2.0-10 ✅ COMPLETA e integrada en master** (idem) · **2.0-11 ✅ COMPLETA e integrada en master** (idem) · **2.0-12 ✅ COMPLETA e integrada en master** (idem) · **2.0-13 ✅ COMPLETA**, **2.0-14 ✅ COMPLETA**, **2.0-15 ✅ COMPLETA**, **2.0-16 ✅ COMPLETA — todas completas en `feat/2.0-13-16-cierre-portales`, pendientes de integración a master** · **2.0-17 NO INICIADA**.
+- **Estado de fases de la Etapa 2: 2.0-00 ✅ COMPLETA e integrada en master** · **2.0-01 ✅ COMPLETA e integrada en master** · **2.0-02 ✅ COMPLETA e integrada en master** · **2.0-03 ✅ COMPLETA e integrada en master** · **2.0-04 ✅ COMPLETA e integrada en master** · **2.0-05 ✅ COMPLETA e integrada en master** · **2.0-06 ✅ COMPLETA e integrada en master** · **2.0-07 ✅ COMPLETA e integrada en master** · **2.0-08 ✅ COMPLETA e integrada en master** · **2.0-09 ✅ COMPLETA e integrada en master** (completada en `feat/2.0-09-12-historicos-finanzas`) · **2.0-10 ✅ COMPLETA e integrada en master** (idem) · **2.0-11 ✅ COMPLETA e integrada en master** (idem) · **2.0-12 ✅ COMPLETA e integrada en master** (idem) · **2.0-13 ✅ COMPLETA e integrada en master**, **2.0-14 ✅ COMPLETA e integrada en master**, **2.0-15 ✅ COMPLETA e integrada en master**, **2.0-16 ✅ COMPLETA e integrada en master** — macrobloque 2.0-13→2.0-16 completado en `feat/2.0-13-16-cierre-portales` y **integrado a `master`** (rama conservada, cierre por `--ff-only`) · **QA pre-2.0-17 ✅ CERRADO** (BUG-01…BUG-05 + N-1…N-3) · **2.0-17 ⬜ NO INICIADA**.
 
 ## Macrobloque 2.0-13 → 2.0-16 — CERRADO (registro)
 
 ### Estado de ejecución
 
+> **Texto histórico:** los gates de esta tabla son los que se obtuvieron **al cerrar cada fase**
+> en la rama `feat/2.0-13-16-cierre-portales`. El macrobloque quedó **integrado en `master`** por
+> `--ff-only` (2026-10-06) y la rama se conserva sin borrar.
+
 | Fase | Estado | Gate |
 |---|---|---|
-| 2.0-13 Servicio social + prácticas | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 676 tests / 3058 assertions / 0 fallas · 69 rutas · build OK · view:cache OK |
-| 2.0-14 Egreso + titulación + constancia | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 715 tests / 3151 assertions / 0 fallas · 70 rutas · build OK · view:cache OK |
-| 2.0-15 Portal de docente | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` | 753 tests / 3225 assertions / 0 fallas · 76 rutas · 0 migraciones · build OK · view:cache OK |
-| 2.0-16 Portal de alumno | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` (cierre del macrobloque) | 773 tests / 3293 assertions / 0 fallas · 81 rutas · 1 migración · build OK · view:cache OK |
+| 2.0-13 Servicio social + prácticas | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` → **integrada en master** | 676 tests / 3058 assertions / 0 fallas · 69 rutas · build OK · view:cache OK |
+| 2.0-14 Egreso + titulación + constancia | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` → **integrada en master** | 715 tests / 3151 assertions / 0 fallas · 70 rutas · build OK · view:cache OK |
+| 2.0-15 Portal de docente | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` → **integrada en master** | 753 tests / 3225 assertions / 0 fallas · 76 rutas · 0 migraciones · build OK · view:cache OK |
+| 2.0-16 Portal de alumno | ✅ **COMPLETA** en `feat/2.0-13-16-cierre-portales` → **integrada en master** (cierre del macrobloque) | 773 tests / 3293 assertions / 0 fallas · 81 rutas · 1 migración · build OK · view:cache OK |
 
 ### 2.0-13 — Servicio social y prácticas profesionales (completa)
 
@@ -620,13 +624,18 @@ inscrito en este grupo.». Resolverlo exigiría cambiar el fixture (prohibido) o
 rediseñar la selección de matrícula (funcionalidad nueva); queda documentado y
 la guía de demo ya no promete esos dos formatos.
 
-### Fuera de alcance (registrado, no fixeado)
+### Fuera de alcance en ese macrobloque (histórico) — estado al saneamiento pre-2.0-17
 
 - `ENUM inscripciones_materias.estatus` **sin** `EXTRAORDINARIO` → `ExtraordinarioService` falla a nivel SQL: exige migración (§18/§20).
+  → **RESUELTO** en el saneamiento pre-2.0-17: migración incremental `2026_10_06_000001_add_extraordinario_to_inscripciones_materias_table` (sin editar migraciones ejecutadas).
 - `obtenerHistorial()` filtra `estatus != 'BAJA'` comparando enum con texto → no-op; decisión de negocio pendiente.
+  → **RESUELTO**: la comparación se hace ahora contra `EstatusInscripcionMateria::BAJA` (el enum) y la regla RB-A5 («BAJA no aporta») queda fijada con prueba; sin cambio de regla.
 - `creditosAprobados()` contradice su docblock respecto a EXTRAORDINARIO (mismo origen: el ENUM).
+  → **RESUELTO**: docblock reconciliado con D-N4 + RB-A5 (EXTRAORDINARIO en proceso no aporta; consolidado en `APROBADA` aporta una sola vez) y cubierto con pruebas.
 - Fuentes `DM Sans`/`Playfair Display` no embebidas en el PDF (DomPDF sustituye); agregar assets queda fuera.
+  → **se mantiene fuera de alcance** (cosmético, no bloquea 2.0-17; decisión explícita del saneamiento pre-2.0-17).
 - `FormatoService::autorizar()` llama `Gate::authorize('ver', $grupo)`, ability inexistente en `GrupoPolicy` (la real es `view`): sólo la supera ADMIN por `Gate::before`, que es el único rol que alcanza esa ruta. Sin efecto visible; se registra para el backlog.
+  → **RESUELTO**: ability corregida a `view` (sí tenía efecto real: CONTROL_ESCOLAR recibía 403 al emitir HORARIO/LISTA_GRUPO), con regresión de rol no-ADMIN.
 
 ### Gate §20
 

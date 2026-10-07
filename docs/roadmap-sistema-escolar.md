@@ -1,7 +1,7 @@
 # Roadmap — Sistema Escolar UVZ
 
 > **Universidad Villa de Zacatecas (UVZ)** · "Aumentamos la excelencia".
-> Documento de evolución futura. **La ETAPA 2 (Control Escolar) fue APROBADA en planeación (02/10/2026); 2.0-00 COMPLETADA e integrada en master; 2.0-01 COMPLETA e integrada en master; 2.0-02 COMPLETA e integrada en master; 2.0-03 COMPLETA e integrada en master; 2.0-04 COMPLETA e integrada en master; 2.0-05 COMPLETA e integrada en master; 2.0-06 COMPLETA e integrada en master; 2.0-07 COMPLETA e integrada en master; 2.0-08 COMPLETA e integrada en master; 2.0-09 COMPLETA e integrada en master; 2.0-10 COMPLETA e integrada en master; 2.0-11 COMPLETA e integrada en master; 2.0-12 COMPLETA e integrada en master; **2.0-13 ✅ COMPLETA en `feat/2.0-13-16-cierre-portales`** (macrobloque 2.0-13→2.0-16 cerrado, pendiente de integración a master); **2.0-14 ✅ COMPLETA en esa misma rama**; **2.0-15 ✅ COMPLETA en esa misma rama**; **2.0-16 ✅ COMPLETA en esa misma rama — macrobloque 2.0-13→2.0-16 cerrado, pendiente de integración a master** (2.0-17 NO autorizada, sigue NO INICIADA)**.
+> Documento de evolución futura. **La ETAPA 2 (Control Escolar) fue APROBADA en planeación (02/10/2026)**; **2.0-00 COMPLETADA e integrada en master**; **2.0-01 COMPLETA e integrada en master**; **2.0-02 COMPLETA e integrada en master**; **2.0-03 COMPLETA e integrada en master**; **2.0-04 COMPLETA e integrada en master**; **2.0-05 COMPLETA e integrada en master**; **2.0-06 COMPLETA e integrada en master**; **2.0-07 COMPLETA e integrada en master**; **2.0-08 COMPLETA e integrada en master**; **2.0-09 COMPLETA e integrada en master**; **2.0-10 COMPLETA e integrada en master**; **2.0-11 COMPLETA e integrada en master**; **2.0-12 COMPLETA e integrada en master**; **2.0-13 COMPLETA e integrada en master**; **2.0-14 COMPLETA e integrada en master**; **2.0-15 COMPLETA e integrada en master**; **2.0-16 COMPLETA e integrada en master** (macrobloque 2.0-13→2.0-16 integrado a `master`); **QA pre-2.0-17 ✅ CERRADA** (correcciones BUG-01…BUG-05 y N-1…N-3, DEMO en verde); **2.0-17 ⬜ NO INICIADA** (sin autorizar; D-N6 se decide en esa fase).
 > Principio rector: **"Preparado para crecer, pero implementar únicamente lo que el MVP necesita."**
 
 ## ETAPA 1 — ADMISIÓN E INSCRIPCIÓN (MVP, Fases 1–14 ✅ COMPLETAS)
@@ -33,7 +33,7 @@ Detalle: `docs/plan-implementacion.md` · Reglas: `docs/arquitectura-mvp.md`.
 - Datos institucionales: **no inventar** planes, materias, créditos, RVOE, fechas, modalidades ni información no proporcionada. **Esto no bloquea 2.0-01**: la fase crea arquitectura, tablas y CRUD con catálogos vacíos; los datos reales se capturan cuando UVZ los proporcione (C7).
 - Decisiones diferidas a su fase: **D-N3 (becas/descuentos — RESUELTA en 2.0-12)**, **D-N4 (extraordinarios — RESUELTA en 2.0-07)**, D-N6 (exportaciones CSV/Excel), **D-N7 (folios actas/constancias — RESUELTA en 2.0-05/08)**.
 
-**Fases de la Etapa 2 (18 en total) — 2.0-00 ✅ COMPLETADA e integrada en master, 2.0-01 ✅ COMPLETA e integrada en master, 2.0-02 ✅ COMPLETA e integrada en master, 2.0-03 ✅ COMPLETA e integrada en master, 2.0-04 ✅ COMPLETA e integrada en master, 2.0-05 ✅ COMPLETA e integrada en master, 2.0-06 ✅ COMPLETA e integrada en master, 2.0-07 ✅ COMPLETA e integrada en master, 2.0-08 ✅ COMPLETA e integrada en master, 2.0-09 ✅ COMPLETA e integrada en master, 2.0-10 ✅ COMPLETA e integrada en master, 2.0-11 ✅ COMPLETA e integrada en master, 2.0-12 ✅ COMPLETA e integrada en master, 2.0-13 ✅ COMPLETA en `feat/2.0-13-16-cierre-portales`, 2.0-14 ✅ COMPLETA en esa misma rama, 2.0-15 ✅ COMPLETA en esa misma rama, 2.0-16 ✅ COMPLETA en esa misma rama (macrobloque cerrado, pendiente de integración a master), 2.0-17 ⬜ NO INICIADA:**
+**Fases de la Etapa 2 (18 en total) — 2.0-00 ✅ COMPLETADA e integrada en master, 2.0-01 ✅ COMPLETA e integrada en master, 2.0-02 ✅ COMPLETA e integrada en master, 2.0-03 ✅ COMPLETA e integrada en master, 2.0-04 ✅ COMPLETA e integrada en master, 2.0-05 ✅ COMPLETA e integrada en master, 2.0-06 ✅ COMPLETA e integrada en master, 2.0-07 ✅ COMPLETA e integrada en master, 2.0-08 ✅ COMPLETA e integrada en master, 2.0-09 ✅ COMPLETA e integrada en master, 2.0-10 ✅ COMPLETA e integrada en master, 2.0-11 ✅ COMPLETA e integrada en master, 2.0-12 ✅ COMPLETA e integrada en master, 2.0-13 ✅ COMPLETA e integrada en master, 2.0-14 ✅ COMPLETA e integrada en master, 2.0-15 ✅ COMPLETA e integrada en master, 2.0-16 ✅ COMPLETA e integrada en master (macrobloque 2.0-13→2.0-16 integrado a `master`), QA pre-2.0-17 ✅ CERRADA, 2.0-17 ⬜ NO INICIADA:**
 
 | Fase | Alcance | Depende de |
 |---|---|---|
@@ -57,6 +57,14 @@ Detalle: `docs/plan-implementacion.md` · Reglas: `docs/arquitectura-mvp.md`.
 | 2.0-17 | Reportes operativos (D-N6 en su caso) | 2.0-09+ |
 
 Detalle de guardas, riesgos y complejidad: `docs/analisis-evolucion-control-escolar.md` §11–§15.
+
+> **Estado al 2026-10-07 — QA pre-2.0-17 cerrado.**
+> **2.0-00 → 2.0-16 completas e integradas en `master`** (el macrobloque 2.0-13→2.0-16 se cerró por
+> `--ff-only`; la rama `feat/2.0-13-16-cierre-portales` se conserva sin borrar).
+> **QA pre-2.0-17 ✅ CERRADO**: BUG-01…BUG-05 y los hallazgos N-1…N-3 corregidos, desplegados en la
+> DEMO y verificados en verde (gate: **801 pruebas / 3657 assertions / 0 fallos**, `migrate:status`
+> 51 Ran / 0 Pending, `route:list` 81 rutas).
+> **2.0-17 ⬜ NO INICIADA** — sigue sin autorizar; **D-N6 no se decide aquí**.
 
 ## Etapas futuras (referencia histórica — listado original, incorporado a la Etapa 2)
 
