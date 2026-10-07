@@ -648,6 +648,47 @@ la guía de demo ya no promete esos dos formatos.
 - `docs/auditoria-pdfs-pre-2.0-17.md` — inventario de los 12 formatos, defectos y decisiones (BUG-04).
 - `docs/demo-presentacion.md` — guion actualizado con las correcciones aplicadas.
 
+### QA en la DEMO (§23 … §31) — 2026-10-06
+
+**§23 · Backups** en `backups/` del servidor (`chmod 600`): `bd-qa-predeploy2-20261006-200151.sql.gz`
+(47 tablas, 39 `INSERT`; volcado con un `--defaults-extra-file` temporal borrado al terminar, así
+**ninguna credencial queda en argv, en el dump ni en el repositorio**) y
+`codigo-qa-predeploy2-20261006-200151.tar.gz` (2.2 MB: código + `.env`, sin `vendor`/`node_modules`/`storage`).
+
+**§24 · Redespliegue**: `git archive HEAD` → **616 archivos** extraídos sobre la raíz de la app
+(`.env` intacto y sin trackear), `optimize:clear` + `config:cache` + `route:cache` + `view:cache` +
+`event:cache` correctos, `migrate:status` **50 Ran / 0 Pending**, PHP 8.3.31, `route:list` **81 rutas**.
+
+**§25–§27 · Formatos académicos** (script propio, 6 perfiles, 32 peticiones Livewire, **0 fallos y 0 HTTP ≥ 500**):
+
+- **Matriz de roles BUG-01**: ADMIN y CONTROL_ESCOLAR → 200 con formulario; ADMINISTRACION → 200
+  **sin** formulario y con el aviso de sólo consulta; ADMISIONES, DOCENTE y ALUMNO → **403**.
+- **Backend**: `POST /livewire/update` crudo como ADMINISTRACION a `generarFormato('kardex')` →
+  **HTTP 403** (la regla única vive fuera del `try`; la UI sólo oculta el botón).
+- **Generación real con descarga `%PDF-`**: CONTROL_ESCOLAR `KARDEX` (172 KB) y ADMIN `TIRA`,
+  `ACTA`, `AVANCE`, `HISTORIAL` + `CONSTANCIA_INSCRIPCION` desde `/admin/formatos`.
+- **N-1**: el `ACTA` ahora sí ofrece «Descargar PDF» en la DEMO (antes: generado sin enlace).
+- **N-2**: reemitir el mismo `ACTA` reutiliza su fila → `documentos_generados` 16 → 27 con
+  **1 sola fila ACTA** y **4/4 folios únicos**; cero `SQLSTATE 1062` en pantalla.
+- **N-3**: `HORARIO` y `LISTA_GRUPO` muestran ahora «El alumno no está inscrito en este grupo.»
+  (antes el clic no decía nada); límite de datos de la DEMO documentado, sin tocar el fixture.
+
+**§28 · Asistencia (BUG-05)**: «Guardar» → **HTTP 200** con el mismo flujo que devolvía 419 y
+**sin ningún diálogo**; persistencia verificada en BD (`asistencias` 9 → **10**, grupo 8, fecha de
+hoy, `registrado_por=10` DOCENTE, alumno `20260007`). El `TypeError` original ya no aparece.
+
+**§29 · Smoke completo** (`6 perfiles` + aislamiento + responsive 1920/768/390 + PDFs anónimos):
+**0 fallos, 0 avisos, 0 HTTP ≥ 500, 0 `console.error`, 0 `pageerror`**.
+
+**§30 · Log**: `production.ERROR` **150** — baseline 149 + **1 entrada propia del QA** (13:36:13,
+`Psy\ParseErrorException` por un one-liner de tinker mal escapado, **no es de la aplicación**);
+`production.WARNING` 0. Ningún error nuevo tras el smoke.
+
+**§31 · Datos DEMO intactos**: `users` 11, `alumnos` 16, `grupos` 12, `materias` 7, `periodos` 4,
+`actas` 2, `inscripciones` 16, `inscripciones_materias` 30, `calificaciones` 16, `pagos` 19,
+`auditoria` 297 — sin borrar ni recrear nada; sólo se **añadieron** 11 documentos y 1 asistencia
+del propio QA. Credenciales usadas sólo desde `~/.ssh/uvz_demo_presentacion` (600), nunca impresas.
+
 ---
 
 ## Pendientes / registrados
