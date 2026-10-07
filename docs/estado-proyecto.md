@@ -700,6 +700,102 @@ del propio QA. Credenciales usadas sólo desde `~/.ssh/uvz_demo_presentacion` (6
 
 ---
 
+## Microbloque PRE-2.0-17 — Saneamiento final (2026-10-07)
+
+> Rama `fix/saneamiento-pre-2.0-17` desde `ed4115a`. Alcance: **únicamente** documentación obsoleta
+> y los pendientes técnicos ya registrados (A–D). **NO** se inició 2.0-17, **NO** se implementaron
+> reportes, **NO** se decidió D-N6, **NO** se tocaron las fuentes DM Sans/Playfair y **NO** hubo
+> push, remotes, rebase, force ni borrado de ramas.
+
+### 1. Estado final (punto 8)
+
+- **2.0-00 → 2.0-16: COMPLETAS e integradas en `master`.**
+- **QA pre-2.0-17: CERRADO** (BUG-01…BUG-05 y N-1…N-3 ya desplegados y verificados en verde).
+- **2.0-17: NO INICIADA** (sin autorizar; D-N6 sin decidir, se define en esa fase).
+
+### 2. Documentación reconciliada
+
+| Documento | Qué cambió |
+|---|---|
+| `arquitectura-mvp.md` | Fuera «2.0-13 en adelante NO INICIADAS» (3 líneas de estado: §1, §24 y Evolución futura) y «2.0-09 en adelante NO INICIADAS». Ahora: 2.0-00 → 2.0-16 integradas, QA pre-2.0-17 cerrado, 2.0-17 NO INICIADA. De paso se corrigió un `**` sin cerrar que dejaba tramos enteros en negritas. |
+| `roadmap-sistema-escolar.md` | Encabezado y listado de fases: el macrobloque 2.0-13→2.0-16 deja de decir «en `feat/2.0-13-16-cierre-portales`, pendiente de integración a master» → **integrado en master**; nuevo bloque «Estado al 2026-10-07» con QA pre-2.0-17 cerrado y 2.0-17 NO INICIADA. |
+| `estado-proyecto.md` | Estado de fases de la Etapa 2 reconciliado (2.0-13…16 «integradas en master»); tabla del macrobloque marcada como **texto histórico** con su integración; sección «Fuera de alcance» renombrada como histórico y con estado por hallazgo. |
+| `analisis-evolucion-control-escolar.md` | Sus 2 líneas «NO INICIADAS» se conservan **íntegras**, marcadas como «estado histórico de la fecha de redacción» + puntero al estado vigente. |
+| `plan-implementacion.md` | Idem: 3 líneas marcadas como histórico con puntero al roadmap. **No se borra historia.** |
+| `auditoria-pdfs-pre-2.0-17.md` | §5 marcado como histórico y con estado por fila (3 resueltos / 1 fuera de alcance) + nuevo §6.1 con el detalle. |
+| `demo-presentacion.md` | **VERSIONADO** (dejó de estar `untracked`). Revisión previa al commit: sin contraseñas, sin secretos y sin datos personales reales (escenario 100 % sintético; las credenciales sólo viven en `~/.ssh/uvz_demo_presentacion`, 600). Se actualizó lo que quedó obsoleto (EXTRAORDINARIO ya es persistible). |
+
+### 3. Pendientes técnicos (A–D)
+
+**A) EXTRAORDINARIO — migración incremental.**
+Auditoría: el enum PHP `EstatusInscripcionMateria::EXTRAORDINARIO` y `ExtraordinarioService`
+(2.0-07, D-N4) existían, pero el ENUM de MySQL `inscripciones_materias.estatus` sólo admitía
+`CURSANDO/APROBADA/REPROBADA/BAJA/VALIDADA`: `iniciar()` hacía `UPDATE … 'EXTRAORDINARIO'` y MySQL
+rechazaba la fila (`SQLSTATE 01000` / *Data truncated for column 'estatus'*), dejando la transacción
+sin completar. **Evidencia:** con la migración retirada, 4/5 pruebas nuevas fallan con ese error;
+con ella, 5/5 en verde. **Migración** `2026_10_06_000001_add_extraordinario_to_inscripciones_materias_table`:
+sólo amplía la lista de valores, conserva `default('CURSANDO')`, índices y filas existentes, y `down()`
+revierte. **Sin editar ninguna migración ejecutada.** Esquema en la DEMO tras desplegar:
+`enum('CURSANDO','APROBADA','REPROBADA','EXTRAORDINARIO','BAJA','VALIDADA')` con sus 2 índices intactos.
+
+**B) Filtro de BAJA en `obtenerHistorial()`.**
+La comparación se hizo explícita contra `EstatusInscripcionMateria::BAJA` en vez del literal `'BAJA'`.
+*Auditoría honesta:* Laravel normaliza ambos lados de `Collection::where` (`enum_value`), así que el
+filtro **ya operaba** (verificado: la fila BAJA salía del kardex); el cambio elimina la comparación
+enum↔texto frágil y **fija la regla aprobada RB-A5 con prueba de regresión**: una BAJA con
+`calificacion_final = 80` no entra al historial, no aporta promedio (queda 90) ni créditos (queda 4),
+y `tiraMaterias()` la sigue mostrando con `es_baja = true`. **La regla no cambia.**
+
+**C) `creditosAprobados()`.**
+Docblock reconciliado con D-N4 + RB-A5 y hecho coincidir con la implementación: `APROBADA`
+(ordinaria o consolidada tras un extraordinario aprobado) aporta **una sola vez**; `EXTRAORDINARIO`
+**en proceso** no aporta (aún sin resultado consolidado); `REPROBADA`, `BAJA`, `CURSANDO` y
+`VALIDADA` tampoco. Cubierto con 3 pruebas.
+
+**D) `FormatoService::autorizar()` — ability.**
+`Gate::authorize('ver', $grupo)` → **`'view'`** (`GrupoPolicy::view`): `ver` no existe en la política.
+**Sí tenía efecto real**: las pruebas de catálogo sólo usaban ADMIN (que pasa por `Gate::before`);
+con CONTROL_ESCOLAR, HORARIO/LISTA_GRUPO devolvían 403 — reproducido: con `'ver'` la prueba nueva
+lanza `AuthorizationException` y con `'view'` genera el PDF. Regresión de rol no-ADMIN añadida
+(CE emite ambos formatos y `allows('view')` = true / `allows('ver')` = false). La capacidad
+`formato_academico.generar` y el policy `create` siguen cubriendo las pantallas (verificado en la DEMO).
+
+**Fuera de alcance por decisión explícita:** fuentes `DM Sans`/`Playfair Display` embebidas en el PDF
+— cosmético, no bloquea 2.0-17.
+
+### 4. Gates (§20)
+
+- `composer test` → **801 tests / 3657 assertions / 0 fallos** (baseline 794 / 3612 / 0).
+- `view:cache` → **OK** · `npm run build` → **OK** (58.06 kB CSS + 53.54 kB JS) · `route:list` → **81**
+  sin cambios (78 rutas registradas; medido igual antes y después, sin rutas nuevas).
+- **1 migración nueva** (la del punto A) · **0 rutas nuevas** · **0 dependencias nuevas** · **0 editadas**.
+
+### 5. Deploy en la DEMO (2026-10-07)
+
+- **Backups previos** (chmod 600): `backups/bd-saneamiento-20261007-192943.sql.gz` (47 tablas) y
+  `backups/codigo-saneamiento-20261007-192943.tar.gz`. Credenciales de BD sólo en fichero temporal
+  (`--defaults-extra-file`), borrado tras usarlo; **nada por argv ni en docs/git/log/reporte**.
+- Código por `git archive HEAD` → **619 archivos**; `.env` **intacto** (mismo md5 antes/después) y
+  no incluido en el archive; el servidor **no** es repo git.
+- `migrate --force` → `2026_10_06_000001_… DONE`; `migrate:status` → **51 Ran / 0 Pending**
+  (sin `fresh`/`refresh`/`wipe`).
+- Cachés: `optimize:clear` → `config:cache` → `route:cache` → `view:cache` → `event:cache` **todos OK**.
+- Verificación: PHP 8.3.31, HTTP 200, log `production.ERROR` **150 de la aplicación** (el registro 151
+  es un `Psy\ParseErrorException` de un `tinker --execute` propio, no del sistema) y `WARNING` **0**.
+- Datos intactos: `users` 11, `alumnos` 16, `grupos` 12, `actas` 2, `pagos` 19, `auditoria` 297,
+  `documentos_generados` 27, `inscripciones_materias` 30 (los `estatus` siguen: 5 CURSANDO,
+  22 APROBADA, 2 REPROBADA, 1 BAJA — **sin filas alteradas**).
+
+### 6. Smoke en la DEMO (`/tmp/smoke_pre217.py`)
+
+**41 comprobaciones · 0 fallos · 0 errores de consola:** login de los 6 roles; navegación real por rol
+(dashboard, alumnos, inscripciones, historial, alumno/kardex|horario|estado-cuenta|documentos,
+docente/grupos/8/evaluaciones|calificaciones|asistencia) y **matriz BUG-01 intacta**: ADMIN y
+CONTROL_ESCOLAR → 200 en `/formatos-academicos`, ADMINISTRACION → 200 con el botón oculto por `@can`
+(el 403 lo conserva el backend), `/admin/formatos` sólo ADMIN (200) y 403 para el resto.
+
+---
+
 ## Pendientes / registrados
 - Cuenta ADMIN de desarrollo: `ADMIN_EMAIL`/`ADMIN_PASSWORD` en `.env` (valores no versionados ni documentados; `.env.example` solo con las claves vacías; **`DB_PASSWORD` también vacía en `.env.example` y `phpunit.xml` — credenciales solo en `.env`**).
 - Policies: las 8 clases existen desde la Fase 2; `PagoPolicy`, `DocumentoPolicy` y `ObservacionPolicy` están **registradas explícitamente** en `AuthServiceProvider` (modelo real) y el resto se resuelve por convención cuando los modelos las usen (sin código artificial).
