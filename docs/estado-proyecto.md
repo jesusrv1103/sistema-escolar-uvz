@@ -425,9 +425,9 @@
 - **Checkpoint Hostinger completo y aprobado** (ver sección anterior) y **F1–F14 completas** (ETAPA 1 — Admisión e Inscripción).
 - **Roadmap 2.0 APROBADO en planeación** (`docs/analisis-evolucion-control-escolar.md`, actualizado con todas las decisiones): 18 fases (**2.0-00 … 2.0-17**) y **23 tablas nuevas propuestas**.
 - **Decisiones persistidas:** C1 portal de alumno aprobado con aislamiento estricto (2.0-16); C2/C3/D-N1 nueva entidad **`matriculas_periodo`** (`UNIQUE(alumno_id, periodo_id)`, máquina propia; `inscripciones` reservada a admisión/ingreso; `inscripciones_materias` sobre `matricula_periodo_id`); C4 **ETAPA 2 — Control Escolar** (F1–F14 = ETAPA 1, sin reescribir historia); C5 análisis persistible y commiteado; C6 **Opción A** → F15/F16 = **2.0-00 Blindaje del núcleo** (antes de 2.0-01); C7 datos institucionales no inventados y **2.0-01 no bloqueada** (catálogos vacíos); C8 formatos **internos UVZ** con pipeline DATOS/REGLAS → SERVICIO → PLANTILLA BLADE → PDF (fuera SEP/MEC/MET/SIGED/certificados/titulación electrónica).
-- **Roles:** conservados los 4 actuales; **DOCENTE** aprobado (2.0-06, D-N2); **ALUMNO** aprobado (2.0-16, D-N5); **COORDINADOR** no por ahora. **Diferidas a su fase:** D-N6. **Resueltas:** D-N3 (2.0-12), D-N4 (2.0-07), D-N7 (2.0-05/08).
+- **Roles:** conservados los 4 actuales; **DOCENTE** aprobado (2.0-06, D-N2); **ALUMNO** aprobado (2.0-16, D-N5); **COORDINADOR** no por ahora. **Diferidas a su fase:** — (ninguna). **Resueltas:** D-N6 (**CSV aprobado**, XLSX descartado — 2.0-17), D-N3 (2.0-12), D-N4 (2.0-07), D-N7 (2.0-05/08).
 - **Documentación actualizada:** `analisis-evolucion-control-escolar.md`, `roadmap-sistema-escolar.md`, `arquitectura-mvp.md` (§7.3, §19, §24), `plan-implementacion.md` (F15/F16 → 2.0-00) y este documento; sin borrar información histórica, **sin código, sin migraciones y sin ejecución de tests** (tarea documental); commit local solo de documentación.
-- **Estado de fases de la Etapa 2: 2.0-00 ✅ COMPLETA e integrada en master** · **2.0-01 ✅ COMPLETA e integrada en master** · **2.0-02 ✅ COMPLETA e integrada en master** · **2.0-03 ✅ COMPLETA e integrada en master** · **2.0-04 ✅ COMPLETA e integrada en master** · **2.0-05 ✅ COMPLETA e integrada en master** · **2.0-06 ✅ COMPLETA e integrada en master** · **2.0-07 ✅ COMPLETA e integrada en master** · **2.0-08 ✅ COMPLETA e integrada en master** · **2.0-09 ✅ COMPLETA e integrada en master** (completada en `feat/2.0-09-12-historicos-finanzas`) · **2.0-10 ✅ COMPLETA e integrada en master** (idem) · **2.0-11 ✅ COMPLETA e integrada en master** (idem) · **2.0-12 ✅ COMPLETA e integrada en master** (idem) · **2.0-13 ✅ COMPLETA e integrada en master**, **2.0-14 ✅ COMPLETA e integrada en master**, **2.0-15 ✅ COMPLETA e integrada en master**, **2.0-16 ✅ COMPLETA e integrada en master** — macrobloque 2.0-13→2.0-16 completado en `feat/2.0-13-16-cierre-portales` y **integrado a `master`** (rama conservada, cierre por `--ff-only`) · **QA pre-2.0-17 ✅ CERRADO** (BUG-01…BUG-05 + N-1…N-3) · **2.0-17 ⬜ NO INICIADA**.
+- **Estado de fases de la Etapa 2: 2.0-00 ✅ COMPLETA e integrada en master** · **2.0-01 ✅ COMPLETA e integrada en master** · **2.0-02 ✅ COMPLETA e integrada en master** · **2.0-03 ✅ COMPLETA e integrada en master** · **2.0-04 ✅ COMPLETA e integrada en master** · **2.0-05 ✅ COMPLETA e integrada en master** · **2.0-06 ✅ COMPLETA e integrada en master** · **2.0-07 ✅ COMPLETA e integrada en master** · **2.0-08 ✅ COMPLETA e integrada en master** · **2.0-09 ✅ COMPLETA e integrada en master** (completada en `feat/2.0-09-12-historicos-finanzas`) · **2.0-10 ✅ COMPLETA e integrada en master** (idem) · **2.0-11 ✅ COMPLETA e integrada en master** (idem) · **2.0-12 ✅ COMPLETA e integrada en master** (idem) · **2.0-13 ✅ COMPLETA e integrada en master**, **2.0-14 ✅ COMPLETA e integrada en master**, **2.0-15 ✅ COMPLETA e integrada en master**, **2.0-16 ✅ COMPLETA e integrada en master** — macrobloque 2.0-13→2.0-16 completado en `feat/2.0-13-16-cierre-portales` y **integrado a `master`** (rama conservada, cierre por `--ff-only`) · **QA pre-2.0-17 ✅ CERRADO** (BUG-01…BUG-05 + N-1…N-3) · **2.0-17 ✅ COMPLETA e integrada en master** (rama `feat/2.0-17-reportes-operativos`, cierre por `--ff-only`) — **ETAPA 2 COMPLETA (18/18 fases)**.
 
 ## Macrobloque 2.0-13 → 2.0-16 — CERRADO (registro)
 
@@ -711,7 +711,9 @@ del propio QA. Credenciales usadas sólo desde `~/.ssh/uvz_demo_presentacion` (6
 
 - **2.0-00 → 2.0-16: COMPLETAS e integradas en `master`.**
 - **QA pre-2.0-17: CERRADO** (BUG-01…BUG-05 y N-1…N-3 ya desplegados y verificados en verde).
-- **2.0-17: NO INICIADA** (sin autorizar; D-N6 sin decidir, se define en esa fase).
+- **2.0-17: NO INICIADA** (sin autorizar; D-N6 sin decidir, se define en esa fase). *(Estado
+  histórico de ese microbloque: **ya cerrada** en la sección «Fase 2.0-17 — Reportes operativos»,
+  con D-N6 resuelta: CSV.)*
 
 ### 2. Documentación reconciliada
 
@@ -793,6 +795,92 @@ lanza `AuthorizationException` y con `'view'` genera el PDF. Regresión de rol n
 docente/grupos/8/evaluaciones|calificaciones|asistencia) y **matriz BUG-01 intacta**: ADMIN y
 CONTROL_ESCOLAR → 200 en `/formatos-academicos`, ADMINISTRACION → 200 con el botón oculto por `@can`
 (el 403 lo conserva el backend), `/admin/formatos` sólo ADMIN (200) y 403 para el resto.
+
+---
+
+## Fase 2.0-17 — Reportes operativos — CERRADA (2026-10-07)
+
+> Rama `feat/2.0-17-reportes-operativos` desde `master` @ `77d45cd` → **integrada a `master` por
+> `--ff-only`** (rama conservada, sin push, sin remotes, sin rebase, sin force, sin borrado de
+> ramas). **Cierra la ETAPA 2 — Control Escolar: 18/18 fases completas.**
+> Baseline de entrada: 801 tests / 3657 assertions / 0 fallos · 81 rutas · 51 migraciones Ran ·
+> build OK · DEMO verde · árbol limpio · 0 remotes.
+
+### 1. Diseño previo
+
+- `docs/analisis-fase-2.0-17-reportes.md` (§0 + A–N): fuentes leídas en orden obligatorio (reglas >
+  arquitectura > plan > estado > roadmap > análisis) y código real; **ninguna contradicción
+  importante** que obligara a detenerse. **D-N6 RESUELTA: CSV aprobado, XLSX NO en 2.0-17.**
+
+### 2. Alcance implementado
+
+- **Catálogo único** `CatalogoReportes` (8 reportes del catálogo R1–R6): `ingreso`, `matricula`,
+  `rendimiento`, `asistencia`, `movimientos` (6 subtipos), `cartera`, `pagos`, `becas`. Centraliza
+  columnas, filtros, reglas de dominio, enums y etiquetas: **la tabla y el CSV ven lo mismo**.
+- **Autorización única** en `AuthServiceProvider::CAPACIDADES` (4 nuevas, **0 roles nuevos**):
+  `reporte_ingreso.ver` (ADMIN + ADMISIONES, CE excluida), `reporte_academico.ver` (ADMIN +
+  CONTROL_ESCOLAR), `reporte_financiero.ver` (ADMIN + ADMINISTRACION) y `reporte.exportar`;
+  `Gate::before` de ADMIN intacto. El backend **siempre** valida (ruta, acción Livewire y CSV).
+- **2 rutas nuevas** bajo `auth`: `GET /reportes` (`reportes.index`) y `GET /reportes/csv/{reporte}`
+  (`reportes.csv`) → **81 → 83 rutas**.
+- **Pantalla única** `/reportes` (`PanelReportes` + `panel-reportes.blade.php`, componentes
+  `x-ui.*`): pestañas de categoría/reporte/subtipo, filtros con **lista blanca** (`''`→`null`;
+  fuera de dominio → error de validación capturado, sin excepción), chips de resumen, tabla,
+  paginación (15) y estado vacío. Navegación: grupo **Reportes** con 3 ítems (`params['categoria']`
+  + `can`), visible sólo con alguna capacidad y activo por `?categoria=`.
+- **`ReporteService`:** todos los `SELECT` y los resúmenes (conteos y sumas directos; **sin
+  promedios agregados, sin índices especulativos, sin repositorios genéricos, sin N+1**). Cartera
+  replica la fórmula de `EstadoCuentaService` (sólo `VALIDADO`, ajustes vía `efectoSobreSaldo`).
+- **`CsvReporteService` + `CsvReporteController`:** `text/csv; charset=UTF-8`, **UTF-8 con BOM**,
+  `fputcsv(..., ',', '"', '\\')`, `streamDownload` + `lazy(500)` sin archivos permanentes, nombre
+  `reporte-<slug>[-<subtipo>]-<AAAA-MM-DD>.csv`; **misma autorización y mismos filtros** que la
+  pantalla (422 fuera de dominio); neutralización anti **CSV injection** (apóstrofo inicial, salvo
+  número plano).
+- **Privacidad:** PII mínima (N. de control + nombre). Sin CURP por defecto ni correos, teléfonos,
+  domicilios, contraseñas, hashes, tokens ni auditoría innecesaria; **403 probado en ruta, en
+  acción Livewire y en CSV directo** y manipulación de filtros/IDs sin efecto.
+- **Fuera de alcance intacto:** sin BI, diseñador de reportes, gráficas/KPIs/predicciones/IA, PDFs
+  masivos, ZIP, email, cron, colas, APIs nuevas, XLSX, reportes institucionales de DOCENTE ni
+  globales de ALUMNO, ni COORDINADOR.
+
+### 3. Gate local
+
+- **`composer test` → 823 tests / 3864 assertions / 0 fallos** (baseline 801 / 3657): +22 pruebas
+  (`ReportesTest` 16, `ReportesCsvTest` 6).
+- `php artisan view:cache` **OK** · `npm run build` **OK** (58.06 kB CSS + 53.54 kB JS) ·
+  `route:list` **83** · `migrate:status` **51 Ran / 0 Pending** · **0 migraciones y 0 dependencias
+  nuevas** · árbol limpio tras 3 commits locales (`8249731` diseño → `66b59fb` implementación →
+  `cf406a5` pruebas).
+
+### 4. Deploy en la DEMO (2026-10-07)
+
+- **Backups previos** (`chmod 600`, en `backups/`): `bd-reportes2017-20261007-205758.sql.gz`
+  (47 tablas) y `codigo-reportes2017-20261007-205758.tar.gz` (código + `.env`, sin `vendor` /
+  `node_modules` / `storage`). Credenciales de BD sólo en fichero temporal `--defaults-extra-file`
+  **borrado tras usarlo** (nada por argv, docs, git, log ni reporte).
+- Código por `git archive HEAD` → extraído sobre la raíz; `.env` **intacto** (mismo md5
+  `a3baf3e7db37858a68618f1869721801` antes/después); **sin `migrate --force`** (0 pendientes).
+- Cachés `optimize:clear` → `config:cache` → `route:cache` → `view:cache` → `event:cache` **todos
+  OK**; `migrate:status` **51 Ran / 0 Pending**; `route:list` **83**; PHP 8.3.31.
+- **Datos intactos:** `users` 11 · `alumnos` 16 · `grupos` 12 · `inscripciones` 16 ·
+  `inscripciones_materias` 30 · `pagos` 19 · `auditoria` 297 · `actas` 2 ·
+  `documentos_generados` 27. Fixture `DEMO-PRESENTACION-2026` **sin tocar**; QA 100 % sintético.
+
+### 5. QA en la DEMO (Playwright, 6 roles — 71 comprobaciones · 0 fallos)
+
+- **Matriz `/reportes?categoria=…`:** ADMIN 200/200/200 · ADMISIONES sólo Ingreso · ADMINISTRACION
+  sólo Financieros · CONTROL_ESCOLAR sólo Académicos · DOCENTE y ALUMNO **403** · parámetro
+  manipulado `categoria=inexistente` → 404 · invitado → login. Menú lateral con
+  **3/1/1/1/0/0** enlaces del grupo Reportes y sin etiqueta para DOCENTE/ALUMNO.
+- **Interacción:** cambio de categoría y de reporte, filtros (búsqueda, estatus, periodo), botón
+  «Limpiar filtros», estado vacío, y subtipos de R5 (Bajas → Titulación) que **cambian columnas sin
+  mezclarse**.
+- **CSV (`ingreso`, `cartera`, `movimientos`):** 200, **BOM**, `text/csv; charset=UTF-8`,
+  `attachment` con nombre por fecha, **sin correos ni columna CURP**; `?estatus=HACK` → **422**,
+  slug inexistente → **404**, CSV directo sin capacidad → **403**.
+- **Responsive 1440 / 768 / 390 px:** sin desborde horizontal y tabla pintada en los 3 anchos.
+- **Salud:** 0 respuestas HTTP ≥ 500 · 0 errores de consola (los 8 cargas 403 provienen de la
+  propia matriz deliberada) · log `production.ERROR` **151** (línea base) y `WARNING` **0**.
 
 ---
 

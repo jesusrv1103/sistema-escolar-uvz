@@ -6,7 +6,7 @@
 > **Alcance del nuevo escenario:** conservar y reutilizar todo lo construido en F1–F14 y evolucionarlo hacia un Sistema de Control Escolar universitario (**ETAPA 2 — CONTROL ESCOLAR**). Los documentos académicos usarán **formatos estándar internos de UVZ**; **fuera de alcance**: formatos oficiales SEP, certificados oficiales, titulación electrónica, MEC, MET, SIGED e integraciones gubernamentales.
 >
 > **Fuentes revisadas por completo:** `docs/reglas-desarrollo.md`, `docs/arquitectura-mvp.md` (v3, §1–§23), `docs/plan-implementacion.md`, `docs/estado-proyecto.md`, `docs/roadmap-sistema-escolar.md`; código de apoyo: `app/Providers/AuthServiceProvider.php`, `app/Enums/*`, `app/Services/*`, `app/Livewire/*`, `database/migrations/*`.
-> **F1–F14 = ETAPA 1 — ADMISIÓN E INSCRIPCIÓN (COMPLETA)** · **F15/F16 → 2.0-00 (NO iniciadas — estado histórico previo a ejecución)** · **2.0-00 ✅ COMPLETADA (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK)** · **2.0-01 ✅ COMPLETA e integrada en master** · **2.0-02 ✅ COMPLETA e integrada en master** · **2.0-03 ✅ COMPLETA e integrada en master** · **2.0-04 ✅ COMPLETA e integrada en master** · 2.0-05 en adelante NO INICIADAS **(estado histórico de la fecha de redacción de este análisis)**. **Estado vigente:** ver `docs/roadmap-sistema-escolar.md` — **2.0-00 → 2.0-16 completas e integradas en `master`**, **QA pre-2.0-17 cerrado** y **2.0-17 NO INICIADA**..
+> **F1–F14 = ETAPA 1 — ADMISIÓN E INSCRIPCIÓN (COMPLETA)** · **F15/F16 → 2.0-00 (NO iniciadas — estado histórico previo a ejecución)** · **2.0-00 ✅ COMPLETADA (386 pruebas / 2326 assertions, 0 migraciones, 33 rutas, build OK)** · **2.0-01 ✅ COMPLETA e integrada en master** · **2.0-02 ✅ COMPLETA e integrada en master** · **2.0-03 ✅ COMPLETA e integrada en master** · **2.0-04 ✅ COMPLETA e integrada en master** · 2.0-05 en adelante NO INICIADAS **(estado histórico de la fecha de redacción de este análisis)**. **Estado vigente:** ver `docs/roadmap-sistema-escolar.md` — **2.0-00 → 2.0-17 completas e integradas en `master` (ETAPA 2 COMPLETA, 18/18 fases)**, **QA pre-2.0-17 cerrado** y **2.0-17 cerrada** (D-N6 resuelta: CSV aprobado, sin XLSX)..
 
 ---
 
@@ -270,7 +270,7 @@ DATOS Y REGLAS ACADÉMICAS  →  SERVICIO  →  PLANTILLA BLADE  →  PDF
 | **2.0-14** | Egreso + titulación (internos) + constancia de terminación | Pruebas de requisitos de egreso | 2.0-09, 2.0-13 | Media |
 | **2.0-15** | Portal de docente (sus grupos, captura) | Matriz de 403/lectura + pruebas | 2.0-06 | Media |
 | **2.0-16** | Portal de alumno (lectura: kardex, horario, estado de cuenta, formatos propios) — **rol ALUMNO con aislamiento estricto** | Matriz de 403/aislamiento estricto | 2.0-09, 2.0-12 (**D-N5 aprobada**) | **Alta** |
-| **2.0-17** | Reportes operativos (académicos/administrativos; exportación si se aprueba → **D-N6 diferida**) | Pruebas de datos y autorización | 2.0-09+ | Media |
+| **2.0-17** ✅ | Reportes operativos (académicos/administrativos; exportación → **D-N6 RESUELTA: CSV**) — **COMPLETA e integrada en master** | Pruebas de datos y autorización | 2.0-09+ | Media |
 
 ## 13. Actuales F15 y F16 → **OPCIÓN A APROBADA**
 
@@ -322,14 +322,14 @@ Sin plazos (no hay datos de capacidad): **18 fases pequeñas**, cada una con gua
 | **D-N3** | Reglas detalladas de becas/descuentos | **RESUELTA** — PORCENTAJE/MONTO, alcance INSCRIPCION/MENSUALIDADES/AMBOS, no acumulación, vigencia por periodo, four-eyes CE→ADMIN, ledger ajustes_financieros; 2.0-12 |
 | **D-N4** | Modalidades/reglas de extraordinarios | **RESUELTA** — 1 oportunidad, solo desde REPROBADA, sin requisito adicional, fechas flexibles, misma escala/aprobatoria, sustituye calificación_final, conserva trazabilidad, sin cobros; implementada en **2.0-07** |
 | **D-N5** | Rol `ALUMNO` / portal de alumno | **APROBADO** para **2.0-16**, con aislamiento estricto (C1) |
-| **D-N6** | Exportaciones CSV/Excel en reportes | **DIFERIDA** — se define en **2.0-17** |
+| **D-N6** | Exportaciones CSV/Excel en reportes | **RESUELTA en 2.0-17** — **CSV aprobado** (UTF-8 con BOM, `fputcsv`, streaming `lazy(500)`, misma autorización que la pantalla); **XLSX NO** (sin Laravel Excel/PhpSpreadsheet ni dependencias nuevas) |
 | **D-N7** | Tipos exactos de folios de actas/constancias | **RESUELTA** — `CI-YYYY-########` (2.0-05) y `ACT-YYYY-########` (2.0-08) con `ConsecutivoService` + `lockForUpdate` |
 | — | Rol `COORDINADOR` | **NO crear por ahora** (registrado; se evalúa con la operación real) |
 
 ## 18. Estado de este análisis
 
-- ✅ Análisis actualizado con las decisiones aprobadas (C1–C8 resueltas, D-N1/D-N2/D-N4/D-N5/D-N7 aprobadas, D-N3/D-N6 diferidas, `matriculas_periodo` incorporada al modelo, ER/flujo/riesgos/roadmap/dependencias corregidos, referencias C*/D-N* verificadas).
+- ✅ Análisis actualizado con las decisiones aprobadas (C1–C8 resueltas, D-N1/D-N2/D-N4/D-N5/D-N7 aprobadas, D-N3 resuelta en 2.0-12 y **D-N6 resuelta en 2.0-17 (CSV)**, `matriculas_periodo` incorporada al modelo, ER/flujo/riesgos/roadmap/dependencias corregidos, referencias C*/D-N* verificadas).
 - ✅ Documentación relacionada actualizada: `roadmap-sistema-escolar.md` (Etapa 2), `arquitectura-mvp.md` (§7.3, §19, §24), `plan-implementacion.md` (F15/F16 → 2.0-00), `estado-proyecto.md` (Etapa 2 y estado del checkpoint).
 - ❌ Sin código, sin migraciones, sin tests ejecutados (tarea documental); ❌ sin borrado de información histórica; ✅ commit local solo de documentación.
-- **Estado de fases:** Etapa 1: F1–F14 **COMPLETAS** · **2.0-00 ✅ COMPLETA** · **2.0-01 ✅ COMPLETA** · **2.0-02 ✅ COMPLETA** · **2.0-03 ✅ COMPLETA** · **2.0-04 ✅ COMPLETA** · **2.0-05 ✅ COMPLETA** · **2.0-06 ✅ COMPLETA** · **2.0-07 ✅ COMPLETA** · **2.0-08 ✅ COMPLETA** · **2.0-09 ✅ COMPLETA** · **2.0-10 ✅ COMPLETA** · **2.0-11 ✅ COMPLETA** · **2.0-12 ✅ COMPLETA** · **2.0-13 en adelante: NO INICIADAS — estado histórico, al cerrar este análisis**. **Estado vigente:** ver `docs/roadmap-sistema-escolar.md` — **2.0-00 → 2.0-16 completas e integradas en `master`**, **QA pre-2.0-17 cerrado** y **2.0-17 NO INICIADA**..
+- **Estado de fases:** Etapa 1: F1–F14 **COMPLETAS** · **2.0-00 ✅ COMPLETA** · **2.0-01 ✅ COMPLETA** · **2.0-02 ✅ COMPLETA** · **2.0-03 ✅ COMPLETA** · **2.0-04 ✅ COMPLETA** · **2.0-05 ✅ COMPLETA** · **2.0-06 ✅ COMPLETA** · **2.0-07 ✅ COMPLETA** · **2.0-08 ✅ COMPLETA** · **2.0-09 ✅ COMPLETA** · **2.0-10 ✅ COMPLETA** · **2.0-11 ✅ COMPLETA** · **2.0-12 ✅ COMPLETA** · **2.0-13 en adelante: NO INICIADAS — estado histórico, al cerrar este análisis**. **Estado vigente:** ver `docs/roadmap-sistema-escolar.md` — **2.0-00 → 2.0-17 completas e integradas en `master` (ETAPA 2 COMPLETA, 18/18 fases)**, **QA pre-2.0-17 cerrado** y **2.0-17 cerrada** (D-N6 resuelta: CSV aprobado, sin XLSX)..
 - **Pendiente:** aprobación del usuario sobre esta persistencia documental.

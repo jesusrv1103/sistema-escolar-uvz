@@ -306,3 +306,20 @@ Las 51 migraciones existentes quedan intactas.
 `FormatoAcademicoTest`, `FormatoCatalogoPdfTest`, `PortalDocenteTest`, `PortalAlumnoTest`,
 `BecaAdminTest`, `ExtraordinarioServiceTest`, `Asistencia*Test`, `EgresoTitulacionTest`,
 `AutorizacionTest`, `UiShellTest`, `UiBladeCompileTest`, `MateriasNavegacionTest`.
+
+---
+
+## O. Resultado (cierre 2026-10-07)
+
+| | |
+|---|---|
+| **Estado** | ✅ **2.0-17 COMPLETA e integrada en `master`** (rama conservada, cierre por `--ff-only`) — **ETAPA 2 COMPLETA (18/18)** |
+| **Gate local** | `composer test` **823 tests / 3864 assertions / 0 fallos** (baseline 801/3657) · `view:cache` OK · `npm run build` OK (58.06 kB + 53.54 kB) · `route:list` **83** (+2) · `migrate:status` **51 Ran / 0 Pending** · **0 migraciones y 0 dependencias nuevas** |
+| **Pruebas nuevas** | `ReportesTest` (16) y `ReportesCsvTest` (6) — cubren la matriz de 6 roles en ruta/acción/CSV/menú, filtros y lista blanca, PII, paginación, estados vacíos, resúmenes, igualdad de cartera contra `EstadoCuentaService`, BOM/cabeceras/acentos/injection/ida-vuelta CSV y 422 fuera de dominio |
+| **DEMO** | Backups BD+código (`chmod 600`), código por `git archive HEAD`, `.env` intacto (mismo md5), sin `migrate --force`, 5 cachés OK, `51 Ran / 0 Pending`, **83 rutas**, datos intactos y fixture `DEMO-PRESENTACION-2026` sin tocar |
+| **QA DEMO** | Playwright, 6 roles: **71 comprobaciones / 0 fallos**, 0 HTTP ≥ 500, 0 errores de consola, responsive 1440/768/390 sin desborde, CSV con BOM y sin PII, 422/404/403 verificados |
+| **D-N6** | **RESUELTA** → CSV (UTF-8 con BOM, `fputcsv`, `lazy(500)`), XLSX descartado; sin Laravel Excel/PhpSpreadsheet |
+
+Desviaciones respecto a este diseño: **ninguna sustantiva**. Los únicos ajustes de implementación
+fueron técnicos: el alias de los `addSelect` con `DB::raw` va dentro de la expresión (Laravel
+descarta la clave del arreglo) y el formato de prueba `numero_control` es `char(8)`.
