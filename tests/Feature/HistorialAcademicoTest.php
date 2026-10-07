@@ -240,11 +240,11 @@ test('BUG-03: la tira entrega es_reprobada y todos los estados del plan', functi
     $plan = PlanEstudio::factory()->paraPrograma($programa)->create();
     $version = PlanVersion::factory()->forPlanEstudio($plan)->vigente()->create();
 
-    // Sin EXTRAORDINARIO: la columna `inscripciones_materias.estatus` es un
-    // ENUM de MySQL que sólo admite CURSANDO/APROBADA/REPROBADA/BAJA/VALIDADA,
-    // así que ese estado no puede existir en la BD (observación registrada en
-    // docs/auditoria-pdfs-pre-2.0-17.md; se requiere migración para habilitarlo).
-    $claves = ['APR', 'REP', 'CUR', 'BAJ', 'EQU', 'PEN'];
+    // EXTRAORDINARIO ya es persistible: la migración incremental
+    // `2026_10_06_000001_add_extraordinario_to_inscripciones_materias_table`
+    // amplió el ENUM `inscripciones_materias.estatus` (registro original del
+    // hallazgo: docs/auditoria-pdfs-pre-2.0-17.md §5).
+    $claves = ['APR', 'REP', 'CUR', 'BAJ', 'EQU', 'PEN', 'EXT'];
     $materias = [];
     foreach ($claves as $clave) {
         $materias[$clave] = Materia::factory()->paraPlanVersion($version)
@@ -273,6 +273,7 @@ test('BUG-03: la tira entrega es_reprobada y todos los estados del plan', functi
     $inscribir('REP', EstatusInscripcionMateria::REPROBADA, 45.00);
     $inscribir('CUR', EstatusInscripcionMateria::CURSANDO, null);
     $inscribir('BAJ', EstatusInscripcionMateria::BAJA, null);
+    $inscribir('EXT', EstatusInscripcionMateria::EXTRAORDINARIO, 55.00);
 
     Equivalencia::create([
         'alumno_id' => $alumno->id,
@@ -309,7 +310,59 @@ test('BUG-03: la tira entrega es_reprobada y todos los estados del plan', functi
 
     expect($tira['BAJ'])->toMatchArray(['estatus' => 'BAJA', 'es_baja' => true, 'es_aprobada' => false, 'es_reprobada' => false]);
 
+    expect($tira['EXT'])->toMatchArray(['estatus' => 'EXTRAORDINARIO', 'es_extraordinario' => true, 'es_aprobada' => false, 'es_reprobada' => false]);
+
     expect($tira['EQU'])->toMatchArray(['estatus' => 'EQUIVALENCIA', 'es_equivalencia' => true, 'es_aprobada' => false]);
 
     expect($tira['PEN'])->toMatchArray(['estatus' => 'PENDIENTE', 'es_aprobada' => false, 'es_reprobada' => false, 'es_cursando' => false]);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Saneamiento pre-2.0-17 — filtro de BAJA en obtenerHistorial() (B)
+|--------------------------------------------------------------------------
+|
+| `obtenerHistorial()` filtraba con `->where('estatus', '!=', 'BAJA')`: una
+| comparación contra un literal de texto sobre un atributo casteado a
+| `EstatusInscripcionMateria` (BackedEnum). La comparación queda ahora
+| explícita contra el caso del enum y la regla aprobada (RB-A5) se fija con
+| prueba: BAJA no entra al kardex y no aporta ni promedio ni créditos.
+|
+*/
+
+test('B: la BAJA no entra al historial y no aporta promedio ni créditos', function () {
+    $alumno = Alumno::factory()->create();
+    $periodo = Periodo::factory()->create(['activo' => true]);
+    $programa = Programa::factory()->create(['activo' => true]);
+    $plan = PlanEstudio::factory()->paraPrograma($programa)->create();
+    $version = PlanVersion::factory()->forPlanEstudio($plan)->vigente()->create();
+
+    $materiaAprobada = Materia::factory()->paraPlanVersion($version)->create(['activo' => true, 'clave' => 'APR', 'creditos' => 4]);
+    $materiaBaja = Materia::factory()->paraPlanVersion($version)->create(['activo' => true, 'clave' => 'BAJ', 'creditos' => 6]);
+
+    $grupoA = Grupo::factory()->paraMateria($materiaAprobada)->paraPeriodo($periodo)->abierto()->create(['activo' => true, 'cupo' => 40]);
+    $grupoB = Grupo::factory()->paraMateria($materiaBaja)->paraPeriodo($periodo)->abierto()->create(['activo' => true, 'cupo' => 40]);
+
+    $matricula = MatriculaPeriodo::factory()->activa()->paraAlumno($alumno)->paraPeriodo($periodo)->paraPrograma($programa)
+        ->create(['plan_version_id' => $version->id]);
+
+    InscripcionMateria::factory()->paraMatricula($matricula)->paraGrupo($grupoA)
+        ->create(['estatus' => EstatusInscripcionMateria::APROBADA, 'calificacion_final' => 90.00]);
+    // BAJA que además conserva calificación: si el filtro no operase, arrastraría
+    // el promedio (90·4 + 80·6)/10 = 84 y sumaría 10 créditos.
+    InscripcionMateria::factory()->paraMatricula($matricula)->paraGrupo($grupoB)
+        ->create(['estatus' => EstatusInscripcionMateria::BAJA, 'calificacion_final' => 80.00, 'fecha_baja' => now()]);
+
+    $service = app(HistorialAcademicoService::class);
+
+    expect($service->obtenerHistorial($alumno)->pluck('materia.clave')->all())
+        ->toEqualCanonicalizing(['APR'])
+        ->and($service->calcularPromedio($alumno))->toBe(90.0)
+        ->and($service->creditosAprobados($alumno))->toBe(4)
+        ->and($service->creditosCursados($alumno))->toBe(4);
+
+    // La baja desaparece del kardex, pero la tira de materias sí la muestra
+    // (es el estado real de esa materia en el plan).
+    $tira = $service->tiraMaterias(Alumno::findOrFail($alumno->id))->keyBy('materia.clave');
+    expect($tira['BAJ'])->toMatchArray(['estatus' => 'BAJA', 'es_baja' => true, 'es_aprobada' => false]);
 });

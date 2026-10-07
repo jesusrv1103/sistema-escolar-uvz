@@ -20,6 +20,7 @@ use App\Models\ServicioSocial;
 use App\Models\User;
 use App\Services\FormatoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class)->group('formatos', 'pdf');
@@ -105,4 +106,53 @@ test('§16: los 12 formatos del catálogo generan su PDF sin excepción', functi
     }
 
     expect(DocumentoGenerado::count())->toBe(count($escenarios));
+});
+
+/*
+|--------------------------------------------------------------------------
+| Regresión saneamiento pre-2.0-17 — ability `view` de GrupoPolicy (D)
+|--------------------------------------------------------------------------
+|
+| `FormatoService::autorizar()` validaba HORARIO y LISTA_GRUPO con
+| `Gate::authorize('ver', $grupo)`. `ver` no existe en `GrupoPolicy` (la
+| ability real es `view`), así que el Gate no encontraba callback: sólo
+| superaba esa guardia ADMIN, que pasa por `Gate::before`. CONTROL_ESCOLAR y
+| ADMINISTRACION — que sí pueden emitir formatos (`formato_academico.generar`)
+| — recibían un 403 injustificado al emitir un formato de grupo.
+|
+*/
+
+test('D: CONTROL_ESCOLAR emite HORARIO y LISTA_GRUPO (ability view, no ver)', function () {
+    Storage::fake('private');
+
+    $periodo = Periodo::factory()->create(['activo' => true]);
+    $programa = Programa::factory()->create(['activo' => true]);
+    $plan = PlanEstudio::factory()->paraPrograma($programa)->create();
+    $version = PlanVersion::factory()->forPlanEstudio($plan)->vigente()->create();
+    $materia = Materia::factory()->paraPlanVersion($version)->create(['activo' => true, 'creditos' => 4]);
+    $grupo = Grupo::factory()->paraMateria($materia)->paraPeriodo($periodo)->abierto()
+        ->create(['activo' => true, 'cupo' => 40, 'turno' => 'MATUTINO']);
+    GrupoHorario::factory()->paraGrupo($grupo)->create();
+
+    $alumno = Alumno::factory()->create();
+    $matricula = MatriculaPeriodo::factory()->activa()
+        ->paraAlumno($alumno)->paraPeriodo($periodo)->paraPrograma($programa)
+        ->create(['plan_version_id' => $version->id]);
+    InscripcionMateria::factory()->paraMatricula($matricula)->paraGrupo($grupo)->cursando()->create();
+
+    $control = User::factory()->deRol(RolUsuario::CONTROL_ESCOLAR)->create();
+    $service = app(FormatoService::class);
+
+    // La ability inexistente sigue sin resolver el Gate; la real (`view`) sí.
+    expect(Gate::forUser($control)->allows('view', $grupo))->toBeTrue()
+        ->and(Gate::forUser($control)->allows('ver', $grupo))->toBeFalse();
+
+    foreach ([TipoFormato::HORARIO, TipoFormato::LISTA_GRUPO] as $tipo) {
+        $ruta = $service->generar($tipo, $tipo === TipoFormato::HORARIO ? $alumno : null,
+            $tipo === TipoFormato::HORARIO ? $matricula : null, $grupo, [], $control);
+        $contenido = Storage::disk('private')->get($ruta);
+
+        $this->assertSame('%PDF-', substr((string) $contenido, 0, 5), "PDF inválido para {$tipo->value}");
+        $this->assertSame(1, DocumentoGenerado::where('tipo', $tipo->value)->count());
+    }
 });

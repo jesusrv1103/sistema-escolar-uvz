@@ -30,6 +30,10 @@ class HistorialAcademicoService
     /**
      * Obtiene el historial académico completo de un alumno.
      *
+     * Una fila por inscripción, **excluyendo las `BAJA`** (RB-A5: no aportan
+     * promedio ni créditos; la tira de materias las muestra aparte desde
+     * `tiraMaterias()`).
+     *
      * @return Collection<int, array<string, mixed>>
      */
     public function obtenerHistorial(Alumno $alumno): Collection
@@ -49,7 +53,12 @@ class HistorialAcademicoService
 
         return $matriculas->flatMap(function ($matricula) {
             return $matricula->inscripciones
-                ->where('estatus', '!=', 'BAJA')
+                // RB-A5: BAJA no aporta al promedio ni a los créditos, y por
+                // tanto no entra al kardex. La comparación se hace contra el
+                // caso del enum y nunca contra el literal 'BAJA': `estatus`
+                // está casteado a `EstatusInscripcionMateria` (BackedEnum) y
+                // un enum no debe compararse con texto.
+                ->where('estatus', '!=', EstatusInscripcionMateria::BAJA)
                 ->map(function ($inscripcion) use ($matricula) {
                     $grupo = $inscripcion->grupo;
                     $materia = $grupo?->materia;
@@ -170,7 +179,18 @@ class HistorialAcademicoService
     }
 
     /**
-     * Créditos aprobados (RB-A5: solo APROBADA + EXTRAORDINARIO->APROBADA).
+     * Créditos aprobados (RB-A5: "sólo cuenta lo APROBADO").
+     *
+     * Reconciliación con D-N4 (extraordinarios), vigente desde la migración
+     * que habilitó `EXTRAORDINARIO` en `inscripciones_materias.estatus`:
+     *
+     * - `APROBADA` (ordinaria o consolidada tras un extraordinario aprobado)
+     *   **sí aporta**: `ExtraordinarioService` deja la inscripción en
+     *   `APROBADA` con la calificación extraordinaria sustituyendo a la
+     *   ordinaria, de modo que el crédito se cuenta una sola vez.
+     * - `EXTRAORDINARIO` **en proceso** no aporta: aún no hay resultado
+     *   consolidado (`calificacion_final` sigue siendo la ordinaria).
+     * - `REPROBADA`, `BAJA`, `CURSANDO` y `VALIDADA` tampoco aportan.
      */
     public function creditosAprobados(Alumno $alumno): int
     {

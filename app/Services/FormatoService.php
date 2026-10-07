@@ -480,7 +480,11 @@ class FormatoService
 
         // Validaciones adicionales por tipo
         if (in_array($tipo, [TipoFormato::HORARIO, TipoFormato::LISTA_GRUPO], true) && $grupo) {
-            Gate::forUser($usuario)->authorize('ver', $grupo);
+            // `GrupoPolicy::view` (la ability era `ver`, que no existe en la
+            // política: Gate no la resuelve y sólo ADMIN la superaba por
+            // `Gate::before`, así que CONTROL_ESCOLAR/ADMINISTRACION recibían
+            // un 403 injustificado al emitir un formato de grupo).
+            Gate::forUser($usuario)->authorize('view', $grupo);
         }
     }
 }
