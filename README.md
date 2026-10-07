@@ -1,59 +1,124 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema Escolar UVZ
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema universitario para la gestión escolar (admisión, vida académica, finanzas y portales)
+desarrollado con:
 
-## About Laravel
+- **Laravel 12**
+- **PHP 8.2+**
+- **Livewire 4**
+- **Blade**
+- **Tailwind CSS 4**
+- **MySQL 8**
+- **Pest**
+- **Vite**
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Cobertura funcional principal
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- admisión e inscripción
+- alumnos
+- programas y periodos
+- planes de estudio
+- materias y prerrequisitos
+- docentes
+- grupos y horarios
+- matrícula por periodo
+- carga académica
+- evaluaciones
+- calificaciones
+- extraordinarios
+- asistencia
+- actas
+- kardex e historial
+- bajas
+- equivalencias/revalidaciones
+- becas y descuentos
+- pagos y estado de cuenta
+- servicio social
+- prácticas profesionales
+- egreso
+- titulación
+- portal docente
+- portal alumno
+- formatos PDF
+- reportes operativos
+- exportación CSV
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Roles
 
-## Learning Laravel
+- **ADMIN**
+- **ADMISIONES**
+- **ADMINISTRACION**
+- **CONTROL_ESCOLAR**
+- **DOCENTE**
+- **ALUMNO**
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Cada rol ve sólo las pantallas y acciones que le corresponden; la autorización se resuelve en el
+backend y es la única fuente de verdad.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Datos
 
-## Laravel Sponsors
+**Los datos incluidos para demostración son completamente sintéticos.** No contienen personas
+reales, ni CURP, teléfonos, domicilios o información médica reales.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Requisitos
 
-### Premium Partners
+- PHP 8.2 o superior con las extensiones de Laravel
+- Composer
+- MySQL 8 (o compatible)
+- Node.js 20+ y npm
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Instalación local
 
-## Contributing
+1. Copiar el archivo de ejemplo de entorno (nunca se versiona el `.env` real):
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+   ```bash
+   cp .env.example .env
+   ```
 
-## Code of Conduct
+2. Completar **localmente** en `.env` los valores que falten (`APP_KEY`, credenciales de la base
+   de datos, etc.). El `.env.example` llega con valores de ejemplo vacíos y no incluye secretos.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+3. Instalar dependencias y generar la clave de la aplicación:
 
-## Security Vulnerabilities
+   ```bash
+   composer install
+   php artisan key:generate
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+4. Crear la base de datos, ajustar `DB_*` en `.env` y ejecutar las migraciones (y opcionalmente
+   los seeders de demostración):
 
-## License
+   ```bash
+   php artisan migrate
+   php artisan migrate --seed
+   ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+5. Compilar los assets:
+
+   ```bash
+   npm install
+   npm run build
+   ```
+
+6. Arrancar el servidor de desarrollo:
+
+   ```bash
+   php artisan serve
+   ```
+
+## Pruebas
+
+```bash
+composer test
+```
+
+Ejecuta la suite completa con Pest.
+
+## Documentación
+
+El detalle de arquitectura, plan de implementación, roadmap y auditorías del proyecto vive en
+[`docs/`](docs/).
+
+## Licencia
+
+Proyecto privado. Todos los derechos reservados.
